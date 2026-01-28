@@ -168,3 +168,4 @@ fabric.properties
 
 # Docker dev data
 docker/db/
+docker/pgadmin/

@@ -14,7 +14,7 @@
 - Keep this file up to date: whenever project instructions change, update `AGENTS.md` in the same change.
 
 ## Local Services
-- Use `docker compose` with `docker/docker-compose.yml` for local Postgres when needed.
+- Use `docker compose` with `docker/docker-compose.yml` for local Postgres/pgAdmin when needed.
 
 ## Code Conventions
 - Keep package base: `vibe.webapp`.

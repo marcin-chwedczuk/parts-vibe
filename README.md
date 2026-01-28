@@ -20,7 +20,7 @@ DB_PASSWORD=webapp
 ```
 
 ## Start Postgres with Docker Compose
-Use the bundled `docker/docker-compose.yml` to spin up Postgres locally:
+Use the bundled `docker/docker-compose.yml` to spin up Postgres locally (includes pgAdmin):
 
 ```
 docker compose -f docker/docker-compose.yml up -d
@@ -38,6 +38,17 @@ Stop:
 docker compose -f docker/docker-compose.yml down
 ```
 
+## Access pgAdmin
+- URL: http://localhost:5050
+- Email: `admin@local.test`
+- Password: `admin123`
+- Add server connection:
+  - Host: `db`
+  - Port: `5432`
+  - Maintenance DB: `webapp`
+  - Username: `webapp`
+  - Password: `webapp`
+
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)
 - User: `user` / `user123` (ROLE_USER)
@@ -53,29 +64,29 @@ APP_USER_PASSWORD=...
 
 ## Run the app
 ```
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 To run with the dev profile (auto-create/update schema from JPA entities):
 ```
-SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 ```
 
 ## Generate DB schema from code
 The `dev` profile sets `spring.jpa.hibernate.ddl-auto=update`, which generates/updates tables from your entities.
 
 Options:
-- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update mvn spring-boot:run`
-- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop mvn spring-boot:run`
+- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update ./mvnw spring-boot:run`
+- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop ./mvnw spring-boot:run`
 
 ## Run unit tests
 ```
-mvn test
+./mvnw test
 ```
 
 ## Run integration tests (Testcontainers)
 ```
-mvn -Pintegration-test verify
+./mvnw -Pintegration-test verify
 ```
 
 ## Routes

@@ -16,3 +16,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: webapp-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.test
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
