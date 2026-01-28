@@ -19,6 +19,25 @@ DB_USER=webapp
 DB_PASSWORD=webapp
 ```
 
+## Start Postgres with Docker Compose
+Use the bundled `docker/docker-compose.yml` to spin up Postgres locally:
+
+```
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Check health:
+
+```
+docker compose -f docker/docker-compose.yml ps
+```
+
+Stop:
+
+```
+docker compose -f docker/docker-compose.yml down
+```
+
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)
 - User: `user` / `user123` (ROLE_USER)

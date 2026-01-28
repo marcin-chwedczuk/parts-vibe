@@ -13,6 +13,9 @@
 - Do not run Maven commands unless asked or needed to verify a change.
 - Keep this file up to date: whenever project instructions change, update `AGENTS.md` in the same change.
 
+## Local Services
+- Use `docker compose` with `docker/docker-compose.yml` for local Postgres when needed.
+
 ## Code Conventions
 - Keep package base: `vibe.webapp`.
 - Use Spring Data repositories for data access.
