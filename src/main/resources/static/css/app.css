@@ -1,0 +1,83 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --danger: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  max-width: 720px;
+  margin: 48px auto;
+  background: var(--card);
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.nav a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alert {
+  padding: 10px 12px;
+  background: #fee2e2;
+  color: var(--danger);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 500;
+}

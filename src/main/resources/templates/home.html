@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webapp</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+<body>
+  <main class="container">
+    <h1>Welcome to webapp</h1>
+    <p>This is a simple Spring Boot + Thymeleaf starter.</p>
+
+    <nav class="nav">
+      <a th:href="@{/login}">Login</a>
+      <a th:href="@{/contact}">Contact form</a>
+      <a th:href="@{/admin}">Admin</a>
+    </nav>
+  </main>
+</body>
+</html>

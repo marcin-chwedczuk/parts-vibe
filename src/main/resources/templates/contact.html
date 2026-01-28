@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+<body>
+  <main class="container">
+    <h1>Contact us</h1>
+
+    <form th:action="@{/contact}" th:object="${contactForm}" method="post" class="form">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <label>
+        Name (max 64 chars)
+        <input type="text" th:field="*{name}" maxlength="64" required />
+        <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+      </label>
+
+      <label>
+        Email
+        <input type="email" th:field="*{email}" required />
+        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+      </label>
+
+      <label>
+        Message
+        <textarea th:field="*{message}" rows="6" required></textarea>
+        <span class="field-error" th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
+      </label>
+
+      <button type="submit">Send</button>
+    </form>
+  </main>
+</body>
+</html>
