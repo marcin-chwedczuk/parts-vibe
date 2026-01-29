@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Catalog indexed</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Catalog text indexed</h1>
+  <main class="container py-4">
+    <h1 class="mb-3">Catalog text indexed</h1>
     <p>Your text was sent to Solr.</p>
     <p><strong>Document ID:</strong> <span th:text="${documentId}"></span></p>
-    <a th:href="@{/catalog/index}">Index another</a>
+    <a class="btn btn-outline-primary" th:href="@{/catalog/index}">Index another</a>
   </main>
 </body>
 </html>

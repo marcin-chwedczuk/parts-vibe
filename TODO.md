@@ -1,1 +1,2 @@
 - Add metrics exporters for PostgreSQL and Solr.
+- Redirect webapp logs to a file and ingest that file via Loki.

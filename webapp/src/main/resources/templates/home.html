@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Webapp</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Welcome to webapp</h1>
+  <main class="container py-4">
+    <h1 class="mb-3">Welcome to parts-vibe</h1>
     <p>This is a simple Spring Boot + Thymeleaf starter.</p>
 
-    <nav class="nav">
-      <a th:href="@{/login}">Login</a>
-      <a th:href="@{/contact}">Contact form</a>
-      <a th:href="@{/catalog/index}">Catalog index</a>
-      <a th:href="@{/catalog/search}">Catalog search</a>
-      <a th:href="@{/admin}">Admin</a>
+    <nav class="nav nav-pills gap-2">
+      <a class="nav-link" th:href="@{/login}">Login</a>
+      <a class="nav-link" th:href="@{/contact}">Contact form</a>
+      <a class="nav-link" th:href="@{/catalog/index}">Catalog index</a>
+      <a class="nav-link" th:href="@{/catalog/search}">Catalog search</a>
+      <a class="nav-link" th:href="@{/admin}">Admin</a>
     </nav>
   </main>
 </body>

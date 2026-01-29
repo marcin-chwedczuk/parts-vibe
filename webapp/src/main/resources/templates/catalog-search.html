@@ -4,18 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Catalog search</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Catalog search</h1>
+  <main class="container py-4">
+    <h1 class="mb-3">Catalog search</h1>
 
-    <form th:action="@{/catalog/search}" method="get" class="form">
-      <label>
-        Search
-        <input type="text" name="q" th:value="${query}" placeholder="Search parts..." required />
-      </label>
-      <button type="submit">Search</button>
+    <form th:action="@{/catalog/search}" method="get" class="row g-3 align-items-end">
+      <div class="col-12 col-md-8">
+        <label class="form-label">
+          Search
+          <input class="form-control" type="text" name="q" th:value="${query}"
+                 placeholder="Search parts..." required />
+        </label>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-primary w-100" type="submit">Search</button>
+      </div>
     </form>
 
     <section th:if="${query != null and !#strings.isEmpty(query)}">
@@ -25,20 +30,21 @@
         <p>No results.</p>
       </div>
 
-      <div th:if="${result.total > 0}">
-        <ol>
-          <li th:each="hit : ${result.hits}">
-            <p><strong th:text="${hit.id}"></strong></p>
-            <p th:text="${hit.content}"></p>
+      <div class="mt-3" th:if="${result.total > 0}">
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item" th:each="hit : ${result.hits}">
+            <div class="ms-2 me-auto">
+              <div class="fw-semibold" th:text="${hit.id}"></div>
+              <div th:text="${hit.content}"></div>
+            </div>
           </li>
         </ol>
       </div>
 
-      <div class="nav">
-        <a th:if="${result.hasPrev()}"
+      <div class="mt-3 d-flex gap-2">
+        <a class="btn btn-outline-secondary" th:if="${result.hasPrev()}"
            th:href="@{/catalog/search(q=${query}, page=${result.prevPage()})}">Prev</a>
-        <span th:if="${result.hasPrev()}"> | </span>
-        <a th:if="${result.hasNext()}"
+        <a class="btn btn-outline-secondary" th:if="${result.hasNext()}"
            th:href="@{/catalog/search(q=${query}, page=${result.nextPage()})}">Next</a>
       </div>
     </section>

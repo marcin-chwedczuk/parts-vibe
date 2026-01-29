@@ -4,33 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Contact</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Contact us</h1>
+  <main class="container py-4">
+    <h1 class="mb-3">Contact us</h1>
 
-    <form th:action="@{/contact}" th:object="${contactForm}" method="post" class="form">
+    <form th:action="@{/contact}" th:object="${contactForm}" method="post" class="row g-3">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <label>
-        Name (max 64 chars)
-        <input type="text" th:field="*{name}" maxlength="64" required />
-        <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
-      </label>
+      <div class="col-12">
+        <label class="form-label">
+          Name (max 64 chars)
+          <input class="form-control" type="text" th:field="*{name}" maxlength="64" required />
+        </label>
+        <span class="text-danger small" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+      </div>
 
-      <label>
-        Email
-        <input type="email" th:field="*{email}" required />
-        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
-      </label>
+      <div class="col-12">
+        <label class="form-label">
+          Email
+          <input class="form-control" type="email" th:field="*{email}" required />
+        </label>
+        <span class="text-danger small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+      </div>
 
-      <label>
-        Message
-        <textarea th:field="*{message}" rows="6" required></textarea>
-        <span class="field-error" th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
-      </label>
+      <div class="col-12">
+        <label class="form-label">
+          Message
+          <textarea class="form-control" th:field="*{message}" rows="6" required></textarea>
+        </label>
+        <span class="text-danger small" th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
+      </div>
 
-      <button type="submit">Send</button>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Send</button>
+      </div>
     </form>
   </main>
 </body>

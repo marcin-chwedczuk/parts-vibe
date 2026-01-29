@@ -4,30 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
 </head>
 <body>
-  <main class="container">
-    <h1>Login</h1>
+  <main class="container py-4">
+    <h1 class="mb-3">Login</h1>
 
-    <div class="alert" th:if="${param.error}">
+    <div class="alert alert-danger" th:if="${param.error}">
       Invalid username or password.
     </div>
-    <div class="alert" th:if="${param.logout}">
+    <div class="alert alert-info" th:if="${param.logout}">
       You have been logged out.
     </div>
 
-    <form th:action="@{/login}" method="post" class="form">
+    <form th:action="@{/login}" method="post" class="row g-3">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <label>
-        Username
-        <input type="text" name="username" autocomplete="username" required />
-      </label>
-      <label>
-        Password
-        <input type="password" name="password" autocomplete="current-password" required />
-      </label>
-      <button type="submit">Sign in</button>
+      <div class="col-12">
+        <label class="form-label">
+          Username
+          <input class="form-control" type="text" name="username" autocomplete="username" required />
+        </label>
+      </div>
+      <div class="col-12">
+        <label class="form-label">
+          Password
+          <input class="form-control" type="password" name="password" autocomplete="current-password" required />
+        </label>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </div>
     </form>
   </main>
 </body>
