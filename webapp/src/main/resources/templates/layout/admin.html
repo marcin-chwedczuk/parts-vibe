@@ -1,0 +1,33 @@
+<section xmlns:th="http://www.thymeleaf.org"
+         th:fragment="body(content)">
+  <div class="d-flex flex-column flex-md-row gap-4">
+    <aside class="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary rounded-3"
+           style="width: 260px;">
+      <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+        <span class="fs-5">Admin</span>
+      </a>
+      <hr>
+      <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+          <a th:href="@{/admin}"
+             th:class="${currentPath != null and currentPath.startsWith('/admin')} ? 'nav-link active' : 'nav-link link-body-emphasis'"
+             th:aria-current="${currentPath != null and currentPath.startsWith('/admin')} ? 'page' : null">
+            User Management
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-body-emphasis">Settings</a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-body-emphasis">Status Page</a>
+        </li>
+      </ul>
+    </aside>
+
+    <section class="flex-grow-1">
+      <div class="card shadow-sm">
+        <div class="card-body" th:replace="${content}"></div>
+      </div>
+    </section>
+  </div>
+</section>
