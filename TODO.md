@@ -1,0 +1,1 @@
+- Add metrics exporters for PostgreSQL and Solr.

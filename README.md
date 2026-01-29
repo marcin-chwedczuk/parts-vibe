@@ -70,6 +70,7 @@ docker compose -f docker-compose/docker-compose.yml down
 ## Logs (Loki + Grafana)
 - Loki: http://localhost:3100 (Grafana data source is auto-provisioned)
 - Logs in Grafana: Explore → select Loki → `{container="webapp"}` (adjust container name as needed).
+- Loki readiness check: http://localhost:3100/ready
 
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)
