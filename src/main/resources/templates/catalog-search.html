@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog search</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+<body>
+  <main class="container">
+    <h1>Catalog search</h1>
+
+    <form th:action="@{/catalog/search}" method="get" class="form">
+      <label>
+        Search
+        <input type="text" name="q" th:value="${query}" placeholder="Search parts..." required />
+      </label>
+      <button type="submit">Search</button>
+    </form>
+
+    <section th:if="${query != null and !#strings.isEmpty(query)}">
+      <p th:text="'Results found: ' + ${result.total}"></p>
+
+      <div th:if="${result.total == 0}">
+        <p>No results.</p>
+      </div>
+
+      <div th:if="${result.total > 0}">
+        <ol>
+          <li th:each="hit : ${result.hits}">
+            <p><strong th:text="${hit.id}"></strong></p>
+            <p th:text="${hit.content}"></p>
+          </li>
+        </ol>
+      </div>
+
+      <div class="nav">
+        <a th:if="${result.hasPrev()}"
+           th:href="@{/catalog/search(q=${query}, page=${result.prevPage()})}">Prev</a>
+        <span th:if="${result.hasPrev()}"> | </span>
+        <a th:if="${result.hasNext()}"
+           th:href="@{/catalog/search(q=${query}, page=${result.nextPage()})}">Next</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
