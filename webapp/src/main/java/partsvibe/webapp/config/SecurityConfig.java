@@ -14,7 +14,7 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/", "/login", "/css/**", "/actuator/prometheus").permitAll()
+            .requestMatchers("/", "/login", "/css/**", "/actuator/**").permitAll()
             .requestMatchers("/admin/**").hasRole("ADMIN")
             .requestMatchers("/contact/**").hasRole("USER")
             .requestMatchers("/catalog/**").hasRole("USER")

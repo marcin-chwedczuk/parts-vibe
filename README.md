@@ -67,6 +67,10 @@ docker compose -f docker-compose/docker-compose.yml down
 - Grafana: http://localhost:3000 (admin/admin)
 - Dashboard: “PartsVibe JVM” is provisioned on first start.
 
+## Logs (Loki + Grafana)
+- Loki: http://localhost:3100 (Grafana data source is auto-provisioned)
+- Logs in Grafana: Explore → select Loki → `{container="webapp"}` (adjust container name as needed).
+
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)
 - User: `user` / `user123` (ROLE_USER)
