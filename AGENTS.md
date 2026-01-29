@@ -6,6 +6,7 @@
 - Build tool: Maven
 - Framework: Spring Boot + Thymeleaf
 - Database: PostgreSQL
+- Modules: `webapp`, `shared`, `data-access`, `application`, `search` (multi-module Maven)
 
 ## Command Rules
 - Always use the Maven Wrapper for Maven-related commands: `./mvnw` (not `mvn`).
