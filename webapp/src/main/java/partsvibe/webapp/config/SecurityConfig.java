@@ -25,6 +25,10 @@ public class SecurityConfig {
             .defaultSuccessUrl("/", true)
             .permitAll()
         )
+        .exceptionHandling(ex -> ex
+            .accessDeniedHandler((request, response, accessDeniedException) ->
+                response.sendRedirect("/login?denied"))
+        )
         .httpBasic(Customizer.withDefaults())
         .logout(logout -> logout.logoutSuccessUrl("/"));
 
