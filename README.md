@@ -1,6 +1,14 @@
-# webapp
+# parts-vibe
 
-Spring Boot + Thymeleaf + PostgreSQL skeleton with JPA, basic role-based auth, and a validated contact form.
+Spring Boot + Thymeleaf + PostgreSQL skeleton with JPA, basic role-based auth, and Solr-backed catalog indexing/search.
+
+## Project layout
+Multi-module Maven project:
+- `webapp` (Spring Boot app + web layer)
+- `application` (application/services)
+- `data-access` (JPA entities + repositories)
+- `search` (Solr integration)
+- `shared` (shared utilities, currently empty)
 
 ## Requirements
 - JDK 25
@@ -20,22 +28,22 @@ DB_PASSWORD=webapp
 ```
 
 ## Start Postgres with Docker Compose
-Use the bundled `docker/docker-compose.yml` to spin up Postgres locally (includes pgAdmin):
+Use the bundled `docker-compose/docker-compose.yml` to spin up Postgres locally (includes pgAdmin and Solr):
 
 ```
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker-compose/docker-compose.yml up -d
 ```
 
 Check health:
 
 ```
-docker compose -f docker/docker-compose.yml ps
+docker compose -f docker-compose/docker-compose.yml ps
 ```
 
 Stop:
 
 ```
-docker compose -f docker/docker-compose.yml down
+docker compose -f docker-compose/docker-compose.yml down
 ```
 
 ## Access pgAdmin
@@ -69,20 +77,20 @@ APP_USER_PASSWORD=...
 
 ## Run the app
 ```
-./mvnw spring-boot:run
+./mvnw -pl webapp spring-boot:run
 ```
 
 To run with the dev profile (auto-create/update schema from JPA entities):
 ```
-SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=dev ./mvnw -pl webapp spring-boot:run
 ```
 
 ## Generate DB schema from code
 The `dev` profile sets `spring.jpa.hibernate.ddl-auto=update`, which generates/updates tables from your entities.
 
 Options:
-- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update ./mvnw spring-boot:run`
-- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop ./mvnw spring-boot:run`
+- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update ./mvnw -pl webapp spring-boot:run`
+- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop ./mvnw -pl webapp spring-boot:run`
 
 ## Run unit tests
 ```
@@ -99,4 +107,5 @@ Options:
 - `/login` login page
 - `/contact` ROLE_USER
 - `/catalog/index` ROLE_USER (indexes text into Solr)
+- `/catalog/search` ROLE_USER (search Solr)
 - `/admin` ROLE_ADMIN

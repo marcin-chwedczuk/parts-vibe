@@ -1,6 +1,6 @@
 spring:
   application:
-    name: webapp
+    name: parts-vibe
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:webapp}
     username: ${DB_USER:webapp}

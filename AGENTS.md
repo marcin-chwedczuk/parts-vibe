@@ -18,7 +18,7 @@
 - Use `docker compose` with `docker/docker-compose.yml` for local Postgres/pgAdmin when needed.
 
 ## Code Conventions
-- Keep package base: `vibe.webapp`.
+- Keep package base: `partsvibe` with module namespaces like `partsvibe.webapp`, `partsvibe.application`, `partsvibe.dataaccess`, `partsvibe.search`.
 - Use Spring Data repositories for data access.
 - Use JPA entities with Hibernate.
 
