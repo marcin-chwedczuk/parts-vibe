@@ -16,6 +16,9 @@ spring:
     cache: false
 
 app:
+  solr:
+    base-url: ${SOLR_BASE_URL:http://localhost:8983}
+    core: ${SOLR_CORE:catalog}
   security:
     admin-username: ${APP_ADMIN_USERNAME:admin}
     admin-password: ${APP_ADMIN_PASSWORD:admin123}

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog indexed</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
+</head>
+<body>
+  <main class="container">
+    <h1>Catalog text indexed</h1>
+    <p>Your text was sent to Solr.</p>
+    <p><strong>Document ID:</strong> <span th:text="${documentId}"></span></p>
+    <a th:href="@{/catalog/index}">Index another</a>
+  </main>
+</body>
+</html>

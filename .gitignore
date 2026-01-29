@@ -169,3 +169,5 @@ fabric.properties
 # Docker dev data
 docker/db/
 docker/pgadmin/
+docker/solr/
+docker/solr/

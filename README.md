@@ -40,7 +40,7 @@ docker compose -f docker/docker-compose.yml down
 
 ## Access pgAdmin
 - URL: http://localhost:5050
-- Email: `admin@local.test`
+- Email: `admin@localtest.me`
 - Password: `admin123`
 - Add server connection:
   - Host: `db`
@@ -48,6 +48,11 @@ docker compose -f docker/docker-compose.yml down
   - Maintenance DB: `webapp`
   - Username: `webapp`
   - Password: `webapp`
+
+## Access Solr Admin UI
+- URL: http://localhost:8983/solr
+- Core: `catalog` (auto-created by docker-compose)
+- Check docs: open the core, then run a query like `q=*:*` in the Query tab.
 
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)
@@ -93,4 +98,5 @@ Options:
 - `/` public home
 - `/login` login page
 - `/contact` ROLE_USER
+- `/catalog/index` ROLE_USER (indexes text into Solr)
 - `/admin` ROLE_ADMIN
