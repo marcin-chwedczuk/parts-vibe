@@ -28,7 +28,7 @@ DB_PASSWORD=webapp
 ```
 
 ## Start Postgres with Docker Compose
-Use the bundled `docker-compose/docker-compose.yml` to spin up Postgres locally (includes pgAdmin and Solr):
+Use the bundled `docker-compose/docker-compose.yml` to spin up Postgres locally (includes pgAdmin, Solr, Prometheus, and Grafana):
 
 ```
 docker compose -f docker-compose/docker-compose.yml up -d
@@ -61,6 +61,11 @@ docker compose -f docker-compose/docker-compose.yml down
 - URL: http://localhost:8983/solr
 - Core: `catalog` (auto-created by docker-compose)
 - Check docs: open the core, then run a query like `q=*:*` in the Query tab.
+
+## Metrics (Prometheus + Grafana)
+- Prometheus: http://localhost:9090 (scrapes `http://host.docker.internal:8080/actuator/prometheus`)
+- Grafana: http://localhost:3000 (admin/admin)
+- Dashboard: “PartsVibe JVM” is provisioned on first start.
 
 ## Default users (seeded at startup)
 - Admin: `admin` / `admin123` (ROLE_ADMIN + ROLE_USER)

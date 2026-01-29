@@ -1,0 +1,103 @@
+{
+  "uid": "partsvibe-jvm",
+  "title": "PartsVibe JVM",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "10s",
+  "tags": ["partsvibe", "jvm"],
+  "templating": {
+    "list": [
+      {
+        "name": "application",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(jvm_memory_used_bytes, application)",
+        "current": {
+          "text": "parts-vibe",
+          "value": "parts-vibe"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "JVM Memory Used (bytes)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (area) (jvm_memory_used_bytes{application=\"$application\"})",
+          "legendFormat": "{{area}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM Memory Max (bytes)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (area) (jvm_memory_max_bytes{application=\"$application\"})",
+          "legendFormat": "{{area}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Live Threads",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "jvm_threads_live{application=\"$application\"}",
+          "legendFormat": "threads"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "type": "timeseries",
+      "title": "Process CPU Usage",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "process_cpu_usage{application=\"$application\"}",
+          "legendFormat": "cpu"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 8}
+    },
+    {
+      "type": "timeseries",
+      "title": "GC Pause Count",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (cause) (jvm_gc_pause_seconds_count{application=\"$application\"})",
+          "legendFormat": "{{cause}}"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 14}
+    }
+  ]
+}

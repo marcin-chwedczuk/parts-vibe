@@ -167,7 +167,10 @@ fabric.properties
 # End of https://www.toptal.com/developers/gitignore/api/intellij
 
 # Docker dev data
-docker/db/
-docker/pgadmin/
-docker/solr/
-docker/solr/
+docker-compose/db/
+docker-compose/pgadmin/
+docker-compose/solr/
+docker-compose/prometheus/data/
+docker-compose/grafana/data/
+docker-compose/solr/
+
