@@ -17,14 +17,61 @@
   <packaging>pom</packaging>
   <name>parts-vibe-parent</name>
   <description>Multi-module parent for parts-vibe</description>
+  <url>TODO</url>
+  <inceptionYear>TODO</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>MIT</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <organization>
+    <name>TODO</name>
+    <url>TODO</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <id>TODO</id>
+      <name>TODO</name>
+      <organization>TODO</organization>
+      <organizationUrl>TODO</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:TODO</connection>
+    <developerConnection>scm:git:TODO</developerConnection>
+    <url>TODO</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>TODO</system>
+    <url>TODO</url>
+  </issueManagement>
 
   <properties>
     <java.version>25</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- Pin artifact timestamps for reproducible builds; set to a fixed ISO-8601 instant. -->
+    <!--
+    <project.build.outputTimestamp>TODO</project.build.outputTimestamp>
+    -->
+
     <testcontainers.version>2.0.3</testcontainers.version>
     <solr.version>9.9.0</solr.version>
     <bootstrap.version>5.3.3</bootstrap.version>
+    <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
+    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+    <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
+    <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
+    <spring.boot.maven.plugin.version>4.0.2</spring.boot.maven.plugin.version>
+    <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -48,6 +95,69 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Centralize plugin versions to keep module builds consistent. -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven.compiler.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${maven.resources.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven.surefire.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${maven.failsafe.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring.boot.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven.enforcer.plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <!-- Keep all modules on the same Java baseline. -->
+                <requireJavaVersion>
+                  <version>[25,)</version>
+                </requireJavaVersion>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <modules>
     <module>app</module>
