@@ -6,20 +6,34 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="data-access" />
+        <module name="search-api" />
         <module name="shared" />
-        <module name="search" />
-        <module name="application" />
+        <module name="site" />
+        <module name="search-impl" />
         <module name="webapp (1)" />
+        <module name="catalog" />
+        <module name="users" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="application" target="22" />
+      <module name="data-access" target="22" />
+      <module name="search" target="22" />
+      <module name="search-solr" target="22" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="application" options="-parameters" />
+      <module name="catalog" options="-parameters" />
       <module name="data-access" options="-parameters" />
       <module name="search" options="-parameters" />
+      <module name="search-api" options="-parameters" />
+      <module name="search-impl" options="-parameters" />
+      <module name="search-solr" options="-parameters" />
       <module name="shared" options="-parameters" />
+      <module name="site" options="-parameters" />
+      <module name="users" options="-parameters" />
       <module name="webapp" options="" />
       <module name="webapp (1)" options="-parameters" />
     </option>

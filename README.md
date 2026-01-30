@@ -4,10 +4,12 @@ Spring Boot + Thymeleaf + PostgreSQL skeleton with JPA, basic role-based auth, a
 
 ## Project layout
 Multi-module Maven project:
-- `webapp` (Spring Boot app + web layer)
-- `application` (application/services)
-- `data-access` (JPA entities + repositories)
-- `search` (Solr integration)
+- `app` (Spring Boot app + runtime assembly)
+- `catalog` (catalog web flow)
+- `users` (RBAC + users)
+- `site` (home + contact)
+- `search-api` (search contracts)
+- `search-impl` (Solr-backed search implementation)
 - `shared` (shared utilities, currently empty)
 
 ## Requirements
@@ -87,20 +89,20 @@ APP_USER_PASSWORD=...
 
 ## Run the app
 ```
-./mvnw -pl webapp spring-boot:run
+./mvnw -pl app spring-boot:run
 ```
 
 To run with the dev profile (auto-create/update schema from JPA entities):
 ```
-SPRING_PROFILES_ACTIVE=dev ./mvnw -pl webapp spring-boot:run
+SPRING_PROFILES_ACTIVE=dev ./mvnw -pl app spring-boot:run
 ```
 
 ## Generate DB schema from code
 The `dev` profile sets `spring.jpa.hibernate.ddl-auto=update`, which generates/updates tables from your entities.
 
 Options:
-- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update ./mvnw -pl webapp spring-boot:run`
-- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop ./mvnw -pl webapp spring-boot:run`
+- `update` (safe-ish for dev): `SPRING_JPA_HIBERNATE_DDL_AUTO=update ./mvnw -pl app spring-boot:run`
+- `create-drop` (clean rebuild each run): `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop ./mvnw -pl app spring-boot:run`
 
 ## Run unit tests
 ```

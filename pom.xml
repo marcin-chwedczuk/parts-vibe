@@ -50,10 +50,12 @@
   </repositories>
 
   <modules>
-    <module>webapp</module>
+    <module>app</module>
     <module>shared</module>
-    <module>data-access</module>
-    <module>application</module>
-    <module>search</module>
+    <module>catalog</module>
+    <module>users</module>
+    <module>site</module>
+    <module>search-api</module>
+    <module>search-impl</module>
   </modules>
 </project>
