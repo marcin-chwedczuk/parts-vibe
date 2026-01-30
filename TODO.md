@@ -1,3 +1,4 @@
 - Add metrics exporters for PostgreSQL and Solr.
 - Redirect webapp logs to a file and ingest that file via Loki.
 - Implement E2E tests (Selenium or a modern alternative).
+- Add github actions and badge
