@@ -5,13 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>vibe</groupId>
-    <artifactId>webapp-parent</artifactId>
+    <groupId>app.partsvibe</groupId>
+    <artifactId>parts-vibe-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>vibe</groupId>
   <artifactId>app</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>app</name>
@@ -19,32 +18,32 @@
 
   <dependencies>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>shared</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>catalog</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>users</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>site</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>search-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>vibe</groupId>
+      <groupId>app.partsvibe</groupId>
       <artifactId>search-impl</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -11,12 +11,12 @@
     <relativePath/>
   </parent>
 
-  <groupId>vibe</groupId>
-  <artifactId>webapp-parent</artifactId>
+  <groupId>app.partsvibe</groupId>
+  <artifactId>parts-vibe-parent</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>webapp-parent</name>
-  <description>Multi-module parent for webapp</description>
+  <name>parts-vibe-parent</name>
+  <description>Multi-module parent for parts-vibe</description>
 
   <properties>
     <java.version>25</java.version>
