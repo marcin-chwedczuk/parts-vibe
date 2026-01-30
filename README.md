@@ -1,4 +1,5 @@
 # parts-vibe
+![CI](https://github.com/marcin-chwedczuk/parts-vibe/actions/workflows/ci.yml/badge.svg)
 
 Spring Boot + Thymeleaf + PostgreSQL skeleton with JPA, basic role-based auth, and Solr-backed catalog indexing/search.
 
