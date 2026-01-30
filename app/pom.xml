@@ -12,7 +12,6 @@
   </parent>
 
   <artifactId>app</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>app</name>
   <description>Spring Boot application module</description>
 
@@ -62,7 +61,6 @@
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>bootstrap</artifactId>
-      <version>5.3.3</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

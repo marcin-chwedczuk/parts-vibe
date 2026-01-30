@@ -20,8 +20,11 @@
 
   <properties>
     <java.version>25</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <testcontainers.version>2.0.3</testcontainers.version>
     <solr.version>9.9.0</solr.version>
+    <bootstrap.version>5.3.3</bootstrap.version>
   </properties>
 
   <dependencyManagement>
@@ -33,21 +36,18 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-solrj</artifactId>
+        <version>${solr.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.webjars</groupId>
+        <artifactId>bootstrap</artifactId>
+        <version>${bootstrap.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>central</id>
-      <name>Maven Central</name>
-      <url>https://repo1.maven.org/maven2/</url>
-    </repository>
-    <repository>
-      <id>jcenter</id>
-      <name>JCenter (read-only)</name>
-      <url>https://jcenter.bintray.com/</url>
-    </repository>
-  </repositories>
 
   <modules>
     <module>app</module>

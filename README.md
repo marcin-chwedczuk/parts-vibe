@@ -18,6 +18,11 @@ Multi-module Maven project:
 - PostgreSQL 15+
 - Docker (for Testcontainers integration tests)
 
+## Maven repository mirror (optional)
+If you want resilience against Maven Central outages, configure a local mirror in
+`~/.m2/settings.xml` (or in CI). This keeps project POMs clean and reproducible
+while allowing a controlled fallback (e.g., a Nexus or Artifactory proxy).
+
 ## Configure Postgres
 Create a database and set credentials, or use the defaults from `application.yml`:
 
