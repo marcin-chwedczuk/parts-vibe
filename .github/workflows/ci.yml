@@ -19,5 +19,5 @@ jobs:
           java-version: "25"
           cache: "maven"
 
-      - name: Build and run unit tests
+      - name: Build, unit tests, Spotless, SpotBugs
         run: ./mvnw -q verify

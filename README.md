@@ -22,7 +22,7 @@ Multi-module Maven project:
 ## Formatting and static analysis
 - Formatter: Spotless (Palantir Java Format). Run `./mvnw spotless:apply` to format locally.
 - IntelliJ: install and enable the `palantir-java-format` plugin to keep IDE formatting consistent.
-- Static analysis: SpotBugs runs during `verify`.
+- Static analysis: SpotBugs runs during `verify` (high-priority findings only).
 
 ## Maven repository mirror (optional)
 If you want resilience against Maven Central outages, configure a local mirror in
