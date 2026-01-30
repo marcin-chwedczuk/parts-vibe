@@ -20,4 +20,4 @@ jobs:
           cache: "maven"
 
       - name: Build and run unit tests
-        run: ./mvnw -q package
+        run: ./mvnw -q verify

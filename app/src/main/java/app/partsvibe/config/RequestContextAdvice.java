@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice
 public class RequestContextAdvice {
-  @ModelAttribute("currentPath")
-  public String currentPath(HttpServletRequest request) {
-    return request.getServletPath();
-  }
+    @ModelAttribute("currentPath")
+    public String currentPath(HttpServletRequest request) {
+        return request.getServletPath();
+    }
 }

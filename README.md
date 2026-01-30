@@ -19,6 +19,11 @@ Multi-module Maven project:
 - PostgreSQL 15+
 - Docker (for Testcontainers integration tests)
 
+## Formatting and static analysis
+- Formatter: Spotless (Palantir Java Format). Run `./mvnw spotless:apply` to format locally.
+- IntelliJ: install and enable the `palantir-java-format` plugin to keep IDE formatting consistent.
+- Static analysis: SpotBugs runs during `verify`.
+
 ## Maven repository mirror (optional)
 If you want resilience against Maven Central outages, configure a local mirror in
 `~/.m2/settings.xml` (or in CI). This keeps project POMs clean and reproducible

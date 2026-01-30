@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 public class PartsVibeApplication {
-  public static void main(String[] args) {
-    SpringApplication.run(PartsVibeApplication.class, args);
-  }
+    public static void main(String[] args) {
+        SpringApplication.run(PartsVibeApplication.class, args);
+    }
 }

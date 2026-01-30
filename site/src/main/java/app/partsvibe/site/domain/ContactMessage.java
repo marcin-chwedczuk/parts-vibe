@@ -12,67 +12,66 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "contact_messages")
 public class ContactMessage {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false, length = 64)
-  private String name;
+    @Column(nullable = false, length = 64)
+    private String name;
 
-  @Column(nullable = false, length = 254)
-  private String email;
+    @Column(nullable = false, length = 254)
+    private String email;
 
-  @Column(nullable = false, length = 2000)
-  private String message;
+    @Column(nullable = false, length = 2000)
+    private String message;
 
-  @Column(nullable = false)
-  private OffsetDateTime createdAt;
+    @Column(nullable = false)
+    private OffsetDateTime createdAt;
 
-  protected ContactMessage() {
-  }
+    protected ContactMessage() {}
 
-  public ContactMessage(String name, String email, String message) {
-    this.name = name;
-    this.email = email;
-    this.message = message;
-  }
-
-  @PrePersist
-  void onCreate() {
-    if (createdAt == null) {
-      createdAt = OffsetDateTime.now();
+    public ContactMessage(String name, String email, String message) {
+        this.name = name;
+        this.email = email;
+        this.message = message;
     }
-  }
 
-  public Long getId() {
-    return id;
-  }
+    @PrePersist
+    void onCreate() {
+        if (createdAt == null) {
+            createdAt = OffsetDateTime.now();
+        }
+    }
 
-  public String getName() {
-    return name;
-  }
+    public Long getId() {
+        return id;
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public String getEmail() {
-    return email;
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  public void setEmail(String email) {
-    this.email = email;
-  }
+    public String getEmail() {
+        return email;
+    }
 
-  public String getMessage() {
-    return message;
-  }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-  public void setMessage(String message) {
-    this.message = message;
-  }
+    public String getMessage() {
+        return message;
+    }
 
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

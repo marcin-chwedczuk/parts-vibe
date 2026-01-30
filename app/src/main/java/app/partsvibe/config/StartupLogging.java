@@ -12,24 +12,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class StartupLogging implements ApplicationRunner {
-  private static final Logger logger = LoggerFactory.getLogger(StartupLogging.class);
-  private final Environment environment;
+    private static final Logger logger = LoggerFactory.getLogger(StartupLogging.class);
+    private final Environment environment;
 
-  public StartupLogging(Environment environment) {
-    this.environment = environment;
-  }
-
-  @Override
-  public void run(ApplicationArguments args) {
-    String javaVersion = System.getProperty("java.version");
-    String springBootVersion = SpringBootVersion.getVersion();
-    String profiles = Arrays.stream(environment.getActiveProfiles())
-        .collect(Collectors.joining(", "));
-    if (profiles.isBlank()) {
-      profiles = "default";
+    public StartupLogging(Environment environment) {
+        this.environment = environment;
     }
 
-    logger.info("Startup: javaVersion={}, springBootVersion={}, profiles={}",
-        javaVersion, springBootVersion, profiles);
-  }
+    @Override
+    public void run(ApplicationArguments args) {
+        String javaVersion = System.getProperty("java.version");
+        String springBootVersion = SpringBootVersion.getVersion();
+        String profiles = Arrays.stream(environment.getActiveProfiles()).collect(Collectors.joining(", "));
+        if (profiles.isBlank()) {
+            profiles = "default";
+        }
+
+        logger.info(
+                "Startup: javaVersion={}, springBootVersion={}, profiles={}", javaVersion, springBootVersion, profiles);
+    }
 }
