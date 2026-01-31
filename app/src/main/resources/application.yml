@@ -16,6 +16,8 @@ spring:
     cache: false
   jmx:
     enabled: false
+  session:
+    store-type: jdbc
 
 management:
   endpoints:
