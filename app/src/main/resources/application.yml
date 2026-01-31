@@ -31,6 +31,10 @@ management:
     tags:
       application: ${spring.application.name}
 
+logging:
+  pattern:
+    level: "%5p [req:%X{requestId}]"
+
 app:
   solr:
     base-url: ${SOLR_BASE_URL:http://localhost:8983/solr}

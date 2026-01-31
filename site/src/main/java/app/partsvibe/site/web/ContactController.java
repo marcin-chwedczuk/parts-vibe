@@ -3,6 +3,8 @@ package app.partsvibe.site.web;
 import app.partsvibe.site.domain.ContactMessage;
 import app.partsvibe.site.repo.ContactMessageRepository;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 @RequestMapping("/contact")
 public class ContactController {
+    private static final Logger log = LoggerFactory.getLogger(ContactController.class);
     private final ContactMessageRepository contactMessageRepository;
 
     public ContactController(ContactMessageRepository contactMessageRepository) {
@@ -22,6 +25,7 @@ public class ContactController {
 
     @GetMapping
     public String form(Model model) {
+        log.info("Contact form requested");
         if (!model.containsAttribute("contactForm")) {
             model.addAttribute("contactForm", new ContactForm());
         }
@@ -31,12 +35,14 @@ public class ContactController {
     @PostMapping
     public String submit(@Valid @ModelAttribute("contactForm") ContactForm contactForm, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
+            log.warn("Contact form validation failed: errors={}", bindingResult.getErrorCount());
             return "contact";
         }
 
         ContactMessage message =
                 new ContactMessage(contactForm.getName(), contactForm.getEmail(), contactForm.getMessage());
-        contactMessageRepository.save(message);
+        ContactMessage saved = contactMessageRepository.save(message);
+        log.info("Contact message saved: id={}", saved.getId());
         return "contact-success";
     }
 }
