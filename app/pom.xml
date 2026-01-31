@@ -103,6 +103,15 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <image>
+            <name>parts-vibe/app:${project.version}</name>
+            <!--
+            <builder>paketobuildpacks/builder-noble-java-tiny:latest</builder>
+            <runImage>paketobuildpacks/run-noble-base:latest</runImage>
+            -->
+          </image>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

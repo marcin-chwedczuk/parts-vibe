@@ -1,0 +1,25 @@
+services:
+  app:
+    image: parts-vibe/app:0.0.1-SNAPSHOT
+    container_name: webapp-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: webapp
+      DB_USER: webapp
+      DB_PASSWORD: webapp
+      SOLR_BASE_URL: http://solr:8983/solr
+      SOLR_CORE: catalog
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      db:
+        condition: service_healthy
+      solr:
+        condition: service_started

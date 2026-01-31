@@ -108,6 +108,41 @@ To run with the dev profile (auto-create/update schema from JPA entities):
 SPRING_PROFILES_ACTIVE=dev ./mvnw -pl app spring-boot:run
 ```
 
+## Build Docker image (Spring Boot buildpacks)
+The app module can build a local Docker image using the Spring Boot Maven plugin:
+
+```
+./mvnw -pl app spring-boot:build-image
+```
+
+Default local image name:
+
+```
+parts-vibe/app:0.0.1-SNAPSHOT
+```
+
+## Run the app in Docker Compose
+Use the base compose file for dependencies, and add the app compose file when you want the
+containerized app as well.
+
+Dependencies only:
+
+```
+docker compose -f docker-compose/docker-compose.yml up -d
+```
+
+Dependencies + app:
+
+```
+docker compose -f docker-compose/docker-compose.yml -f docker-compose/docker-compose.app.yml up -d
+```
+
+Remove only the app container:
+
+```
+docker compose -f docker-compose/docker-compose.yml -f docker-compose/docker-compose.app.yml rm -sf app
+```
+
 ## Generate DB schema from code
 The `dev` profile sets `spring.jpa.hibernate.ddl-auto=update`, which generates/updates tables from your entities.
 
