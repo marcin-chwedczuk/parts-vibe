@@ -168,6 +168,12 @@ fabric.properties
 
 # Docker dev data
 docker-compose/db/
+!docker-compose/db/init/
+!docker-compose/db/init/**
+!docker-compose/db/pg_hba.conf
+docker-compose/db-replica/
+!docker-compose/db-replica/init/
+!docker-compose/db-replica/init/**
 docker-compose/pgadmin/
 docker-compose/solr/
 docker-compose/prometheus/data/

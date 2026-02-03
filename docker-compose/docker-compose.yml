@@ -7,15 +7,106 @@ services:
       POSTGRES_DB: webapp
       POSTGRES_USER: webapp
       POSTGRES_PASSWORD: webapp
+      PGDATA: /var/lib/postgresql/data
+      REPLICATION_USER: replicator
+      REPLICATION_PASSWORD: replicator
     ports:
       - "5432:5432"
     volumes:
       - ./db:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command:
+      - "postgres"
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
+      - "-c"
+      - "listen_addresses=*"
+      - "-c"
+      - "wal_level=replica"
+      - "-c"
+      - "max_wal_senders=10"
+      - "-c"
+      - "max_replication_slots=10"
+      - "-c"
+      - "hot_standby=on"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U webapp -d webapp"]
       interval: 5s
       timeout: 5s
       retries: 10
+  db-replica:
+    image: postgres:16-alpine
+    container_name: webapp-db-replica
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: webapp
+      POSTGRES_PASSWORD: webapp
+      POSTGRES_DB: webapp
+      PGDATA: /var/lib/postgresql/data
+      REPLICATION_USER: replicator
+      REPLICATION_PASSWORD: replicator
+      PGPASSWORD: replicator
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db-replica:/var/lib/postgresql/data
+      - ./db-replica/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - "sh"
+      - "-c"
+      - |
+        DATA_DIR="$${PGDATA:-/var/lib/postgresql/data}";
+        if [ ! -s "$${DATA_DIR}/PG_VERSION" ]; then
+          until pg_isready -h db -U "$${REPLICATION_USER}" -d "$${POSTGRES_DB}"; do
+            sleep 1;
+          done;
+          rm -rf "$${DATA_DIR:?}"/*;
+          pg_basebackup -h db -D "$${DATA_DIR}" -U "$${REPLICATION_USER}" -v -P --wal-method=stream;
+          echo "primary_conninfo = 'host=db port=5432 user=$${REPLICATION_USER} password=$${REPLICATION_PASSWORD}'" >> "$${DATA_DIR}/postgresql.auto.conf";
+          touch "$${DATA_DIR}/standby.signal";
+        fi;
+        chown -R postgres:postgres "$${DATA_DIR}";
+        chmod 700 "$${DATA_DIR}";
+        exec su-exec postgres postgres -c hot_standby=on
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U replicator -d webapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  db-replication-init:
+    image: postgres:16-alpine
+    container_name: webapp-db-replication-init
+    restart: "no"
+    environment:
+      POSTGRES_DB: webapp
+      POSTGRES_USER: webapp
+      POSTGRES_PASSWORD: webapp
+      REPLICATION_USER: replicator
+      REPLICATION_PASSWORD: replicator
+      PGPASSWORD: webapp
+    command:
+      - "sh"
+      - "-c"
+      - |
+        until pg_isready -h db -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"; do
+          sleep 1;
+        done;
+        psql -h db -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -v ON_ERROR_STOP=1 <<-EOSQL
+        DO \$\$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$${REPLICATION_USER}') THEN
+            CREATE ROLE $${REPLICATION_USER} WITH REPLICATION LOGIN PASSWORD '$${REPLICATION_PASSWORD}';
+          END IF;
+        END
+        \$\$;
+        EOSQL
+    depends_on:
+      db:
+        condition: service_healthy
   pgadmin:
     image: dpage/pgadmin4:8
     container_name: webapp-pgadmin
