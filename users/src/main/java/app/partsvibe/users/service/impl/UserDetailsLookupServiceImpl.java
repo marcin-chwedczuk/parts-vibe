@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserDetailsLookupServiceImpl implements UserDetailsLookupService {
@@ -19,6 +20,7 @@ public class UserDetailsLookupServiceImpl implements UserDetailsLookupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) {
         log.info("Loading user details for username={}", username);
         return userAccountRepository
