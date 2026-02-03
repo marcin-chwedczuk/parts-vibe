@@ -2,13 +2,13 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="layout/base :: layout(~{::title}, ~{::section})">
 <head>
-  <title>Server error</title>
+  <title th:text="#{error.500.title}">Server error</title>
 </head>
 <section>
   <div class="text-center">
-    <h1 class="display-6 mb-3">Something went wrong</h1>
-    <p class="text-muted">An unexpected error occurred. Please try again later.</p>
-    <a class="btn btn-primary" th:href="@{/}">Back home</a>
+    <h1 class="display-6 mb-3" th:text="#{error.500.heading}">Something went wrong</h1>
+    <p class="text-muted" th:text="#{error.500.body}">An unexpected error occurred. Please try again later.</p>
+    <a class="btn btn-primary" th:href="@{/}" th:text="#{error.500.backHome}">Back home</a>
   </div>
 </section>
 </html>

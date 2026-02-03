@@ -2,13 +2,13 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="layout/base :: layout(~{::title}, ~{::section})">
 <head>
-  <title>Admin</title>
+  <title th:text="#{admin.title}">Admin</title>
 </head>
 <section th:replace="layout/admin :: body(~{::div})">
   <div>
-    <h1 class="h4 mb-3">Admin area</h1>
-    <p class="mb-4">Only ROLE_ADMIN can access this page.</p>
-    <a class="btn btn-outline-primary" th:href="@{/}">Back home</a>
+    <h1 class="h4 mb-3" th:text="#{admin.heading}">Admin area</h1>
+    <p class="mb-4" th:text="#{admin.body}">Only ROLE_ADMIN can access this page.</p>
+    <a class="btn btn-outline-primary" th:href="@{/}" th:text="#{admin.backHome}">Back home</a>
   </div>
 </section>
 </html>

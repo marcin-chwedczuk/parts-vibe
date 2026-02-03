@@ -2,13 +2,13 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="layout/base :: layout(~{::title}, ~{::section})">
 <head>
-  <title>Access denied</title>
+  <title th:text="#{error.403.title}">Access denied</title>
 </head>
 <section>
   <div class="text-center">
-    <h1 class="display-6 mb-3">Access denied</h1>
-    <p class="text-muted">You don’t have permission to view this page.</p>
-    <a class="btn btn-primary" th:href="@{/}">Back home</a>
+    <h1 class="display-6 mb-3" th:text="#{error.403.heading}">Access denied</h1>
+    <p class="text-muted" th:text="#{error.403.body}">You don’t have permission to view this page.</p>
+    <a class="btn btn-primary" th:href="@{/}" th:text="#{error.403.backHome}">Back home</a>
   </div>
 </section>
 </html>

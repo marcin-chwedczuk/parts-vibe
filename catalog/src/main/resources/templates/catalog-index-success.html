@@ -2,14 +2,14 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="layout/base :: layout(~{::title}, ~{::section})">
 <head>
-  <title>Catalog indexed</title>
+  <title th:text="#{catalog.index.success.title}">Catalog indexed</title>
 </head>
 <section th:replace="layout/user :: body(~{::div})">
   <div>
-    <h1 class="h4 mb-3">Catalog text indexed</h1>
-    <p>Your text was sent to Solr.</p>
-    <p><strong>Document ID:</strong> <span th:text="${documentId}"></span></p>
-    <a class="btn btn-outline-primary" th:href="@{/catalog/index}">Index another</a>
+    <h1 class="h4 mb-3" th:text="#{catalog.index.success.heading}">Catalog text indexed</h1>
+    <p th:text="#{catalog.index.success.body}">Your text was sent to Solr.</p>
+    <p><strong th:text="#{catalog.index.success.docId}">Document ID:</strong> <span th:text="${documentId}"></span></p>
+    <a class="btn btn-outline-primary" th:href="@{/catalog/index}" th:text="#{catalog.index.success.another}">Index another</a>
   </div>
 </section>
 </html>

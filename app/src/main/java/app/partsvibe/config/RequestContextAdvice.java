@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 public class RequestContextAdvice {
     @ModelAttribute("currentPath")
     public String currentPath(HttpServletRequest request) {
-        return request.getServletPath();
+        if (request == null) {
+            return "/";
+        }
+        String path = request.getServletPath();
+        return (path == null || path.isBlank()) ? "/" : path;
     }
 }

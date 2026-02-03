@@ -4,7 +4,7 @@
     <aside class="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary rounded-3"
            style="width: 260px;">
       <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
-        <span class="fs-5">Admin</span>
+        <span class="fs-5" th:text="#{nav.admin}">Admin</span>
       </a>
       <hr>
       <ul class="nav nav-pills flex-column mb-auto">
@@ -12,14 +12,14 @@
           <a th:href="@{/admin}"
              th:class="${currentPath != null and currentPath.startsWith('/admin')} ? 'nav-link active' : 'nav-link link-body-emphasis'"
              th:aria-current="${currentPath != null and currentPath.startsWith('/admin')} ? 'page' : null">
-            User Management
+            <span th:text="#{nav.admin.users}">User Management</span>
           </a>
         </li>
         <li>
-          <a href="#" class="nav-link link-body-emphasis">Settings</a>
+          <a href="#" class="nav-link link-body-emphasis" th:text="#{nav.admin.settings}">Settings</a>
         </li>
         <li>
-          <a href="#" class="nav-link link-body-emphasis">Status Page</a>
+          <a href="#" class="nav-link link-body-emphasis" th:text="#{nav.admin.status}">Status Page</a>
         </li>
       </ul>
     </aside>

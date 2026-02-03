@@ -1,22 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="layout/base :: layout(~{::title}, ~{::section})">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login</title>
-  <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
+  <title th:text="#{login.title}">Login</title>
 </head>
-<body>
-  <main class="container py-4">
-    <h1 class="mb-3">Login</h1>
+<section>
+  <div class="container py-4">
+    <h1 class="mb-3" th:text="#{login.heading}">Login</h1>
 
-    <div class="alert alert-danger" th:if="${param.error}">
+    <div class="alert alert-danger" th:if="${param.error}" th:text="#{login.error}">
       Invalid username or password.
     </div>
-    <div class="alert alert-warning" th:if="${param.denied}">
+    <div class="alert alert-warning" th:if="${param.denied}" th:text="#{login.denied}">
       Please sign in to access that page.
     </div>
-    <div class="alert alert-info" th:if="${param.logout}">
+    <div class="alert alert-info" th:if="${param.logout}" th:text="#{login.logout}">
       You have been logged out.
     </div>
 
@@ -24,20 +22,20 @@
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <div class="col-12">
         <label class="form-label">
-          Username
+          <span th:text="#{login.username}">Username</span>
           <input class="form-control" type="text" name="username" autocomplete="username" required />
         </label>
       </div>
       <div class="col-12">
         <label class="form-label">
-          Password
+          <span th:text="#{login.password}">Password</span>
           <input class="form-control" type="password" name="password" autocomplete="current-password" required />
         </label>
       </div>
       <div class="col-12">
-        <button class="btn btn-primary" type="submit">Sign in</button>
+        <button class="btn btn-primary" type="submit" th:text="#{login.submit}">Sign in</button>
       </div>
     </form>
-  </main>
-</body>
+  </div>
+</section>
 </html>
