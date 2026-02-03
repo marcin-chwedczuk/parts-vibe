@@ -1,6 +1,6 @@
 package app.partsvibe.catalog.web;
 
-import app.partsvibe.search.api.CatalogSearchService;
+import app.partsvibe.catalog.service.CatalogService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/catalog")
 public class CatalogIndexController {
     private static final Logger log = LoggerFactory.getLogger(CatalogIndexController.class);
-    private final CatalogSearchService catalogSearchService;
+    private final CatalogService catalogService;
 
-    public CatalogIndexController(CatalogSearchService catalogSearchService) {
-        this.catalogSearchService = catalogSearchService;
+    public CatalogIndexController(CatalogService catalogService) {
+        this.catalogService = catalogService;
     }
 
     @GetMapping("/index")
@@ -41,7 +41,7 @@ public class CatalogIndexController {
             return "catalog-index";
         }
 
-        String documentId = catalogSearchService.indexText(form.getText());
+        String documentId = catalogService.indexText(form.getText());
         log.info(
                 "Catalog text indexed: length={}, documentId={}", form.getText().length(), documentId);
         model.addAttribute("documentId", documentId);

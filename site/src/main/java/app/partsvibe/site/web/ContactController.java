@@ -1,7 +1,6 @@
 package app.partsvibe.site.web;
 
-import app.partsvibe.site.domain.ContactMessage;
-import app.partsvibe.site.repo.ContactMessageRepository;
+import app.partsvibe.site.service.ContactService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/contact")
 public class ContactController {
     private static final Logger log = LoggerFactory.getLogger(ContactController.class);
-    private final ContactMessageRepository contactMessageRepository;
+    private final ContactService contactService;
 
-    public ContactController(ContactMessageRepository contactMessageRepository) {
-        this.contactMessageRepository = contactMessageRepository;
+    public ContactController(ContactService contactService) {
+        this.contactService = contactService;
     }
 
     @GetMapping
@@ -39,10 +38,9 @@ public class ContactController {
             return "contact";
         }
 
-        ContactMessage message =
-                new ContactMessage(contactForm.getName(), contactForm.getEmail(), contactForm.getMessage());
-        ContactMessage saved = contactMessageRepository.save(message);
-        log.info("Contact message saved: id={}", saved.getId());
+        Long messageId =
+                contactService.submitMessage(contactForm.getName(), contactForm.getEmail(), contactForm.getMessage());
+        log.info("Contact message saved: id={}", messageId);
         return "contact-success";
     }
 }

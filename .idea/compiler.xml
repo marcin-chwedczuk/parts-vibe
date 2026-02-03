@@ -6,6 +6,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+      </profile>
+      <profile name="Annotation profile for parts-vibe-parent" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.6.3/mapstruct-1.6.3.jar" />
+        </processorPath>
         <module name="app" />
         <module name="search-api" />
         <module name="shared" />
@@ -20,6 +29,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="app" options="-parameters" />
       <module name="catalog" options="-parameters" />
+      <module name="parts-vibe-parent" options="-parameters" />
       <module name="search-api" options="-parameters" />
       <module name="search-impl" options="-parameters" />
       <module name="shared" options="-parameters" />
