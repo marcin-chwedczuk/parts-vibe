@@ -179,3 +179,10 @@ services:
       - ./promtail/positions:/positions
     depends_on:
       - loki
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: webapp-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # UI
+      - "1025:1025" # SMTP
