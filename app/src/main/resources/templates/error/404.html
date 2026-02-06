@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="layout/base :: layout(~{::title}, ~{::section})">
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
   <title th:text="#{error.404.title}">Page not found</title>
 </head>

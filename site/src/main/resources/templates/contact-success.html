@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="layout/base :: layout(~{::title}, ~{::section})">
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
   <title th:text="#{contact.success.title}">Thank you</title>
 </head>
-<section th:replace="layout/user :: body(~{::div})">
+<section th:replace="~{layout/user :: body(~{::div})}">
   <div>
     <h1 class="h4 mb-3" th:text="#{contact.success.heading}">Thanks for reaching out!</h1>
     <p th:text="#{contact.success.body}">We received your message.</p>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="layout/base :: layout(~{::title}, ~{::section})">
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
   <title th:text="#{catalog.index.title}">Catalog index</title>
 </head>
-<section th:replace="layout/user :: body(~{::div})">
+<section th:replace="~{layout/user :: body(~{::div})}">
   <div>
     <h1 class="h4 mb-3" th:text="#{catalog.index.heading}">Index catalog text</h1>
 
