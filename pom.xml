@@ -79,6 +79,7 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <archunit.version>1.4.1</archunit.version>
     <lombok.version>1.18.42</lombok.version>
+    <playwright.version>1.58.0</playwright.version>
   </properties>
 
   <dependencyManagement>
@@ -124,6 +125,11 @@
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
         <version>${lombok.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.microsoft.playwright</groupId>
+        <artifactId>playwright</artifactId>
+        <version>${playwright.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -285,6 +291,7 @@
     <module>users</module>
     <module>site</module>
     <module>infra</module>
+    <module>e2e</module>
     <module>search-api</module>
     <module>search-impl</module>
   </modules>

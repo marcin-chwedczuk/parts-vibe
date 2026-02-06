@@ -160,6 +160,20 @@ Options:
 ./mvnw -Pintegration-test verify
 ```
 
+## Run end-to-end tests (Playwright)
+E2E tests run in the dedicated `e2e` module and are disabled by default.
+Start the app separately, then run:
+
+```
+E2E_BASE_URL=http://localhost:8080 ./mvnw -pl e2e -Pe2e test
+```
+
+To see the browser:
+
+```
+E2E_BASE_URL=http://localhost:8080 ./mvnw -pl e2e -Pe2e test -De2e.headless=false
+```
+
 ## Routes
 - `/` public home
 - `/login` login page

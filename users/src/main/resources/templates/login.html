@@ -6,7 +6,7 @@
 </head>
 <section>
   <div class="container py-4">
-    <h1 class="mb-3" th:text="#{login.heading}">Login</h1>
+    <h1 class="mb-3" data-testid="login-title" th:text="#{login.heading}">Login</h1>
 
     <div class="alert alert-danger" th:if="${param.error}" th:text="#{login.error}">
       Invalid username or password.
