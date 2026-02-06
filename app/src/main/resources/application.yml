@@ -3,10 +3,6 @@ spring:
     name: parts-vibe
   messages:
     encoding: UTF-8
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:webapp}
-    username: ${DB_USER:webapp}
-    password: ${DB_PASSWORD:webapp}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -38,6 +34,15 @@ logging:
     level: "%5p [req:%X{requestId}]"
 
 app:
+  datasource:
+    write:
+      jdbc-url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:webapp}
+      username: ${DB_USER:webapp}
+      password: ${DB_PASSWORD:webapp}
+    read:
+      jdbc-url: jdbc:postgresql://${DB_READ_HOST:localhost}:${DB_READ_PORT:5433}/${DB_READ_NAME:${DB_NAME:webapp}}
+      username: ${DB_READ_USER:${DB_USER:webapp}}
+      password: ${DB_READ_PASSWORD:${DB_PASSWORD:webapp}}
   solr:
     base-url: ${SOLR_BASE_URL:http://localhost:8983/solr}
     core: ${SOLR_CORE:catalog}
