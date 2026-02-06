@@ -284,6 +284,7 @@
     <module>catalog</module>
     <module>users</module>
     <module>site</module>
+    <module>infra</module>
     <module>search-api</module>
     <module>search-impl</module>
   </modules>

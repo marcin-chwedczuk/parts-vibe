@@ -16,6 +16,15 @@ spring:
     enabled: false
   session:
     store-type: jdbc
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 management:
   endpoints:
@@ -34,6 +43,8 @@ logging:
     level: "%5p [req:%X{requestId}]"
 
 app:
+  mail:
+    from: ${APP_MAIL_FROM:no-reply@parts-vibe.local}
   datasource:
     write:
       jdbc-url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:webapp}

@@ -23,6 +23,11 @@
     </dependency>
     <dependency>
       <groupId>app.partsvibe</groupId>
+      <artifactId>infra</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>app.partsvibe</groupId>
       <artifactId>catalog</artifactId>
       <version>${project.version}</version>
     </dependency>
