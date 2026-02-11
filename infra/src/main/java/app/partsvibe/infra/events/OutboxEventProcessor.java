@@ -36,57 +36,62 @@ public class OutboxEventProcessor {
         this.retryScheduledCounter = meterRegistry.counter("app.events.worker.retry.scheduled");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processClaimedEvent(ClaimedOutboxEvent event) {
-        processedCounter.increment();
+    public void dispatch(ClaimedOutboxEvent event) {
         log.debug(
-                "Processing claimed outbox event started. id={}, eventId={}, eventType={}, attemptCount={}",
+                "Dispatching claimed outbox event started. id={}, eventId={}, eventType={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
                 event.attemptCount());
-        try {
-            eventDispatcher.dispatch(event.eventType(), event.payload());
-            outboxEventRepository.markDone(event.id(), Instant.now());
-            doneCounter.increment();
-            log.info(
-                    "Outbox event processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
-                    event.id(),
-                    event.eventId(),
-                    event.eventType(),
-                    event.attemptCount());
-        } catch (RuntimeException ex) {
-            Instant nextAttemptAt = Instant.now().plusMillis(computeBackoffMs(event.attemptCount()));
-            String error = truncatedError(ex);
-            outboxEventRepository.markFailed(event.id(), nextAttemptAt, error, Instant.now());
-            failedCounter.increment();
-            if (event.attemptCount() < properties.getMaxAttempts()) {
-                retryScheduledCounter.increment();
-                log.debug(
-                        "Scheduled outbox event retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
-                        event.id(),
-                        event.eventId(),
-                        event.eventType(),
-                        event.attemptCount(),
-                        nextAttemptAt);
-            } else {
-                log.warn(
-                        "Outbox event reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
-                        event.id(),
-                        event.eventId(),
-                        event.eventType(),
-                        event.attemptCount());
-            }
-            log.error(
-                    "Outbox event processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
+        eventDispatcher.dispatch(event.eventType(), event.payload());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markDone(ClaimedOutboxEvent event) {
+        processedCounter.increment();
+        outboxEventRepository.markDone(event.id(), Instant.now());
+        doneCounter.increment();
+        log.info(
+                "Outbox event processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
+                event.id(),
+                event.eventId(),
+                event.eventType(),
+                event.attemptCount());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markFailed(ClaimedOutboxEvent event, Throwable errorCause) {
+        processedCounter.increment();
+        Instant nextAttemptAt = Instant.now().plusMillis(computeBackoffMs(event.attemptCount()));
+        String error = truncatedError(errorCause);
+        outboxEventRepository.markFailed(event.id(), nextAttemptAt, error, Instant.now());
+        failedCounter.increment();
+        if (event.attemptCount() < properties.getMaxAttempts()) {
+            retryScheduledCounter.increment();
+            log.debug(
+                    "Scheduled outbox event retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
                     event.attemptCount(),
-                    nextAttemptAt,
-                    error,
-                    ex);
+                    nextAttemptAt);
+        } else {
+            log.warn(
+                    "Outbox event reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
+                    event.id(),
+                    event.eventId(),
+                    event.eventType(),
+                    event.attemptCount());
         }
+        log.error(
+                "Outbox event processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
+                event.id(),
+                event.eventId(),
+                event.eventType(),
+                event.attemptCount(),
+                nextAttemptAt,
+                error,
+                errorCause);
     }
 
     private long computeBackoffMs(int attemptCount) {

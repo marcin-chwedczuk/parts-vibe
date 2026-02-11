@@ -14,6 +14,7 @@ public class EventWorkerProperties {
     private long backoffInitialMs = 1000;
     private double backoffMultiplier = 2.0;
     private long backoffMaxMs = 300000;
+    private long handlerTimeoutMs = 60000;
 
     public boolean isEnabled() {
         return enabled;
@@ -93,5 +94,13 @@ public class EventWorkerProperties {
 
     public void setBackoffMaxMs(long backoffMaxMs) {
         this.backoffMaxMs = backoffMaxMs;
+    }
+
+    public long getHandlerTimeoutMs() {
+        return handlerTimeoutMs;
+    }
+
+    public void setHandlerTimeoutMs(long handlerTimeoutMs) {
+        this.handlerTimeoutMs = handlerTimeoutMs;
     }
 }

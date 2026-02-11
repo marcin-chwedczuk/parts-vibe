@@ -81,3 +81,4 @@ app:
       backoff-initial-ms: ${APP_EVENTS_WORKER_BACKOFF_INITIAL_MS:1000}
       backoff-multiplier: ${APP_EVENTS_WORKER_BACKOFF_MULTIPLIER:2.0}
       backoff-max-ms: ${APP_EVENTS_WORKER_BACKOFF_MAX_MS:300000}
+      handler-timeout-ms: ${APP_EVENTS_WORKER_HANDLER_TIMEOUT_MS:60000}
