@@ -1,6 +1,7 @@
 package app.partsvibe.infra.events;
 
 import app.partsvibe.shared.events.Event;
+import app.partsvibe.shared.events.EventDispatchException;
 import app.partsvibe.shared.events.EventJsonSerializer;
 import app.partsvibe.shared.events.EventPublisherException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,6 +40,16 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
                     "Failed to serialize event payload. eventId=%s, eventType=%s"
                             .formatted(event.eventId(), event.eventType()),
                     e);
+        }
+    }
+
+    @Override
+    public <E extends Event> E deserialize(String payloadJson, Class<E> eventClass) {
+        try {
+            return objectMapper.readValue(payloadJson, eventClass);
+        } catch (JsonProcessingException e) {
+            throw new EventDispatchException(
+                    "Failed to deserialize event payload. eventClass=%s".formatted(eventClass.getName()), e);
         }
     }
 }

@@ -4,6 +4,7 @@ import app.partsvibe.shared.events.Event;
 import app.partsvibe.shared.events.EventJsonSerializer;
 import app.partsvibe.shared.events.EventPublisher;
 import app.partsvibe.shared.events.EventPublisherException;
+import app.partsvibe.shared.events.EventTypeName;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -87,6 +88,15 @@ public class JpaEventPublisher implements EventPublisher {
         if (!EVENT_TYPE_PATTERN.matcher(event.eventType()).matches()) {
             throw new EventPublisherException(
                     "Event eventType must be snake_case. eventType=%s".formatted(event.eventType()));
+        }
+        EventTypeName annotation = event.getClass().getAnnotation(EventTypeName.class);
+        if (annotation == null || annotation.value().isBlank()) {
+            throw new EventPublisherException("Event class must declare @EventTypeName. eventClass=%s"
+                    .formatted(event.getClass().getName()));
+        }
+        if (!annotation.value().equals(event.eventType())) {
+            throw new EventPublisherException("Event type mismatch. eventClass=%s, annotatedType=%s, runtimeType=%s"
+                    .formatted(event.getClass().getName(), annotation.value(), event.eventType()));
         }
         if (event.schemaVersion() <= 0) {
             throw new EventPublisherException("Event schemaVersion must be greater than 0.");
