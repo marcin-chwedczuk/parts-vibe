@@ -1,7 +1,7 @@
 package app.partsvibe.infra.events.publishing;
 
-import app.partsvibe.infra.events.jpa.OutboxEventEntity;
-import app.partsvibe.infra.events.jpa.OutboxEventRepository;
+import app.partsvibe.infra.events.jpa.EventQueueEntry;
+import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventTypeName;
@@ -18,18 +18,18 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-public class JpaEventPublisher implements EventPublisher {
-    private static final Logger log = LoggerFactory.getLogger(JpaEventPublisher.class);
+public class EventQueuePublisher implements EventPublisher {
+    private static final Logger log = LoggerFactory.getLogger(EventQueuePublisher.class);
     private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("^[a-z0-9]+(?:_[a-z0-9]+)*$");
 
-    private final OutboxEventRepository repository;
+    private final EventQueueRepository repository;
     private final EventJsonSerializer eventJsonSerializer;
     private final Counter publishAttemptsCounter;
     private final Counter publishSuccessCounter;
     private final Counter publishErrorsCounter;
 
-    public JpaEventPublisher(
-            OutboxEventRepository repository, EventJsonSerializer eventJsonSerializer, MeterRegistry meterRegistry) {
+    public EventQueuePublisher(
+            EventQueueRepository repository, EventJsonSerializer eventJsonSerializer, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.eventJsonSerializer = eventJsonSerializer;
         this.publishAttemptsCounter = meterRegistry.counter("app.events.publish.attempts");
@@ -44,7 +44,7 @@ public class JpaEventPublisher implements EventPublisher {
         try {
             validate(event);
             String payloadJson = eventJsonSerializer.serialize(event);
-            OutboxEventEntity entity = OutboxEventEntity.newEvent(
+            EventQueueEntry entity = EventQueueEntry.newEvent(
                     event.eventId(),
                     event.eventType(),
                     event.schemaVersion(),
@@ -54,7 +54,7 @@ public class JpaEventPublisher implements EventPublisher {
             repository.save(entity);
             publishSuccessCounter.increment();
             log.info(
-                    "Published event to outbox. eventId={}, eventType={}, schemaVersion={}, requestId={}",
+                    "Published event to event queue. eventId={}, eventType={}, schemaVersion={}, requestId={}",
                     event.eventId(),
                     event.eventType(),
                     event.schemaVersion(),

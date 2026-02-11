@@ -20,13 +20,13 @@ import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(
-        name = "outbox_events",
-        uniqueConstraints = @UniqueConstraint(name = "uk_outbox_events_event_id", columnNames = "event_id"),
+        name = "event_queue",
+        uniqueConstraints = @UniqueConstraint(name = "uk_event_queue_event_id", columnNames = "event_id"),
         indexes = {
-            @Index(name = "idx_outbox_events_status_next_attempt_id", columnList = "status,next_attempt_at,id"),
-            @Index(name = "idx_outbox_events_occurred_at", columnList = "occurred_at")
+            @Index(name = "idx_event_queue_status_next_attempt_id", columnList = "status,next_attempt_at,id"),
+            @Index(name = "idx_event_queue_occurred_at", columnList = "occurred_at")
         })
-public class OutboxEventEntity {
+public class EventQueueEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -53,7 +53,7 @@ public class OutboxEventEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    private OutboxEventStatus status;
+    private EventQueueStatus status;
 
     @Column(name = "attempt_count", nullable = false)
     private int attemptCount;
@@ -76,7 +76,7 @@ public class OutboxEventEntity {
     @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp with time zone")
     private Instant updatedAt;
 
-    protected OutboxEventEntity() {}
+    protected EventQueueEntry() {}
 
     @PrePersist
     void onCreate() {
@@ -94,16 +94,16 @@ public class OutboxEventEntity {
         updatedAt = Instant.now();
     }
 
-    public static OutboxEventEntity newEvent(
+    public static EventQueueEntry newEvent(
             UUID eventId, String eventType, int schemaVersion, Instant occurredAt, String requestId, String payload) {
-        OutboxEventEntity entity = new OutboxEventEntity();
+        EventQueueEntry entity = new EventQueueEntry();
         entity.eventId = eventId;
         entity.eventType = eventType;
         entity.schemaVersion = schemaVersion;
         entity.occurredAt = occurredAt;
         entity.requestId = requestId;
         entity.payload = payload;
-        entity.status = OutboxEventStatus.NEW;
+        entity.status = EventQueueStatus.NEW;
         entity.attemptCount = 0;
         entity.nextAttemptAt = Instant.now();
         return entity;
@@ -137,7 +137,7 @@ public class OutboxEventEntity {
         return payload;
     }
 
-    public OutboxEventStatus getStatus() {
+    public EventQueueStatus getStatus() {
         return status;
     }
 

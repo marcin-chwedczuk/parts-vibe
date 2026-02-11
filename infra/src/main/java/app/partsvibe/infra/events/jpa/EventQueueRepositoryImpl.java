@@ -10,15 +10,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventRepositoryImpl.class);
+public class EventQueueRepositoryImpl implements EventQueueRepositoryCustom {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueRepositoryImpl.class);
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     @Transactional
-    public List<ClaimedOutboxEvent> claimBatchForProcessing(
+    public List<ClaimedEventQueueEntry> claimBatchForProcessing(
             int batchSize, int maxAttempts, String workerId, Instant now) {
         if (batchSize <= 0) {
             log.debug("Claim batch skipped because batchSize <= 0");
@@ -30,7 +30,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
                 .createNativeQuery(
                         """
                         SELECT id
-                        FROM outbox_events
+                        FROM event_queue
                         WHERE status IN ('NEW', 'FAILED')
                           AND next_attempt_at <= now()
                           AND attempt_count < :maxAttempts
@@ -43,7 +43,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
                 .getResultList();
 
         if (idRows.isEmpty()) {
-            log.debug("No outbox event IDs selected for claiming");
+            log.debug("No event queue entry IDs selected for claiming");
             return Collections.emptyList();
         }
 
@@ -52,7 +52,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
         entityManager
                 .createNativeQuery(
                         """
-                        UPDATE outbox_events
+                        UPDATE event_queue
                         SET status = 'PROCESSING',
                             locked_at = :now,
                             locked_by = :workerId,
@@ -65,14 +65,14 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
                 .setParameter("ids", ids)
                 .executeUpdate();
 
-        List<ClaimedOutboxEvent> claimed = entityManager
-                .createQuery("SELECT e FROM OutboxEventEntity e WHERE e.id IN :ids", OutboxEventEntity.class)
+        List<ClaimedEventQueueEntry> claimed = entityManager
+                .createQuery("SELECT e FROM EventQueueEntry e WHERE e.id IN :ids", EventQueueEntry.class)
                 .setParameter("ids", ids)
                 .getResultStream()
-                .map(ClaimedOutboxEvent::fromEntity)
+                .map(ClaimedEventQueueEntry::fromEntity)
                 .collect(Collectors.toList());
         log.debug(
-                "Claimed outbox rows and marked as PROCESSING. workerId={}, requestedBatchSize={}, selectedCount={}, claimedCount={}",
+                "Claimed event queue rows and marked as PROCESSING. workerId={}, requestedBatchSize={}, selectedCount={}, claimedCount={}",
                 workerId,
                 batchSize,
                 ids.size(),

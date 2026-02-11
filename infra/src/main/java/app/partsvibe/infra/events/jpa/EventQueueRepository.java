@@ -8,14 +8,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, Long>, OutboxEventRepositoryCustom {
-    Optional<OutboxEventEntity> findByEventId(UUID eventId);
+public interface EventQueueRepository extends JpaRepository<EventQueueEntry, Long>, EventQueueRepositoryCustom {
+    Optional<EventQueueEntry> findByEventId(UUID eventId);
 
     @Modifying
     @Query(
             value =
                     """
-            UPDATE outbox_events
+            UPDATE event_queue
             SET status = 'DONE',
                 locked_at = NULL,
                 locked_by = NULL,
@@ -30,7 +30,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
     @Query(
             value =
                     """
-            UPDATE outbox_events
+            UPDATE event_queue
             SET status = 'FAILED',
                 next_attempt_at = :nextAttemptAt,
                 last_error = :lastError,
@@ -50,7 +50,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEventEntity, 
     @Query(
             value =
                     """
-            UPDATE outbox_events
+            UPDATE event_queue
             SET status = 'FAILED',
                 next_attempt_at = :now,
                 last_error = 'Processing lock timeout reached.',

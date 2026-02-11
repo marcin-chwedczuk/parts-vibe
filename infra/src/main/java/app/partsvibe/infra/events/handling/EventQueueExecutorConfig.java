@@ -5,9 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-public class OutboxEventExecutorConfig {
-    @Bean(name = "outboxEventExecutor")
-    public ThreadPoolTaskExecutor outboxEventExecutor(EventWorkerProperties properties) {
+public class EventQueueExecutorConfig {
+    @Bean(name = "eventQueueExecutor")
+    public ThreadPoolTaskExecutor eventQueueExecutor(EventQueueWorkerProperties properties) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setThreadNamePrefix("event-handling-worker-");
         executor.setDaemon(true);

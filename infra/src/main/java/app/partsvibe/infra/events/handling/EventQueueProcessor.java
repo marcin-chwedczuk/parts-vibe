@@ -1,7 +1,7 @@
 package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.infra.events.jpa.ClaimedOutboxEvent;
-import app.partsvibe.infra.events.jpa.OutboxEventRepository;
+import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
+import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -13,26 +13,26 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class OutboxEventProcessor {
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventProcessor.class);
+public class EventQueueProcessor {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueProcessor.class);
 
     private final EventDispatcher eventDispatcher;
-    private final OutboxEventRepository outboxEventRepository;
-    private final EventWorkerProperties properties;
+    private final EventQueueRepository eventQueueRepository;
+    private final EventQueueWorkerProperties properties;
     private final TimeProvider timeProvider;
     private final Counter processedCounter;
     private final Counter doneCounter;
     private final Counter failedCounter;
     private final Counter retryScheduledCounter;
 
-    public OutboxEventProcessor(
+    public EventQueueProcessor(
             EventDispatcher eventDispatcher,
-            OutboxEventRepository outboxEventRepository,
-            EventWorkerProperties properties,
+            EventQueueRepository eventQueueRepository,
+            EventQueueWorkerProperties properties,
             TimeProvider timeProvider,
             MeterRegistry meterRegistry) {
         this.eventDispatcher = eventDispatcher;
-        this.outboxEventRepository = outboxEventRepository;
+        this.eventQueueRepository = eventQueueRepository;
         this.properties = properties;
         this.timeProvider = timeProvider;
         this.processedCounter = meterRegistry.counter("app.events.worker.processed");
@@ -41,9 +41,9 @@ public class OutboxEventProcessor {
         this.retryScheduledCounter = meterRegistry.counter("app.events.worker.retry.scheduled");
     }
 
-    public void dispatch(ClaimedOutboxEvent event) {
+    public void dispatch(ClaimedEventQueueEntry event) {
         log.debug(
-                "Dispatching claimed outbox event started. id={}, eventId={}, eventType={}, attemptCount={}",
+                "Dispatching claimed event queue entry started. id={}, eventId={}, eventType={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
@@ -52,12 +52,12 @@ public class OutboxEventProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markDone(ClaimedOutboxEvent event) {
+    public void markDone(ClaimedEventQueueEntry event) {
         processedCounter.increment();
-        outboxEventRepository.markDone(event.id(), timeProvider.now());
+        eventQueueRepository.markDone(event.id(), timeProvider.now());
         doneCounter.increment();
         log.info(
-                "Outbox event processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
+                "Event queue entry processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
@@ -65,16 +65,16 @@ public class OutboxEventProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markFailed(ClaimedOutboxEvent event, Throwable errorCause) {
+    public void markFailed(ClaimedEventQueueEntry event, Throwable errorCause) {
         processedCounter.increment();
         Instant nextAttemptAt = timeProvider.now().plusMillis(computeBackoffMs(event.attemptCount()));
         String error = truncatedError(errorCause);
-        outboxEventRepository.markFailed(event.id(), nextAttemptAt, error, timeProvider.now());
+        eventQueueRepository.markFailed(event.id(), nextAttemptAt, error, timeProvider.now());
         failedCounter.increment();
         if (event.attemptCount() < properties.getMaxAttempts()) {
             retryScheduledCounter.increment();
             log.debug(
-                    "Scheduled outbox event retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
+                    "Scheduled event queue retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -82,14 +82,14 @@ public class OutboxEventProcessor {
                     nextAttemptAt);
         } else {
             log.warn(
-                    "Outbox event reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
+                    "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
                     event.attemptCount());
         }
         log.error(
-                "Outbox event processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
+                "Event queue processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),

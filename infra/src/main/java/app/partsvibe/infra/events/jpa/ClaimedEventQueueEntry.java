@@ -2,10 +2,10 @@ package app.partsvibe.infra.events.jpa;
 
 import java.util.UUID;
 
-public record ClaimedOutboxEvent(
+public record ClaimedEventQueueEntry(
         long id, UUID eventId, String eventType, String payload, String requestId, int attemptCount) {
-    public static ClaimedOutboxEvent fromEntity(OutboxEventEntity entity) {
-        return new ClaimedOutboxEvent(
+    public static ClaimedEventQueueEntry fromEntity(EventQueueEntry entity) {
+        return new ClaimedEventQueueEntry(
                 entity.getId(),
                 entity.getEventId(),
                 entity.getEventType(),

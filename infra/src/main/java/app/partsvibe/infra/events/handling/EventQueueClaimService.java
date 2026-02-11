@@ -1,7 +1,7 @@
 package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.infra.events.jpa.ClaimedOutboxEvent;
-import app.partsvibe.infra.events.jpa.OutboxEventRepository;
+import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
+import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import java.time.Instant;
 import java.util.List;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class OutboxEventClaimService {
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventClaimService.class);
+public class EventQueueClaimService {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueClaimService.class);
 
-    private final OutboxEventRepository outboxEventRepository;
+    private final EventQueueRepository eventQueueRepository;
     private final TimeProvider timeProvider;
 
-    public OutboxEventClaimService(OutboxEventRepository outboxEventRepository, TimeProvider timeProvider) {
-        this.outboxEventRepository = outboxEventRepository;
+    public EventQueueClaimService(EventQueueRepository eventQueueRepository, TimeProvider timeProvider) {
+        this.eventQueueRepository = eventQueueRepository;
         this.timeProvider = timeProvider;
     }
 
@@ -26,7 +26,7 @@ public class OutboxEventClaimService {
     public int requeueStaleProcessing(long processingTimeoutMs) {
         Instant now = timeProvider.now();
         Instant lockedBefore = now.minusMillis(processingTimeoutMs);
-        int requeued = outboxEventRepository.requeueStaleProcessing(lockedBefore, now);
+        int requeued = eventQueueRepository.requeueStaleProcessing(lockedBefore, now);
         log.debug(
                 "Requeue stale processing evaluated. processingTimeoutMs={}, lockedBefore={}, requeued={}",
                 processingTimeoutMs,
@@ -35,10 +35,10 @@ public class OutboxEventClaimService {
         return requeued;
     }
 
-    public List<ClaimedOutboxEvent> claimBatch(int batchSize, int maxAttempts, String workerId) {
+    public List<ClaimedEventQueueEntry> claimBatch(int batchSize, int maxAttempts, String workerId) {
         Instant now = timeProvider.now();
-        List<ClaimedOutboxEvent> claimed =
-                outboxEventRepository.claimBatchForProcessing(batchSize, maxAttempts, workerId, now);
+        List<ClaimedEventQueueEntry> claimed =
+                eventQueueRepository.claimBatchForProcessing(batchSize, maxAttempts, workerId, now);
         log.debug(
                 "Claim batch finished. workerId={}, batchSize={}, maxAttempts={}, claimedCount={}",
                 workerId,

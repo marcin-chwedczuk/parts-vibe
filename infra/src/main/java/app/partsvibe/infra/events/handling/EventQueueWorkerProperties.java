@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("app.events.worker")
 @Getter
 @Setter
-public class EventWorkerProperties {
+public class EventQueueWorkerProperties {
     private boolean enabled = false;
     private long pollIntervalMs = 1000;
     private int batchSize = 20;

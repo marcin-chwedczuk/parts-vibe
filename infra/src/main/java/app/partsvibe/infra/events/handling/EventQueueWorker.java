@@ -1,6 +1,6 @@
 package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.infra.events.jpa.ClaimedOutboxEvent;
+import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,12 +26,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OutboxEventWorker {
-    private static final Logger log = LoggerFactory.getLogger(OutboxEventWorker.class);
+public class EventQueueWorker {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueWorker.class);
 
-    private final EventWorkerProperties properties;
-    private final OutboxEventClaimService claimService;
-    private final OutboxEventProcessor processor;
+    private final EventQueueWorkerProperties properties;
+    private final EventQueueClaimService claimService;
+    private final EventQueueProcessor processor;
     private final TimeProvider timeProvider;
     private final ThreadPoolTaskExecutor executor;
     private final CompletionService<EventExecutionOutcome> completionService;
@@ -44,12 +44,12 @@ public class OutboxEventWorker {
     private final Counter executorRejectedCounter;
     private final Counter timeoutCancelledCounter;
 
-    public OutboxEventWorker(
-            EventWorkerProperties properties,
-            OutboxEventClaimService claimService,
-            OutboxEventProcessor processor,
+    public EventQueueWorker(
+            EventQueueWorkerProperties properties,
+            EventQueueClaimService claimService,
+            EventQueueProcessor processor,
             TimeProvider timeProvider,
-            @Qualifier("outboxEventExecutor") ThreadPoolTaskExecutor executor,
+            @Qualifier("eventQueueExecutor") ThreadPoolTaskExecutor executor,
             MeterRegistry meterRegistry) {
         this.properties = properties;
         this.claimService = claimService;
@@ -74,7 +74,7 @@ public class OutboxEventWorker {
         meterRegistry.gauge("app.events.worker.inflight", runningTasks, Map::size);
         meterRegistry.gauge("app.events.worker.permits.available", inFlightSlots, Semaphore::availablePermits);
         log.info(
-                "Outbox event worker initialized. enabled={}, pollIntervalMs={}, batchSize={}, poolSize={}, queueCapacity={}, maxAttempts={}, handlerTimeoutMs={}",
+                "Event queue worker initialized. enabled={}, pollIntervalMs={}, batchSize={}, poolSize={}, queueCapacity={}, maxAttempts={}, handlerTimeoutMs={}",
                 properties.isEnabled(),
                 properties.getPollIntervalMs(),
                 properties.getBatchSize(),
@@ -87,12 +87,12 @@ public class OutboxEventWorker {
     @Scheduled(fixedDelayString = "${app.events.worker.poll-interval-ms:1000}")
     public void pollAndDispatch() {
         if (!properties.isEnabled()) {
-            log.debug("Outbox worker poll skipped because worker is disabled");
+            log.debug("Event queue worker poll skipped because worker is disabled");
             return;
         }
 
         log.debug(
-                "Outbox worker poll started. workerId={}, batchSize={}, poolSize={}, queueCapacity={}",
+                "Event queue worker poll started. workerId={}, batchSize={}, poolSize={}, queueCapacity={}",
                 workerId,
                 properties.getBatchSize(),
                 properties.getPoolSize(),
@@ -104,42 +104,43 @@ public class OutboxEventWorker {
         int staleRecovered = claimService.requeueStaleProcessing(properties.getProcessingTimeoutMs());
         if (staleRecovered > 0) {
             staleRequeuedCounter.increment(staleRecovered);
-            log.warn("Recovered stale PROCESSING outbox events. count={}", staleRecovered);
+            log.warn("Recovered stale PROCESSING event queue entries. count={}", staleRecovered);
         } else {
-            log.debug("No stale PROCESSING outbox events found");
+            log.debug("No stale PROCESSING event queue entries found");
         }
 
         int capacity = availableInFlightCapacity();
         if (capacity <= 0) {
             pollSkippedCounter.increment();
-            log.debug("Outbox worker poll skipped due to no in-flight capacity. workerId={}", workerId);
+            log.debug("Event queue worker poll skipped due to no in-flight capacity. workerId={}", workerId);
             return;
         }
 
         int claimSize = Math.min(properties.getBatchSize(), capacity);
         log.debug(
-                "Attempting to claim outbox events. workerId={}, claimSize={}, maxAttempts={}",
+                "Attempting to claim event queue entries. workerId={}, claimSize={}, maxAttempts={}",
                 workerId,
                 claimSize,
                 properties.getMaxAttempts());
-        List<ClaimedOutboxEvent> claimed = claimService.claimBatch(claimSize, properties.getMaxAttempts(), workerId);
+        List<ClaimedEventQueueEntry> claimed =
+                claimService.claimBatch(claimSize, properties.getMaxAttempts(), workerId);
         if (claimed.isEmpty()) {
-            log.debug("No outbox events claimed. workerId={}", workerId);
+            log.debug("No event queue entries claimed. workerId={}", workerId);
             return;
         }
 
         claimedCounter.increment(claimed.size());
-        log.debug("Claimed outbox events. workerId={}, claimedCount={}", workerId, claimed.size());
-        for (ClaimedOutboxEvent event : claimed) {
+        log.debug("Claimed event queue entries. workerId={}, claimedCount={}", workerId, claimed.size());
+        for (ClaimedEventQueueEntry event : claimed) {
             submitEvent(event);
         }
     }
 
-    private void submitEvent(ClaimedOutboxEvent event) {
+    private void submitEvent(ClaimedEventQueueEntry event) {
         inFlightSlots.acquireUninterruptibly();
         try {
             log.debug(
-                    "Submitting outbox event to executor. id={}, eventId={}, eventType={}, attemptCount={}",
+                    "Submitting event queue entry to executor. id={}, eventId={}, eventType={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -150,7 +151,7 @@ public class OutboxEventWorker {
             inFlightSlots.release();
             executorRejectedCounter.increment();
             log.error(
-                    "Failed to submit outbox event to executor. id={}, eventId={}, eventType={}",
+                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventType={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -159,7 +160,7 @@ public class OutboxEventWorker {
         }
     }
 
-    private EventExecutionOutcome executeEvent(ClaimedOutboxEvent event) {
+    private EventExecutionOutcome executeEvent(ClaimedEventQueueEntry event) {
         try {
             processor.dispatch(event);
             return EventExecutionOutcome.success();
@@ -173,7 +174,7 @@ public class OutboxEventWorker {
         while ((completed = completionService.poll()) != null) {
             RunningTask task = runningTasks.remove(completed);
             if (task == null) {
-                log.debug("Completed outbox task not found in running map");
+                log.debug("Completed event queue task not found in running map");
                 continue;
             }
             try {
@@ -185,7 +186,7 @@ public class OutboxEventWorker {
     }
 
     private void handleCompletedTask(Future<EventExecutionOutcome> completed, RunningTask task) {
-        ClaimedOutboxEvent event = task.event();
+        ClaimedEventQueueEntry event = task.event();
         if (completed.isCancelled()) {
             Throwable cancellationReason = task.timeoutCancellationRequested().get()
                     ? new IllegalStateException(
@@ -193,7 +194,7 @@ public class OutboxEventWorker {
                     : new IllegalStateException("Event handler task was cancelled");
             processor.markFailed(event, cancellationReason);
             log.warn(
-                    "Outbox event task cancelled. id={}, eventId={}, eventType={}, timeoutCancellation={}",
+                    "Event queue task cancelled. id={}, eventId={}, eventType={}, timeoutCancellation={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -212,7 +213,7 @@ public class OutboxEventWorker {
             Thread.currentThread().interrupt();
             processor.markFailed(event, ex);
             log.warn(
-                    "Interrupted while draining completed outbox task. id={}, eventId={}, eventType={}",
+                    "Interrupted while draining completed event queue task. id={}, eventId={}, eventType={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -244,7 +245,7 @@ public class OutboxEventWorker {
             if (cancelled) {
                 timeoutCancelledCounter.increment();
                 log.warn(
-                        "Cancelled timed out outbox event task. id={}, eventId={}, eventType={}, runningMs={}, timeoutMs={}",
+                        "Cancelled timed out event queue task. id={}, eventId={}, eventType={}, runningMs={}, timeoutMs={}",
                         task.event().id(),
                         task.event().eventId(),
                         task.event().eventType(),
@@ -252,7 +253,7 @@ public class OutboxEventWorker {
                         timeoutMs);
             } else {
                 log.debug(
-                        "Timed out outbox task could not be cancelled because it already completed. id={}, eventId={}, eventType={}",
+                        "Timed out event queue task could not be cancelled because it already completed. id={}, eventId={}, eventType={}",
                         task.event().id(),
                         task.event().eventId(),
                         task.event().eventType());
@@ -275,8 +276,8 @@ public class OutboxEventWorker {
     }
 
     private record RunningTask(
-            ClaimedOutboxEvent event, Instant startedAt, AtomicBoolean timeoutCancellationRequested) {
-        private RunningTask(ClaimedOutboxEvent event, Instant startedAt) {
+            ClaimedEventQueueEntry event, Instant startedAt, AtomicBoolean timeoutCancellationRequested) {
+        private RunningTask(ClaimedEventQueueEntry event, Instant startedAt) {
             this(event, startedAt, new AtomicBoolean(false));
         }
     }
