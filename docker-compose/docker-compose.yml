@@ -186,3 +186,11 @@ services:
     ports:
       - "8025:8025" # UI
       - "1025:1025" # SMTP
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: webapp-clamav
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    volumes:
+      - ./clamav:/var/lib/clamav

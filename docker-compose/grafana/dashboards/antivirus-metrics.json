@@ -1,0 +1,146 @@
+{
+  "uid": "partsvibe-antivirus",
+  "title": "PartsVibe Antivirus",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "10s",
+  "tags": ["partsvibe", "antivirus", "security"],
+  "templating": {
+    "list": [
+      {
+        "name": "application",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(app_antivirus_scans_total, application)",
+        "current": {
+          "text": "parts-vibe",
+          "value": "parts-vibe"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Scans",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_antivirus_scans_total{application=\"$application\"})"
+        }
+      ],
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "Malware Found",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_antivirus_scan_malware_found_total{application=\"$application\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 1}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "Scan Errors",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_antivirus_scan_errors_total{application=\"$application\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 1}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Antivirus Counters",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_antivirus_scans_total{application=\"$application\"})",
+          "legendFormat": "scans"
+        },
+        {
+          "expr": "sum(app_antivirus_scan_malware_found_total{application=\"$application\"})",
+          "legendFormat": "malware_found"
+        },
+        {
+          "expr": "sum(app_antivirus_scan_errors_total{application=\"$application\"})",
+          "legendFormat": "errors"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 5}
+    },
+    {
+      "type": "timeseries",
+      "title": "Scan Activity (5m increase)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(app_antivirus_scans_total{application=\"$application\"}[5m]))",
+          "legendFormat": "scans/5m"
+        },
+        {
+          "expr": "sum(increase(app_antivirus_scan_malware_found_total{application=\"$application\"}[5m]))",
+          "legendFormat": "malware_found/5m"
+        },
+        {
+          "expr": "sum(increase(app_antivirus_scan_errors_total{application=\"$application\"}[5m]))",
+          "legendFormat": "errors/5m"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13}
+    }
+  ]
+}

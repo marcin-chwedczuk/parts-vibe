@@ -62,3 +62,8 @@ app:
     admin-password: ${APP_ADMIN_PASSWORD:admin123}
     user-username: ${APP_USER_USERNAME:user}
     user-password: ${APP_USER_PASSWORD:user123}
+  antivirus:
+    host: ${CLAMAV_HOST:localhost}
+    port: ${CLAMAV_PORT:3310}
+    connect-timeout-ms: ${CLAMAV_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${CLAMAV_READ_TIMEOUT_MS:10000}
