@@ -5,7 +5,6 @@ import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventMetadata;
-import app.partsvibe.shared.events.model.EventTypeName;
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.events.publishing.EventPublisherException;
 import io.micrometer.core.instrument.Counter;
@@ -105,23 +104,8 @@ public class EventQueuePublisher implements EventPublisher {
             throw new EventPublisherException(
                     "Event eventType must be snake_case. eventType=%s".formatted(metadata.eventType()));
         }
-        EventTypeName annotation = event.getClass().getAnnotation(EventTypeName.class);
-        if (annotation == null || annotation.value().isBlank()) {
-            throw new EventPublisherException("Event class must declare @EventTypeName. eventClass=%s"
-                    .formatted(event.getClass().getName()));
-        }
-        if (!annotation.value().equals(metadata.eventType())) {
-            throw new EventPublisherException("Event type mismatch. eventClass=%s, annotatedType=%s, resolvedType=%s"
-                    .formatted(event.getClass().getName(), annotation.value(), metadata.eventType()));
-        }
         if (metadata.schemaVersion() <= 0) {
             throw new EventPublisherException("Event schemaVersion must be greater than 0.");
-        }
-        if (annotation.schemaVersion() != metadata.schemaVersion()) {
-            throw new EventPublisherException(
-                    "Event schema version mismatch. eventClass=%s, annotatedVersion=%d, resolvedVersion=%d"
-                            .formatted(
-                                    event.getClass().getName(), annotation.schemaVersion(), metadata.schemaVersion()));
         }
         return metadata;
     }

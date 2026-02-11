@@ -9,16 +9,16 @@ public record EventMetadata(String eventType, int schemaVersion) {
     }
 
     public static EventMetadata fromEventClass(Class<? extends Event> eventClass) {
-        EventTypeName annotation = eventClass.getAnnotation(EventTypeName.class);
-        if (annotation == null || annotation.value().isBlank()) {
+        EventDescriptor annotation = eventClass.getAnnotation(EventDescriptor.class);
+        if (annotation == null || annotation.name().isBlank()) {
             throw new IllegalStateException(
-                    "Event class must be annotated with @EventTypeName and non-blank value: " + eventClass.getName());
+                    "Event class must be annotated with @EventDescriptor and non-blank name: " + eventClass.getName());
         }
-        if (annotation.schemaVersion() <= 0) {
+        if (annotation.version() <= 0) {
             throw new IllegalStateException(
                     "Event schemaVersion must be greater than 0. eventClass=%s, schemaVersion=%d"
-                            .formatted(eventClass.getName(), annotation.schemaVersion()));
+                            .formatted(eventClass.getName(), annotation.version()));
         }
-        return new EventMetadata(annotation.value(), annotation.schemaVersion());
+        return new EventMetadata(annotation.name(), annotation.version());
     }
 }

@@ -2,8 +2,8 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.spring.ClasspathScanner;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventDescriptor;
 import app.partsvibe.shared.events.model.EventMetadata;
-import app.partsvibe.shared.events.model.EventTypeName;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,12 +17,12 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
 
     private final Map<EventTypeKey, Class<? extends Event>> eventTypeToClass;
 
-    public SpringEventTypeRegistry(ClasspathScanner annotationClassScanner) {
+    public SpringEventTypeRegistry(ClasspathScanner classpathScanner) {
         Map<EventTypeKey, Class<? extends Event>> byType = new LinkedHashMap<>();
-        for (Class<?> discoveredClass : annotationClassScanner.findAnnotatedClasses(EventTypeName.class)) {
+        for (Class<?> discoveredClass : classpathScanner.findAnnotatedClasses(EventDescriptor.class)) {
             if (!Event.class.isAssignableFrom(discoveredClass)) {
                 throw new IllegalStateException(
-                        "@EventTypeName class must implement Event: " + discoveredClass.getName());
+                        "@EventDescriptor class must implement Event: " + discoveredClass.getName());
             }
             @SuppressWarnings("unchecked")
             Class<? extends Event> eventClass = (Class<? extends Event>) discoveredClass;

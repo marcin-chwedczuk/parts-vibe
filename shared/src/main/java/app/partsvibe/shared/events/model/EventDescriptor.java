@@ -7,8 +7,8 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EventTypeName {
-    String value();
+public @interface EventDescriptor {
+    String name();
 
-    int schemaVersion() default 1;
+    int version() default 1;
 }
