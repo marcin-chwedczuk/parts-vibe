@@ -43,12 +43,13 @@ public class EventQueueProcessor {
 
     public void dispatch(ClaimedEventQueueEntry event) {
         log.debug(
-                "Dispatching claimed event queue entry started. id={}, eventId={}, eventType={}, attemptCount={}",
+                "Dispatching claimed event queue entry started. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
+                event.schemaVersion(),
                 event.attemptCount());
-        eventDispatcher.dispatch(event.eventType(), event.payload());
+        eventDispatcher.dispatch(event.eventType(), event.schemaVersion(), event.payload());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -57,10 +58,11 @@ public class EventQueueProcessor {
         eventQueueRepository.markDone(event.id(), timeProvider.now());
         doneCounter.increment();
         log.info(
-                "Event queue entry processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
+                "Event queue entry processed successfully. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
+                event.schemaVersion(),
                 event.attemptCount());
     }
 
@@ -74,25 +76,28 @@ public class EventQueueProcessor {
         if (event.attemptCount() < properties.getMaxAttempts()) {
             retryScheduledCounter.increment();
             log.debug(
-                    "Scheduled event queue retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
+                    "Scheduled event queue retry. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     event.attemptCount(),
                     nextAttemptAt);
         } else {
             log.warn(
-                    "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
+                    "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     event.attemptCount());
         }
         log.error(
-                "Event queue processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
+                "Event queue processing failed. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
+                event.schemaVersion(),
                 event.attemptCount(),
                 nextAttemptAt,
                 error,

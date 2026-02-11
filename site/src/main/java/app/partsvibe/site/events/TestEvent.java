@@ -12,14 +12,4 @@ public record TestEvent(UUID eventId, Instant occurredAt, String requestId, Stri
     public static TestEvent create(String requestId, String message) {
         return new TestEvent(UUID.randomUUID(), Instant.now(), requestId, message);
     }
-
-    @Override
-    public String eventType() {
-        return EVENT_TYPE;
-    }
-
-    @Override
-    public int schemaVersion() {
-        return 1;
-    }
 }

@@ -2,6 +2,7 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.spring.ClasspathScanner;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventMetadata;
 import app.partsvibe.shared.events.model.EventTypeName;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,10 +15,10 @@ import org.springframework.stereotype.Component;
 public class SpringEventTypeRegistry implements EventTypeRegistry {
     private static final Logger log = LoggerFactory.getLogger(SpringEventTypeRegistry.class);
 
-    private final Map<String, Class<? extends Event>> eventTypeToClass;
+    private final Map<EventTypeKey, Class<? extends Event>> eventTypeToClass;
 
     public SpringEventTypeRegistry(ClasspathScanner annotationClassScanner) {
-        Map<String, Class<? extends Event>> byType = new LinkedHashMap<>();
+        Map<EventTypeKey, Class<? extends Event>> byType = new LinkedHashMap<>();
         for (Class<?> discoveredClass : annotationClassScanner.findAnnotatedClasses(EventTypeName.class)) {
             if (!Event.class.isAssignableFrom(discoveredClass)) {
                 throw new IllegalStateException(
@@ -25,48 +26,51 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
             }
             @SuppressWarnings("unchecked")
             Class<? extends Event> eventClass = (Class<? extends Event>) discoveredClass;
-            String eventType = resolveEventTypeName(eventClass);
+            EventMetadata metadata = EventMetadata.fromEventClass(eventClass);
+            EventTypeKey eventTypeKey = new EventTypeKey(metadata.eventType(), metadata.schemaVersion());
 
-            Class<? extends Event> existingClass = byType.get(eventType);
+            Class<? extends Event> existingClass = byType.get(eventTypeKey);
             if (existingClass != null && !existingClass.equals(eventClass)) {
                 throw new IllegalStateException(
-                        "Duplicate event type mapping to different classes. eventType=%s, classes=%s,%s"
-                                .formatted(eventType, existingClass.getName(), eventClass.getName()));
+                        "Duplicate event type mapping to different classes. eventType=%s, schemaVersion=%d, classes=%s,%s"
+                                .formatted(
+                                        eventTypeKey.eventType(),
+                                        eventTypeKey.schemaVersion(),
+                                        existingClass.getName(),
+                                        eventClass.getName()));
             }
 
-            byType.put(eventType, eventClass);
+            byType.put(eventTypeKey, eventClass);
         }
         this.eventTypeToClass = Map.copyOf(byType);
         logDiscoveredTypes(this.eventTypeToClass);
     }
 
     @Override
-    public Class<? extends Event> eventClassFor(String eventType) {
-        Class<? extends Event> eventClass = eventTypeToClass.get(eventType);
+    public Class<? extends Event> eventClassFor(String eventType, int schemaVersion) {
+        Class<? extends Event> eventClass = eventTypeToClass.get(new EventTypeKey(eventType, schemaVersion));
         if (eventClass == null) {
-            throw new UnknownEventTypeException("Unknown event type: " + eventType);
+            throw new UnknownEventTypeException(
+                    "Unknown event type: %s, schemaVersion=%d".formatted(eventType, schemaVersion));
         }
         return eventClass;
     }
 
-    private static void logDiscoveredTypes(Map<String, Class<? extends Event>> eventTypes) {
+    private static void logDiscoveredTypes(Map<EventTypeKey, Class<? extends Event>> eventTypes) {
         if (eventTypes.isEmpty()) {
             log.info("Discovered event types: none");
             return;
         }
         String discovered = eventTypes.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue().getName())
+                .map(entry -> "%s@v%d=%s"
+                        .formatted(
+                                entry.getKey().eventType(),
+                                entry.getKey().schemaVersion(),
+                                entry.getValue().getName()))
                 .sorted()
                 .collect(Collectors.joining(", "));
         log.info("Discovered event types. count={}, types=[{}]", eventTypes.size(), discovered);
     }
 
-    private static String resolveEventTypeName(Class<? extends Event> eventClass) {
-        EventTypeName annotation = eventClass.getAnnotation(EventTypeName.class);
-        if (annotation == null || annotation.value().isBlank()) {
-            throw new IllegalStateException(
-                    "Event class must be annotated with @EventTypeName and non-blank value: " + eventClass.getName());
-        }
-        return annotation.value();
-    }
+    private record EventTypeKey(String eventType, int schemaVersion) {}
 }

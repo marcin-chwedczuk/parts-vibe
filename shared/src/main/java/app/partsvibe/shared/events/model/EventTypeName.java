@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EventTypeName {
     String value();
+
+    int schemaVersion() default 1;
 }

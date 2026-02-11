@@ -42,24 +42,29 @@ public class SpringEventDispatcher implements EventDispatcher {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void dispatch(String eventType, String payloadJson) {
+    public void dispatch(String eventType, int schemaVersion, String payloadJson) {
         dispatchAttemptsCounter.increment();
         try {
-            Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(eventType);
+            Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(eventType, schemaVersion);
             log.debug(
-                    "Resolved event class for dispatch. eventType={}, eventClass={}", eventType, eventClass.getName());
+                    "Resolved event class for dispatch. eventType={}, schemaVersion={}, eventClass={}",
+                    eventType,
+                    schemaVersion,
+                    eventClass.getName());
             Event event = eventJsonSerializer.deserialize(payloadJson, eventClass);
             List<ResolvedHandler> handlers = resolveHandlers(eventClass);
             log.debug(
-                    "Dispatching event to handlers. eventType={}, eventClass={}, handlersCount={}",
+                    "Dispatching event to handlers. eventType={}, schemaVersion={}, eventClass={}, handlersCount={}",
                     eventType,
+                    schemaVersion,
                     eventClass.getName(),
                     handlers.size());
             for (ResolvedHandler resolvedHandler : handlers) {
                 String handlerClassName = handlerClassName(resolvedHandler.handler());
                 log.debug(
-                        "Invoking event handler. eventType={}, handlerBeanName={}, handlerClass={}",
+                        "Invoking event handler. eventType={}, schemaVersion={}, handlerBeanName={}, handlerClass={}",
                         eventType,
+                        schemaVersion,
                         resolvedHandler.beanName(),
                         handlerClassName);
                 try {
@@ -68,17 +73,19 @@ public class SpringEventDispatcher implements EventDispatcher {
                     dispatchErrorsCounter.increment();
                     String causeMessage = safeMessage(ex);
                     log.error(
-                            "Event handler execution failed. eventType={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
+                            "Event handler execution failed. eventType={}, schemaVersion={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
                             eventType,
+                            schemaVersion,
                             resolvedHandler.beanName(),
                             handlerClassName,
                             ex.getClass().getSimpleName(),
                             causeMessage,
                             ex);
                     throw new EventDispatchException(
-                            "Event handler failed. eventType=%s, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
+                            "Event handler failed. eventType=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
                                     .formatted(
                                             eventType,
+                                            schemaVersion,
                                             resolvedHandler.beanName(),
                                             handlerClassName,
                                             ex.getClass().getSimpleName(),
@@ -87,21 +94,26 @@ public class SpringEventDispatcher implements EventDispatcher {
                 }
             }
             dispatchSuccessCounter.increment();
-            log.info("Dispatched event. eventType={}, handlersCount={}", eventType, handlers.size());
+            log.info(
+                    "Dispatched event. eventType={}, schemaVersion={}, handlersCount={}",
+                    eventType,
+                    schemaVersion,
+                    handlers.size());
         } catch (EventDispatchException e) {
             throw e;
         } catch (RuntimeException e) {
             dispatchErrorsCounter.increment();
             String causeMessage = safeMessage(e);
             log.error(
-                    "Event dispatch failed before handler execution. eventType={}, errorType={}, errorMessage={}",
+                    "Event dispatch failed before handler execution. eventType={}, schemaVersion={}, errorType={}, errorMessage={}",
                     eventType,
+                    schemaVersion,
                     e.getClass().getSimpleName(),
                     causeMessage,
                     e);
             throw new EventDispatchException(
-                    "Event dispatch failed. eventType=%s, cause=%s: %s"
-                            .formatted(eventType, e.getClass().getSimpleName(), causeMessage),
+                    "Event dispatch failed. eventType=%s, schemaVersion=%d, cause=%s: %s"
+                            .formatted(eventType, schemaVersion, e.getClass().getSimpleName(), causeMessage),
                     e);
         }
     }

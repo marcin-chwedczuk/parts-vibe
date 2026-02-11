@@ -9,8 +9,4 @@ public interface Event {
     Instant occurredAt();
 
     String requestId();
-
-    String eventType();
-
-    int schemaVersion();
 }

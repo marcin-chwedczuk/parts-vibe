@@ -2,6 +2,7 @@ package app.partsvibe.infra.events.serialization;
 
 import app.partsvibe.infra.events.handling.EventDispatchException;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventMetadata;
 import app.partsvibe.shared.events.publishing.EventPublisherException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -32,15 +33,25 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
+            String eventType = "unknown";
+            int schemaVersion = -1;
+            try {
+                EventMetadata metadata = EventMetadata.fromEvent(event);
+                eventType = metadata.eventType();
+                schemaVersion = metadata.schemaVersion();
+            } catch (RuntimeException ignored) {
+                // Keep fallback metadata values when annotation lookup fails.
+            }
             log.error(
-                    "Event JSON serialization failed. eventId={}, eventType={}, requestId={}",
+                    "Event JSON serialization failed. eventId={}, eventType={}, schemaVersion={}, requestId={}",
                     event.eventId(),
-                    event.eventType(),
+                    eventType,
+                    schemaVersion,
                     event.requestId(),
                     e);
             throw new EventPublisherException(
-                    "Failed to serialize event payload. eventId=%s, eventType=%s"
-                            .formatted(event.eventId(), event.eventType()),
+                    "Failed to serialize event payload. eventId=%s, eventType=%s, schemaVersion=%d"
+                            .formatted(event.eventId(), eventType, schemaVersion),
                     e);
         }
     }

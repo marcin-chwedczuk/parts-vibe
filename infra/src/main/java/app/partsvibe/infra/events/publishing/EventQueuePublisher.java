@@ -4,6 +4,7 @@ import app.partsvibe.infra.events.jpa.EventQueueEntry;
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventMetadata;
 import app.partsvibe.shared.events.model.EventTypeName;
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.events.publishing.EventPublisherException;
@@ -42,12 +43,12 @@ public class EventQueuePublisher implements EventPublisher {
     public void publish(Event event) {
         publishAttemptsCounter.increment();
         try {
-            validate(event);
+            EventMetadata metadata = validate(event);
             String payloadJson = eventJsonSerializer.serialize(event);
             EventQueueEntry entity = EventQueueEntry.newEvent(
                     event.eventId(),
-                    event.eventType(),
-                    event.schemaVersion(),
+                    metadata.eventType(),
+                    metadata.schemaVersion(),
                     event.occurredAt(),
                     event.requestId(),
                     payloadJson);
@@ -56,22 +57,34 @@ public class EventQueuePublisher implements EventPublisher {
             log.info(
                     "Published event to event queue. eventId={}, eventType={}, schemaVersion={}, requestId={}",
                     event.eventId(),
-                    event.eventType(),
-                    event.schemaVersion(),
+                    metadata.eventType(),
+                    metadata.schemaVersion(),
                     event.requestId());
         } catch (EventPublisherException e) {
             publishErrorsCounter.increment();
             throw e;
         } catch (RuntimeException e) {
             publishErrorsCounter.increment();
-            String eventType = (event == null) ? "unknown" : String.valueOf(event.eventType());
+            String eventType = "unknown";
+            int schemaVersion = -1;
+            if (event != null) {
+                try {
+                    EventMetadata metadata = EventMetadata.fromEvent(event);
+                    eventType = metadata.eventType();
+                    schemaVersion = metadata.schemaVersion();
+                } catch (RuntimeException ignored) {
+                    // Fallback to unknown values when metadata extraction fails.
+                }
+            }
             String eventId = (event == null) ? "unknown" : String.valueOf(event.eventId());
             throw new EventPublisherException(
-                    "Failed to publish event. eventId=%s, eventType=%s".formatted(eventId, eventType), e);
+                    "Failed to publish event. eventId=%s, eventType=%s, schemaVersion=%d"
+                            .formatted(eventId, eventType, schemaVersion),
+                    e);
         }
     }
 
-    private static void validate(Event event) {
+    private static EventMetadata validate(Event event) {
         if (event == null) {
             throw new EventPublisherException("Event must not be null.");
         }
@@ -84,25 +97,33 @@ public class EventQueuePublisher implements EventPublisher {
         if (isBlank(event.requestId())) {
             throw new EventPublisherException("Event requestId must not be blank.");
         }
-        if (isBlank(event.eventType())) {
+        EventMetadata metadata = EventMetadata.fromEvent(event);
+        if (isBlank(metadata.eventType())) {
             throw new EventPublisherException("Event eventType must not be blank.");
         }
-        if (!EVENT_TYPE_PATTERN.matcher(event.eventType()).matches()) {
+        if (!EVENT_TYPE_PATTERN.matcher(metadata.eventType()).matches()) {
             throw new EventPublisherException(
-                    "Event eventType must be snake_case. eventType=%s".formatted(event.eventType()));
+                    "Event eventType must be snake_case. eventType=%s".formatted(metadata.eventType()));
         }
         EventTypeName annotation = event.getClass().getAnnotation(EventTypeName.class);
         if (annotation == null || annotation.value().isBlank()) {
             throw new EventPublisherException("Event class must declare @EventTypeName. eventClass=%s"
                     .formatted(event.getClass().getName()));
         }
-        if (!annotation.value().equals(event.eventType())) {
-            throw new EventPublisherException("Event type mismatch. eventClass=%s, annotatedType=%s, runtimeType=%s"
-                    .formatted(event.getClass().getName(), annotation.value(), event.eventType()));
+        if (!annotation.value().equals(metadata.eventType())) {
+            throw new EventPublisherException("Event type mismatch. eventClass=%s, annotatedType=%s, resolvedType=%s"
+                    .formatted(event.getClass().getName(), annotation.value(), metadata.eventType()));
         }
-        if (event.schemaVersion() <= 0) {
+        if (metadata.schemaVersion() <= 0) {
             throw new EventPublisherException("Event schemaVersion must be greater than 0.");
         }
+        if (annotation.schemaVersion() != metadata.schemaVersion()) {
+            throw new EventPublisherException(
+                    "Event schema version mismatch. eventClass=%s, annotatedVersion=%d, resolvedVersion=%d"
+                            .formatted(
+                                    event.getClass().getName(), annotation.schemaVersion(), metadata.schemaVersion()));
+        }
+        return metadata;
     }
 
     private static boolean isBlank(String value) {

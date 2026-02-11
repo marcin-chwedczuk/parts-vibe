@@ -140,10 +140,11 @@ public class EventQueueWorker {
         inFlightSlots.acquireUninterruptibly();
         try {
             log.debug(
-                    "Submitting event queue entry to executor. id={}, eventId={}, eventType={}, attemptCount={}",
+                    "Submitting event queue entry to executor. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     event.attemptCount());
             Future<EventExecutionOutcome> future = completionService.submit(() -> executeEvent(event));
             runningTasks.put(future, new RunningTask(event, timeProvider.now()));
@@ -151,10 +152,11 @@ public class EventQueueWorker {
             inFlightSlots.release();
             executorRejectedCounter.increment();
             log.error(
-                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventType={}",
+                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventType={}, schemaVersion={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     ex);
             processor.markFailed(event, ex);
         }
@@ -194,10 +196,11 @@ public class EventQueueWorker {
                     : new IllegalStateException("Event handler task was cancelled");
             processor.markFailed(event, cancellationReason);
             log.warn(
-                    "Event queue task cancelled. id={}, eventId={}, eventType={}, timeoutCancellation={}",
+                    "Event queue task cancelled. id={}, eventId={}, eventType={}, schemaVersion={}, timeoutCancellation={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     task.timeoutCancellationRequested().get());
             return;
         }
@@ -213,10 +216,11 @@ public class EventQueueWorker {
             Thread.currentThread().interrupt();
             processor.markFailed(event, ex);
             log.warn(
-                    "Interrupted while draining completed event queue task. id={}, eventId={}, eventType={}",
+                    "Interrupted while draining completed event queue task. id={}, eventId={}, eventType={}, schemaVersion={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
+                    event.schemaVersion(),
                     ex);
         } catch (ExecutionException ex) {
             Throwable rootCause = ex.getCause() == null ? ex : ex.getCause();
@@ -245,18 +249,20 @@ public class EventQueueWorker {
             if (cancelled) {
                 timeoutCancelledCounter.increment();
                 log.warn(
-                        "Cancelled timed out event queue task. id={}, eventId={}, eventType={}, runningMs={}, timeoutMs={}",
+                        "Cancelled timed out event queue task. id={}, eventId={}, eventType={}, schemaVersion={}, runningMs={}, timeoutMs={}",
                         task.event().id(),
                         task.event().eventId(),
                         task.event().eventType(),
+                        task.event().schemaVersion(),
                         runningMs,
                         timeoutMs);
             } else {
                 log.debug(
-                        "Timed out event queue task could not be cancelled because it already completed. id={}, eventId={}, eventType={}",
+                        "Timed out event queue task could not be cancelled because it already completed. id={}, eventId={}, eventType={}, schemaVersion={}",
                         task.event().id(),
                         task.event().eventId(),
-                        task.event().eventType());
+                        task.event().eventType(),
+                        task.event().schemaVersion());
             }
         }
     }
