@@ -1,4 +1,4 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
 import lombok.Getter;
 import lombok.Setter;

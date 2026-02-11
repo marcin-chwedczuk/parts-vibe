@@ -1,4 +1,4 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.jpa;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

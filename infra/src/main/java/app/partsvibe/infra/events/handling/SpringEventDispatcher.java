@@ -1,11 +1,11 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.shared.events.Event;
-import app.partsvibe.shared.events.EventDispatchException;
-import app.partsvibe.shared.events.EventDispatcher;
-import app.partsvibe.shared.events.EventHandler;
-import app.partsvibe.shared.events.EventJsonSerializer;
-import app.partsvibe.shared.events.EventTypeRegistry;
+import app.partsvibe.shared.events.handling.EventDispatchException;
+import app.partsvibe.shared.events.handling.EventDispatcher;
+import app.partsvibe.shared.events.handling.EventHandler;
+import app.partsvibe.shared.events.handling.EventTypeRegistry;
+import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.serialization.EventJsonSerializer;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;

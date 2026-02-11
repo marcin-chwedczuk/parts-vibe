@@ -1,6 +1,6 @@
 package app.partsvibe.site.service.impl;
 
-import app.partsvibe.shared.events.EventPublisher;
+import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.site.events.TestEvent;
 import app.partsvibe.site.service.TestEventService;
 import java.util.UUID;

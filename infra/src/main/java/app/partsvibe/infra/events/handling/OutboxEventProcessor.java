@@ -1,6 +1,8 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.shared.events.EventDispatcher;
+import app.partsvibe.infra.events.jpa.ClaimedOutboxEvent;
+import app.partsvibe.infra.events.jpa.OutboxEventRepository;
+import app.partsvibe.shared.events.handling.EventDispatcher;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;

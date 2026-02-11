@@ -1,4 +1,4 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.jpa;
 
 import java.time.Instant;
 import java.util.List;

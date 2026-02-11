@@ -1,7 +1,7 @@
 package app.partsvibe.site.events;
 
-import app.partsvibe.shared.events.Event;
-import app.partsvibe.shared.events.EventTypeName;
+import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventTypeName;
 import java.time.Instant;
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package app.partsvibe.shared.events;
+package app.partsvibe.shared.events.handling;
 
 import app.partsvibe.shared.error.ApplicationException;
 

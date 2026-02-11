@@ -1,5 +1,6 @@
-package app.partsvibe.shared.events;
+package app.partsvibe.shared.events.handling;
 
+import app.partsvibe.shared.events.model.Event;
 import java.util.Collection;
 
 public interface EventTypeRegistry {

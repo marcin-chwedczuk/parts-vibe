@@ -1,10 +1,10 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.shared.events.Event;
-import app.partsvibe.shared.events.EventHandler;
-import app.partsvibe.shared.events.EventTypeName;
-import app.partsvibe.shared.events.EventTypeRegistry;
-import app.partsvibe.shared.events.UnknownEventTypeException;
+import app.partsvibe.shared.events.handling.EventHandler;
+import app.partsvibe.shared.events.handling.EventTypeRegistry;
+import app.partsvibe.shared.events.handling.UnknownEventTypeException;
+import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventTypeName;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;

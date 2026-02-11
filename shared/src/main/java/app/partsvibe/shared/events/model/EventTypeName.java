@@ -1,4 +1,4 @@
-package app.partsvibe.shared.events;
+package app.partsvibe.shared.events.model;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

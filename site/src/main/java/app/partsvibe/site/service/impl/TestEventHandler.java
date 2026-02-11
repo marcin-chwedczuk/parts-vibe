@@ -1,6 +1,6 @@
 package app.partsvibe.site.service.impl;
 
-import app.partsvibe.shared.events.EventHandler;
+import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.site.events.TestEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

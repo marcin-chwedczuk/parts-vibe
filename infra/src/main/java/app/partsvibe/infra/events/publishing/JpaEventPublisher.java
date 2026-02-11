@@ -1,10 +1,12 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.publishing;
 
-import app.partsvibe.shared.events.Event;
-import app.partsvibe.shared.events.EventJsonSerializer;
-import app.partsvibe.shared.events.EventPublisher;
-import app.partsvibe.shared.events.EventPublisherException;
-import app.partsvibe.shared.events.EventTypeName;
+import app.partsvibe.infra.events.jpa.OutboxEventEntity;
+import app.partsvibe.infra.events.jpa.OutboxEventRepository;
+import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventTypeName;
+import app.partsvibe.shared.events.publishing.EventPublisher;
+import app.partsvibe.shared.events.publishing.EventPublisherException;
+import app.partsvibe.shared.events.serialization.EventJsonSerializer;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;

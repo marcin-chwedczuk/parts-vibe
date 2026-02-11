@@ -1,4 +1,6 @@
-package app.partsvibe.shared.events;
+package app.partsvibe.shared.events.serialization;
+
+import app.partsvibe.shared.events.model.Event;
 
 public interface EventJsonSerializer {
     String serialize(Event event);

@@ -1,4 +1,4 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.jpa;
 
 public enum OutboxEventStatus {
     NEW,

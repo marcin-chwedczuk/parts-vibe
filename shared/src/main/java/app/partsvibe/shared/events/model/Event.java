@@ -1,4 +1,4 @@
-package app.partsvibe.shared.events;
+package app.partsvibe.shared.events.model;
 
 import java.time.Instant;
 import java.util.UUID;

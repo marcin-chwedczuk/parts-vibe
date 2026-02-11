@@ -1,5 +1,7 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
+import app.partsvibe.infra.events.jpa.ClaimedOutboxEvent;
+import app.partsvibe.infra.events.jpa.OutboxEventRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import java.time.Instant;
 import java.util.List;

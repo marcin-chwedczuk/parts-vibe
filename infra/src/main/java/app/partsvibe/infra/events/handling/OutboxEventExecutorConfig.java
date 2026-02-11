@@ -1,4 +1,4 @@
-package app.partsvibe.infra.events;
+package app.partsvibe.infra.events.handling;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
