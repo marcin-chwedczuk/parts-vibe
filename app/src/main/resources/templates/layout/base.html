@@ -61,7 +61,8 @@
 
   <footer class="border-top bg-dark">
     <div class="container-fluid py-3 text-light small">
-      <span th:text="#{footer.text}">parts-vibe</span>
+      <span class="text-light"
+            th:text="#{footer.version(${appVersion})}">Application version: v0.0.0</span>
     </div>
   </footer>
 
