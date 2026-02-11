@@ -39,6 +39,12 @@ public class OutboxEventProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processClaimedEvent(ClaimedOutboxEvent event) {
         processedCounter.increment();
+        log.debug(
+                "Processing claimed outbox event started. id={}, eventId={}, eventType={}, attemptCount={}",
+                event.id(),
+                event.eventId(),
+                event.eventType(),
+                event.attemptCount());
         try {
             eventDispatcher.dispatch(event.eventType(), event.payload());
             outboxEventRepository.markDone(event.id(), Instant.now());
@@ -56,14 +62,29 @@ public class OutboxEventProcessor {
             failedCounter.increment();
             if (event.attemptCount() < properties.getMaxAttempts()) {
                 retryScheduledCounter.increment();
+                log.debug(
+                        "Scheduled outbox event retry. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
+                        event.id(),
+                        event.eventId(),
+                        event.eventType(),
+                        event.attemptCount(),
+                        nextAttemptAt);
+            } else {
+                log.warn(
+                        "Outbox event reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, attemptCount={}",
+                        event.id(),
+                        event.eventId(),
+                        event.eventType(),
+                        event.attemptCount());
             }
             log.error(
-                    "Outbox event processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}",
+                    "Outbox event processing failed. id={}, eventId={}, eventType={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
                     event.attemptCount(),
                     nextAttemptAt,
+                    error,
                     ex);
         }
     }
@@ -77,12 +98,27 @@ public class OutboxEventProcessor {
 
     private static String truncatedError(Throwable throwable) {
         String text = throwable.getMessage();
+        String rootCauseSummary = rootCauseSummary(throwable);
         if (text == null || text.isBlank()) {
-            text = throwable.getClass().getSimpleName();
+            text = rootCauseSummary;
+        } else if (!text.contains(rootCauseSummary)) {
+            text = text + " | rootCause=" + rootCauseSummary;
         }
         if (text.length() <= 2000) {
             return text;
         }
         return text.substring(0, 2000);
+    }
+
+    private static String rootCauseSummary(Throwable throwable) {
+        Throwable root = throwable;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        String rootMessage = root.getMessage();
+        if (rootMessage == null || rootMessage.isBlank()) {
+            rootMessage = "<no-message>";
+        }
+        return root.getClass().getSimpleName() + ": " + rootMessage;
     }
 }

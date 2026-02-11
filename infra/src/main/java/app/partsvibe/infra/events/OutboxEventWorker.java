@@ -44,35 +44,67 @@ public class OutboxEventWorker {
                 .getQueue()
                 .size());
         meterRegistry.gauge("app.events.worker.executor.active", executor, ThreadPoolTaskExecutor::getActiveCount);
+        log.info(
+                "Outbox event worker initialized. enabled={}, pollIntervalMs={}, batchSize={}, poolSize={}, queueCapacity={}, maxAttempts={}",
+                properties.isEnabled(),
+                properties.getPollIntervalMs(),
+                properties.getBatchSize(),
+                properties.getPoolSize(),
+                properties.getQueueCapacity(),
+                properties.getMaxAttempts());
     }
 
     @Scheduled(fixedDelayString = "${app.events.worker.poll-interval-ms:1000}")
     public void pollAndDispatch() {
         if (!properties.isEnabled()) {
+            log.debug("Outbox worker poll skipped because worker is disabled");
             return;
         }
+
+        log.debug(
+                "Outbox worker poll started. workerId={}, batchSize={}, poolSize={}, queueCapacity={}",
+                workerId,
+                properties.getBatchSize(),
+                properties.getPoolSize(),
+                properties.getQueueCapacity());
 
         int staleRecovered = claimService.requeueStaleProcessing(properties.getProcessingTimeoutMs());
         if (staleRecovered > 0) {
             staleRequeuedCounter.increment(staleRecovered);
             log.warn("Recovered stale PROCESSING outbox events. count={}", staleRecovered);
+        } else {
+            log.debug("No stale PROCESSING outbox events found");
         }
 
         int capacity = availableExecutorCapacity();
         if (capacity <= 0) {
             pollSkippedCounter.increment();
+            log.debug("Outbox worker poll skipped due to no executor capacity. workerId={}", workerId);
             return;
         }
 
         int claimSize = Math.min(properties.getBatchSize(), capacity);
+        log.debug(
+                "Attempting to claim outbox events. workerId={}, claimSize={}, maxAttempts={}",
+                workerId,
+                claimSize,
+                properties.getMaxAttempts());
         List<ClaimedOutboxEvent> claimed = claimService.claimBatch(claimSize, properties.getMaxAttempts(), workerId);
         if (claimed.isEmpty()) {
+            log.debug("No outbox events claimed. workerId={}", workerId);
             return;
         }
 
         claimedCounter.increment(claimed.size());
+        log.debug("Claimed outbox events. workerId={}, claimedCount={}", workerId, claimed.size());
         for (ClaimedOutboxEvent event : claimed) {
             try {
+                log.debug(
+                        "Submitting outbox event to executor. id={}, eventId={}, eventType={}, attemptCount={}",
+                        event.id(),
+                        event.eventId(),
+                        event.eventType(),
+                        event.attemptCount());
                 executor.execute(() -> processor.processClaimedEvent(event));
             } catch (RuntimeException ex) {
                 executorRejectedCounter.increment();

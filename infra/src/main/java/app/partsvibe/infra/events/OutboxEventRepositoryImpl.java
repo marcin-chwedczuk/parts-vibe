@@ -6,9 +6,13 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
+    private static final Logger log = LoggerFactory.getLogger(OutboxEventRepositoryImpl.class);
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -16,6 +20,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
     @Transactional
     public List<ClaimedOutboxEvent> claimBatchForProcessing(int batchSize, int maxAttempts, String workerId) {
         if (batchSize <= 0) {
+            log.debug("Claim batch skipped because batchSize <= 0");
             return Collections.emptyList();
         }
 
@@ -37,6 +42,7 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
                 .getResultList();
 
         if (idRows.isEmpty()) {
+            log.debug("No outbox event IDs selected for claiming");
             return Collections.emptyList();
         }
 
@@ -59,11 +65,18 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
                 .setParameter("ids", ids)
                 .executeUpdate();
 
-        return entityManager
+        List<ClaimedOutboxEvent> claimed = entityManager
                 .createQuery("SELECT e FROM OutboxEventEntity e WHERE e.id IN :ids", OutboxEventEntity.class)
                 .setParameter("ids", ids)
                 .getResultStream()
                 .map(ClaimedOutboxEvent::fromEntity)
                 .collect(Collectors.toList());
+        log.debug(
+                "Claimed outbox rows and marked as PROCESSING. workerId={}, requestedBatchSize={}, selectedCount={}, claimedCount={}",
+                workerId,
+                batchSize,
+                ids.size(),
+                claimed.size());
+        return claimed;
     }
 }

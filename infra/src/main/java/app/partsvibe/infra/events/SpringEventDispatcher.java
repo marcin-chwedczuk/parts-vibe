@@ -50,17 +50,70 @@ public class SpringEventDispatcher implements EventDispatcher {
         dispatchAttemptsCounter.increment();
         try {
             Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(eventType);
+            log.debug(
+                    "Resolved event class for dispatch. eventType={}, eventClass={}", eventType, eventClass.getName());
             Event event = eventJsonSerializer.deserialize(payloadJson, eventClass);
             List<EventHandler<? extends Event>> handlers = handlersByEventClass.getOrDefault(eventClass, List.of());
+            log.debug(
+                    "Dispatching event to handlers. eventType={}, eventClass={}, handlersCount={}",
+                    eventType,
+                    eventClass.getName(),
+                    handlers.size());
             for (EventHandler<? extends Event> handler : handlers) {
-                invokeHandler(handler, event);
+                String handlerClassName = handlerClassName(handler);
+                log.debug("Invoking event handler. eventType={}, handlerClass={}", eventType, handlerClassName);
+                try {
+                    invokeHandler(handler, event);
+                } catch (RuntimeException ex) {
+                    dispatchErrorsCounter.increment();
+                    String causeMessage = safeMessage(ex);
+                    log.error(
+                            "Event handler execution failed. eventType={}, handlerClass={}, errorType={}, errorMessage={}",
+                            eventType,
+                            handlerClassName,
+                            ex.getClass().getSimpleName(),
+                            causeMessage,
+                            ex);
+                    throw new EventDispatchException(
+                            "Event handler failed. eventType=%s, handlerClass=%s, cause=%s: %s"
+                                    .formatted(
+                                            eventType,
+                                            handlerClassName,
+                                            ex.getClass().getSimpleName(),
+                                            causeMessage),
+                            ex);
+                }
             }
             dispatchSuccessCounter.increment();
             log.info("Dispatched event. eventType={}, handlersCount={}", eventType, handlers.size());
+        } catch (EventDispatchException e) {
+            throw e;
         } catch (RuntimeException e) {
             dispatchErrorsCounter.increment();
-            throw new EventDispatchException("Failed to dispatch event. eventType=%s".formatted(eventType), e);
+            String causeMessage = safeMessage(e);
+            log.error(
+                    "Event dispatch failed before handler execution. eventType={}, errorType={}, errorMessage={}",
+                    eventType,
+                    e.getClass().getSimpleName(),
+                    causeMessage,
+                    e);
+            throw new EventDispatchException(
+                    "Event dispatch failed. eventType=%s, cause=%s: %s"
+                            .formatted(eventType, e.getClass().getSimpleName(), causeMessage),
+                    e);
         }
+    }
+
+    private static String handlerClassName(EventHandler<? extends Event> handler) {
+        return ClassUtils.getUserClass(handler.getClass()).getName();
+    }
+
+    private static String safeMessage(Throwable throwable) {
+        String message = throwable.getMessage();
+        if (message == null || message.isBlank()) {
+            return "<no-message>";
+        }
+        return message;
     }
 
     @SuppressWarnings("unchecked")

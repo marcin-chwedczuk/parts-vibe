@@ -7,3 +7,12 @@ spring:
       mode: always
       schema-locations: classpath:org/springframework/session/jdbc/schema-postgresql.sql
       continue-on-error: true
+
+app:
+  events:
+    worker:
+      enabled: true
+
+logging:
+  level:
+    app.partsvibe.infra.events: DEBUG
