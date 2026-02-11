@@ -3,7 +3,6 @@ package app.partsvibe.infra.events.handling;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventTypeName;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,20 +50,6 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
             throw new UnknownEventTypeException("Unknown event type: " + eventType);
         }
         return eventClass;
-    }
-
-    @Override
-    public String eventTypeFor(Class<? extends Event> eventClass) {
-        String eventType = eventClassToType.get(eventClass);
-        if (eventType == null) {
-            throw new UnknownEventTypeException("Unknown event class: " + eventClass.getName());
-        }
-        return eventType;
-    }
-
-    @Override
-    public Collection<String> supportedEventTypes() {
-        return eventTypeToClass.keySet();
     }
 
     @SuppressWarnings("unchecked")
