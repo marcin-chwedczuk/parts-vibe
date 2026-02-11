@@ -10,6 +10,7 @@ public class OutboxEventExecutorConfig {
     public ThreadPoolTaskExecutor outboxEventExecutor(EventWorkerProperties properties) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setThreadNamePrefix("event-handling-worker-");
+        executor.setDaemon(true);
         executor.setCorePoolSize(properties.getPoolSize());
         executor.setMaxPoolSize(properties.getPoolSize());
         executor.setQueueCapacity(properties.getQueueCapacity());
