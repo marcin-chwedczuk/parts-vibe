@@ -10,7 +10,11 @@
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg bg-dark navbar-dark border-bottom">
     <div class="container-fluid">
-      <a class="navbar-brand fw-semibold" th:href="@{/}">parts-vibe</a>
+      <a class="navbar-brand d-inline-flex align-items-center gap-2 fw-semibold" th:href="@{/}">
+        <img th:src="@{/logo-128.png}" src="/logo-128.png" alt="parts-vibe logo"
+             width="40" class="rounded" />
+        <span>parts-vibe</span>
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
               data-bs-target="#topbarMenu" aria-controls="topbarMenu"
               aria-expanded="false" aria-label="Toggle navigation">

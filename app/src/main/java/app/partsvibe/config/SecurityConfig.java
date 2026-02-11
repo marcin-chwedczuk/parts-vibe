@@ -1,4 +1,4 @@
-package app.partsvibe.users.config;
+package app.partsvibe.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,17 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth.requestMatchers("/", "/login", "/css/**", "/webjars/**", "/actuator/**")
+        http.authorizeHttpRequests(auth -> auth.requestMatchers(
+                                "/",
+                                "/login",
+                                "/favicon.ico",
+                                "/logo-*.png",
+                                "/webjars/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**")
+                        .permitAll()
+                        .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus")
                         .permitAll()
                         .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
