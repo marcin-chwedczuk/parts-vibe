@@ -14,9 +14,11 @@ import org.springframework.stereotype.Component;
 public class StartupLogging implements ApplicationRunner {
     private static final Logger logger = LoggerFactory.getLogger(StartupLogging.class);
     private final Environment environment;
+    private final BuildVersionInfo buildVersionInfo;
 
-    public StartupLogging(Environment environment) {
+    public StartupLogging(Environment environment, BuildVersionInfo buildVersionInfo) {
         this.environment = environment;
+        this.buildVersionInfo = buildVersionInfo;
     }
 
     @Override
@@ -30,5 +32,12 @@ public class StartupLogging implements ApplicationRunner {
 
         logger.info(
                 "Startup: javaVersion={}, springBootVersion={}, profiles={}", javaVersion, springBootVersion, profiles);
+        logger.info(
+                "Build: buildTime={}, mavenVersion={}, jdkVersion={}, gitCommitIdShort={}, gitCommitIdFull={}",
+                buildVersionInfo.buildTime(),
+                buildVersionInfo.mavenVersion(),
+                buildVersionInfo.jdkVersion(),
+                buildVersionInfo.gitCommitIdShort(),
+                buildVersionInfo.gitCommitIdFull());
     }
 }
