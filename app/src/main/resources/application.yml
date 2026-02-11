@@ -69,3 +69,15 @@ app:
     port: ${CLAMAV_PORT:3310}
     connect-timeout-ms: ${CLAMAV_CONNECT_TIMEOUT_MS:2000}
     read-timeout-ms: ${CLAMAV_READ_TIMEOUT_MS:10000}
+  events:
+    worker:
+      enabled: ${APP_EVENTS_WORKER_ENABLED:false}
+      poll-interval-ms: ${APP_EVENTS_WORKER_POLL_INTERVAL_MS:1000}
+      batch-size: ${APP_EVENTS_WORKER_BATCH_SIZE:20}
+      pool-size: ${APP_EVENTS_WORKER_POOL_SIZE:4}
+      queue-capacity: ${APP_EVENTS_WORKER_QUEUE_CAPACITY:200}
+      processing-timeout-ms: ${APP_EVENTS_WORKER_PROCESSING_TIMEOUT_MS:120000}
+      max-attempts: ${APP_EVENTS_WORKER_MAX_ATTEMPTS:10}
+      backoff-initial-ms: ${APP_EVENTS_WORKER_BACKOFF_INITIAL_MS:1000}
+      backoff-multiplier: ${APP_EVENTS_WORKER_BACKOFF_MULTIPLIER:2.0}
+      backoff-max-ms: ${APP_EVENTS_WORKER_BACKOFF_MAX_MS:300000}
