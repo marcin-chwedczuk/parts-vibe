@@ -1,4 +1,4 @@
-package app.partsvibe.shared.events.serialization;
+package app.partsvibe.infra.events.serialization;
 
 import app.partsvibe.shared.events.model.Event;
 

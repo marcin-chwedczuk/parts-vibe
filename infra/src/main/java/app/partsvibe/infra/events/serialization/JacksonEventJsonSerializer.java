@@ -1,9 +1,8 @@
 package app.partsvibe.infra.events.serialization;
 
-import app.partsvibe.shared.events.handling.EventDispatchException;
+import app.partsvibe.infra.events.handling.EventDispatchException;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.publishing.EventPublisherException;
-import app.partsvibe.shared.events.serialization.EventJsonSerializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

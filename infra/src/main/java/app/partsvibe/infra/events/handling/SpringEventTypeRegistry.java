@@ -1,8 +1,6 @@
 package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.shared.events.handling.EventHandler;
-import app.partsvibe.shared.events.handling.EventTypeRegistry;
-import app.partsvibe.shared.events.handling.UnknownEventTypeException;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventTypeName;
 import java.util.Collection;
