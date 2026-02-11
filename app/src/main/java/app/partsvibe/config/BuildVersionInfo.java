@@ -15,6 +15,8 @@ public class BuildVersionInfo {
     private final String jdkVersion;
     private final String gitCommitIdFull;
     private final String gitCommitIdShort;
+    private final String gitClosestTagName;
+    private final String gitClosestTagCommitCount;
 
     public BuildVersionInfo() {
         Properties properties = new Properties();
@@ -31,6 +33,8 @@ public class BuildVersionInfo {
         this.jdkVersion = valueOf(properties, "jdk.version");
         this.gitCommitIdFull = valueOf(properties, "git.commit.id.full");
         this.gitCommitIdShort = valueOf(properties, "git.commit.id.short");
+        this.gitClosestTagName = valueOf(properties, "git.closest.tag.name");
+        this.gitClosestTagCommitCount = valueOf(properties, "git.closest.tag.commit.count");
     }
 
     public String buildTime() {
@@ -51,6 +55,29 @@ public class BuildVersionInfo {
 
     public String gitCommitIdShort() {
         return gitCommitIdShort;
+    }
+
+    public String gitClosestTagName() {
+        return gitClosestTagName;
+    }
+
+    public int gitCommitsSinceClosestTag() {
+        try {
+            return Integer.parseInt(gitClosestTagCommitCount);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    public String gitVersionLabel() {
+        int commitsSinceTag = gitCommitsSinceClosestTag();
+        if (UNKNOWN.equals(gitClosestTagName)) {
+            return gitCommitIdShort;
+        }
+        if (commitsSinceTag <= 0) {
+            return gitClosestTagName;
+        }
+        return gitClosestTagName + "+" + commitsSinceTag;
     }
 
     private static String valueOf(Properties properties, String key) {

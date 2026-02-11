@@ -155,6 +155,7 @@
           </execution>
         </executions>
         <configuration>
+          <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
           <failOnNoGitDirectory>true</failOnNoGitDirectory>
           <generateGitPropertiesFile>false</generateGitPropertiesFile>
         </configuration>

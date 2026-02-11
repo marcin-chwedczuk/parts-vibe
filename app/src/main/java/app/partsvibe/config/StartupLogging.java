@@ -33,11 +33,14 @@ public class StartupLogging implements ApplicationRunner {
         logger.info(
                 "Startup: javaVersion={}, springBootVersion={}, profiles={}", javaVersion, springBootVersion, profiles);
         logger.info(
-                "Build: buildTime={}, mavenVersion={}, jdkVersion={}, gitCommitIdShort={}, gitCommitIdFull={}",
+                "Build: versionLabel={}, buildTime={}, mavenVersion={}, jdkVersion={}, gitCommitIdShort={}, gitCommitIdFull={}, gitClosestTagName={}, gitCommitsSinceClosestTag={}",
+                buildVersionInfo.gitVersionLabel(),
                 buildVersionInfo.buildTime(),
                 buildVersionInfo.mavenVersion(),
                 buildVersionInfo.jdkVersion(),
                 buildVersionInfo.gitCommitIdShort(),
-                buildVersionInfo.gitCommitIdFull());
+                buildVersionInfo.gitCommitIdFull(),
+                buildVersionInfo.gitClosestTagName(),
+                buildVersionInfo.gitCommitsSinceClosestTag());
     }
 }
