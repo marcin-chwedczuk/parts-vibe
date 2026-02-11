@@ -155,6 +155,13 @@ Options:
 ./mvnw test
 ```
 
+## Skip SpotBugs during local development
+SpotBugs runs in `verify` by default. For faster local iteration, skip it with:
+
+```
+./mvnw -Pskip-spotbugs verify
+```
+
 ## Run integration tests (Testcontainers)
 ```
 ./mvnw -Pintegration-test verify

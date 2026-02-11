@@ -131,6 +131,13 @@
           <include>version-info.properties</include>
         </includes>
       </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>version-info.properties</exclude>
+        </excludes>
+      </resource>
     </resources>
 
     <plugins>

@@ -74,6 +74,7 @@
     <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
     <spotless.maven.plugin.version>3.1.0</spotless.maven.plugin.version>
     <spotbugs.maven.plugin.version>4.9.8.2</spotbugs.maven.plugin.version>
+    <spotbugs.skip>false</spotbugs.skip>
     <palantir.java.format.version>2.73.0</palantir.java.format.version>
     <spotbugs.annotations.version>4.9.4</spotbugs.annotations.version>
     <mapstruct.version>1.6.3</mapstruct.version>
@@ -257,6 +258,7 @@
           </execution>
         </executions>
         <configuration>
+          <skip>${spotbugs.skip}</skip>
           <!-- Suppress common representation exposure warnings across the codebase. -->
           <excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs/excludes.xml</excludeFilterFile>
           <!-- Reduce noise: report only high-priority bugs with default analysis effort. -->
@@ -266,6 +268,15 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>skip-spotbugs</id>
+      <properties>
+        <spotbugs.skip>true</spotbugs.skip>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
