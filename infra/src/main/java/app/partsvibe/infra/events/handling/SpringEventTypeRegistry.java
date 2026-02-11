@@ -1,25 +1,30 @@
 package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.shared.events.handling.EventHandler;
+import app.partsvibe.infra.spring.ClasspathScanner;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventTypeName;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import org.springframework.core.ResolvableType;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ClassUtils;
 
 @Component
 public class SpringEventTypeRegistry implements EventTypeRegistry {
-    private final Map<String, Class<? extends Event>> eventTypeToClass;
-    private final Map<Class<? extends Event>, String> eventClassToType;
+    private static final Logger log = LoggerFactory.getLogger(SpringEventTypeRegistry.class);
 
-    public SpringEventTypeRegistry(List<EventHandler<?>> eventHandlers) {
+    private final Map<String, Class<? extends Event>> eventTypeToClass;
+
+    public SpringEventTypeRegistry(ClasspathScanner annotationClassScanner) {
         Map<String, Class<? extends Event>> byType = new LinkedHashMap<>();
-        Map<Class<? extends Event>, String> byClass = new LinkedHashMap<>();
-        for (EventHandler<?> handler : eventHandlers) {
-            Class<? extends Event> eventClass = resolveHandledEventClass(handler);
+        for (Class<?> discoveredClass : annotationClassScanner.findAnnotatedClasses(EventTypeName.class)) {
+            if (!Event.class.isAssignableFrom(discoveredClass)) {
+                throw new IllegalStateException(
+                        "@EventTypeName class must implement Event: " + discoveredClass.getName());
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends Event> eventClass = (Class<? extends Event>) discoveredClass;
             String eventType = resolveEventTypeName(eventClass);
 
             Class<? extends Event> existingClass = byType.get(eventType);
@@ -29,18 +34,10 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
                                 .formatted(eventType, existingClass.getName(), eventClass.getName()));
             }
 
-            String existingType = byClass.get(eventClass);
-            if (existingType != null && !existingType.equals(eventType)) {
-                throw new IllegalStateException(
-                        "Duplicate event class mapping to different types. eventClass=%s, types=%s,%s"
-                                .formatted(eventClass.getName(), existingType, eventType));
-            }
-
             byType.put(eventType, eventClass);
-            byClass.put(eventClass, eventType);
         }
         this.eventTypeToClass = Map.copyOf(byType);
-        this.eventClassToType = Map.copyOf(byClass);
+        logDiscoveredTypes(this.eventTypeToClass);
     }
 
     @Override
@@ -52,15 +49,16 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
         return eventClass;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Class<? extends Event> resolveHandledEventClass(EventHandler<?> handler) {
-        Class<?> userClass = ClassUtils.getUserClass(handler.getClass());
-        ResolvableType type = ResolvableType.forClass(userClass).as(EventHandler.class);
-        Class<?> resolved = type.getGeneric(0).resolve();
-        if (resolved == null || !Event.class.isAssignableFrom(resolved)) {
-            throw new IllegalStateException("Cannot resolve handled event class for handler: " + userClass.getName());
+    private static void logDiscoveredTypes(Map<String, Class<? extends Event>> eventTypes) {
+        if (eventTypes.isEmpty()) {
+            log.info("Discovered event types: none");
+            return;
         }
-        return (Class<? extends Event>) resolved;
+        String discovered = eventTypes.entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue().getName())
+                .sorted()
+                .collect(Collectors.joining(", "));
+        log.info("Discovered event types. count={}, types=[{}]", eventTypes.size(), discovered);
     }
 
     private static String resolveEventTypeName(Class<? extends Event> eventClass) {
