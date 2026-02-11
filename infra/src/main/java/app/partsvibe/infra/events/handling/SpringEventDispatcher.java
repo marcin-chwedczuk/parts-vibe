@@ -6,11 +6,10 @@ import app.partsvibe.shared.events.model.Event;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -23,7 +22,7 @@ public class SpringEventDispatcher implements EventDispatcher {
 
     private final EventTypeRegistry eventTypeRegistry;
     private final EventJsonSerializer eventJsonSerializer;
-    private final Map<Class<? extends Event>, List<EventHandler<? extends Event>>> handlersByEventClass;
+    private final ListableBeanFactory beanFactory;
     private final Counter dispatchAttemptsCounter;
     private final Counter dispatchSuccessCounter;
     private final Counter dispatchErrorsCounter;
@@ -31,11 +30,11 @@ public class SpringEventDispatcher implements EventDispatcher {
     public SpringEventDispatcher(
             EventTypeRegistry eventTypeRegistry,
             EventJsonSerializer eventJsonSerializer,
-            List<EventHandler<?>> handlers,
+            ListableBeanFactory beanFactory,
             MeterRegistry meterRegistry) {
         this.eventTypeRegistry = eventTypeRegistry;
         this.eventJsonSerializer = eventJsonSerializer;
-        this.handlersByEventClass = buildHandlersMap(handlers);
+        this.beanFactory = beanFactory;
         this.dispatchAttemptsCounter = meterRegistry.counter("app.events.dispatch.attempts");
         this.dispatchSuccessCounter = meterRegistry.counter("app.events.dispatch.success");
         this.dispatchErrorsCounter = meterRegistry.counter("app.events.dispatch.errors");
@@ -50,31 +49,37 @@ public class SpringEventDispatcher implements EventDispatcher {
             log.debug(
                     "Resolved event class for dispatch. eventType={}, eventClass={}", eventType, eventClass.getName());
             Event event = eventJsonSerializer.deserialize(payloadJson, eventClass);
-            List<EventHandler<? extends Event>> handlers = handlersByEventClass.getOrDefault(eventClass, List.of());
+            List<ResolvedHandler> handlers = resolveHandlers(eventClass);
             log.debug(
                     "Dispatching event to handlers. eventType={}, eventClass={}, handlersCount={}",
                     eventType,
                     eventClass.getName(),
                     handlers.size());
-            for (EventHandler<? extends Event> handler : handlers) {
-                String handlerClassName = handlerClassName(handler);
-                log.debug("Invoking event handler. eventType={}, handlerClass={}", eventType, handlerClassName);
+            for (ResolvedHandler resolvedHandler : handlers) {
+                String handlerClassName = handlerClassName(resolvedHandler.handler());
+                log.debug(
+                        "Invoking event handler. eventType={}, handlerBeanName={}, handlerClass={}",
+                        eventType,
+                        resolvedHandler.beanName(),
+                        handlerClassName);
                 try {
-                    invokeHandler(handler, event);
+                    invokeHandler(resolvedHandler.handler(), event);
                 } catch (RuntimeException ex) {
                     dispatchErrorsCounter.increment();
                     String causeMessage = safeMessage(ex);
                     log.error(
-                            "Event handler execution failed. eventType={}, handlerClass={}, errorType={}, errorMessage={}",
+                            "Event handler execution failed. eventType={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
                             eventType,
+                            resolvedHandler.beanName(),
                             handlerClassName,
                             ex.getClass().getSimpleName(),
                             causeMessage,
                             ex);
                     throw new EventDispatchException(
-                            "Event handler failed. eventType=%s, handlerClass=%s, cause=%s: %s"
+                            "Event handler failed. eventType=%s, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
                                     .formatted(
                                             eventType,
+                                            resolvedHandler.beanName(),
                                             handlerClassName,
                                             ex.getClass().getSimpleName(),
                                             causeMessage),
@@ -105,6 +110,21 @@ public class SpringEventDispatcher implements EventDispatcher {
         return ClassUtils.getUserClass(handler.getClass()).getName();
     }
 
+    @SuppressWarnings("unchecked")
+    private List<ResolvedHandler> resolveHandlers(Class<? extends Event> eventClass) {
+        ResolvableType handlerType = ResolvableType.forClassWithGenerics(EventHandler.class, eventClass);
+        String[] beanNames = beanFactory.getBeanNamesForType(EventHandler.class, true, false);
+        List<ResolvedHandler> handlers = new ArrayList<>();
+        for (String beanName : beanNames) {
+            if (!beanFactory.isTypeMatch(beanName, handlerType)) {
+                continue;
+            }
+            EventHandler<? extends Event> handler = (EventHandler<? extends Event>) beanFactory.getBean(beanName);
+            handlers.add(new ResolvedHandler(beanName, handler));
+        }
+        return handlers;
+    }
+
     private static String safeMessage(Throwable throwable) {
         String message = throwable.getMessage();
         if (message == null || message.isBlank()) {
@@ -119,23 +139,5 @@ public class SpringEventDispatcher implements EventDispatcher {
         typedHandler.handle((E) event);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<Class<? extends Event>, List<EventHandler<? extends Event>>> buildHandlersMap(
-            List<EventHandler<?>> handlers) {
-        Map<Class<? extends Event>, List<EventHandler<? extends Event>>> handlersMap = new LinkedHashMap<>();
-        for (EventHandler<?> handler : handlers) {
-            Class<?> userClass = ClassUtils.getUserClass(handler.getClass());
-            ResolvableType type = ResolvableType.forClass(userClass).as(EventHandler.class);
-            Class<?> resolved = type.getGeneric(0).resolve();
-            if (resolved == null || !Event.class.isAssignableFrom(resolved)) {
-                throw new IllegalStateException(
-                        "Cannot resolve handled event class for handler: " + userClass.getName());
-            }
-            Class<? extends Event> eventClass = (Class<? extends Event>) resolved;
-            handlersMap
-                    .computeIfAbsent(eventClass, ignored -> new ArrayList<>())
-                    .add((EventHandler<? extends Event>) handler);
-        }
-        return Map.copyOf(handlersMap);
-    }
+    private record ResolvedHandler(String beanName, EventHandler<? extends Event> handler) {}
 }
