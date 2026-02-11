@@ -1,11 +1,11 @@
 {
-  "uid": "partsvibe-antivirus",
-  "title": "PartsVibe Antivirus",
+  "uid": "partsvibe-app",
+  "title": "PartsVibe App",
   "schemaVersion": 39,
   "version": 1,
   "timezone": "browser",
   "refresh": "10s",
-  "tags": ["partsvibe", "antivirus", "security"],
+  "tags": ["partsvibe", "app", "antivirus", "email", "security"],
   "templating": {
     "list": [
       {
@@ -141,6 +141,109 @@
         }
       ],
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13}
+    },
+    {
+      "type": "stat",
+      "title": "Emails: Attempts",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_email_send_attempts_total{application=\"$application\"})"
+        }
+      ],
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 21}
+    },
+    {
+      "type": "stat",
+      "title": "Emails: Sent",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_email_send_success_total{application=\"$application\"})"
+        }
+      ],
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 21}
+    },
+    {
+      "type": "stat",
+      "title": "Emails: Errors",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_email_send_errors_total{application=\"$application\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 1}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 21}
+    },
+    {
+      "type": "timeseries",
+      "title": "Email Counters",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(app_email_send_attempts_total{application=\"$application\"})",
+          "legendFormat": "attempts"
+        },
+        {
+          "expr": "sum(app_email_send_success_total{application=\"$application\"})",
+          "legendFormat": "sent"
+        },
+        {
+          "expr": "sum(app_email_send_errors_total{application=\"$application\"})",
+          "legendFormat": "errors"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 26}
+    },
+    {
+      "type": "timeseries",
+      "title": "Email Activity (5m increase)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(app_email_send_attempts_total{application=\"$application\"}[5m]))",
+          "legendFormat": "attempts/5m"
+        },
+        {
+          "expr": "sum(increase(app_email_send_success_total{application=\"$application\"}[5m]))",
+          "legendFormat": "sent/5m"
+        },
+        {
+          "expr": "sum(increase(app_email_send_errors_total{application=\"$application\"}[5m]))",
+          "legendFormat": "errors/5m"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 34}
     }
   ]
 }
