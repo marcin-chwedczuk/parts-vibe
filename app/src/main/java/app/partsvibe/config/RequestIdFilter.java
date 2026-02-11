@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class RequestIdFilter extends OncePerRequestFilter {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String MDC_KEY = "requestId";
+    public static final String REQUEST_ID_ATTRIBUTE = "requestId";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -27,6 +28,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
         }
 
         MDC.put(MDC_KEY, requestId);
+        request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
         response.setHeader(REQUEST_ID_HEADER, requestId);
         try {
             filterChain.doFilter(request, response);

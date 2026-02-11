@@ -14,6 +14,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(
@@ -43,6 +46,8 @@ public class OutboxEventEntity {
     @Column(name = "request_id", nullable = false, length = 64)
     private String requestId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @ColumnTransformer(write = "?::jsonb")
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 
