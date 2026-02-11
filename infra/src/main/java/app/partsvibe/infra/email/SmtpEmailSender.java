@@ -1,8 +1,8 @@
 package app.partsvibe.infra.email;
 
+import app.partsvibe.shared.email.EmailMessage;
 import app.partsvibe.shared.email.EmailSender;
 import app.partsvibe.shared.email.EmailSenderException;
-import app.partsvibe.shared.email.MailMessage;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.util.List;
@@ -22,7 +22,7 @@ public class SmtpEmailSender implements EmailSender {
     }
 
     @Override
-    public void send(MailMessage message) {
+    public void send(EmailMessage message) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         boolean multipart = message.bodyHtml() != null && !message.bodyHtml().isBlank();
         try {

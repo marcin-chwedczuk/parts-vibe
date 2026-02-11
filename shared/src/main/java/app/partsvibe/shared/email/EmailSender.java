@@ -1,5 +1,5 @@
 package app.partsvibe.shared.email;
 
 public interface EmailSender {
-    void send(MailMessage message);
+    void send(EmailMessage message);
 }

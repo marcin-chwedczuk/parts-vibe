@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Singular;
 
 @Builder
-public record MailMessage(
+public record EmailMessage(
         @Singular("to") List<String> to,
         @Singular("cc") List<String> cc,
         @Singular("bcc") List<String> bcc,

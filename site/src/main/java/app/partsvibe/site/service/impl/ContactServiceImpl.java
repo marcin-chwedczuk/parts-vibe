@@ -1,7 +1,7 @@
 package app.partsvibe.site.service.impl;
 
+import app.partsvibe.shared.email.EmailMessage;
 import app.partsvibe.shared.email.EmailSender;
-import app.partsvibe.shared.email.MailMessage;
 import app.partsvibe.site.domain.ContactMessage;
 import app.partsvibe.site.repo.ContactMessageRepository;
 import app.partsvibe.site.service.ContactService;
@@ -34,6 +34,6 @@ public class ContactServiceImpl implements ContactService {
                 + "Regards,\n"
                 + "parts-vibe";
         emailSender.send(
-                MailMessage.builder().to(email).subject(subject).bodyText(body).build());
+                EmailMessage.builder().to(email).subject(subject).bodyText(body).build());
     }
 }
