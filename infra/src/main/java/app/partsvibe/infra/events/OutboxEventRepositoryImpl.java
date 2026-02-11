@@ -18,7 +18,8 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
 
     @Override
     @Transactional
-    public List<ClaimedOutboxEvent> claimBatchForProcessing(int batchSize, int maxAttempts, String workerId) {
+    public List<ClaimedOutboxEvent> claimBatchForProcessing(
+            int batchSize, int maxAttempts, String workerId, Instant now) {
         if (batchSize <= 0) {
             log.debug("Claim batch skipped because batchSize <= 0");
             return Collections.emptyList();
@@ -47,7 +48,6 @@ public class OutboxEventRepositoryImpl implements OutboxEventRepositoryCustom {
         }
 
         List<Long> ids = idRows.stream().map(Number::longValue).toList();
-        Instant now = Instant.now();
 
         entityManager
                 .createNativeQuery(

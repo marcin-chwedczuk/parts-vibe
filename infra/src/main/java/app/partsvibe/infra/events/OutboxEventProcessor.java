@@ -1,6 +1,7 @@
 package app.partsvibe.infra.events;
 
 import app.partsvibe.shared.events.EventDispatcher;
+import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
@@ -17,6 +18,7 @@ public class OutboxEventProcessor {
     private final EventDispatcher eventDispatcher;
     private final OutboxEventRepository outboxEventRepository;
     private final EventWorkerProperties properties;
+    private final TimeProvider timeProvider;
     private final Counter processedCounter;
     private final Counter doneCounter;
     private final Counter failedCounter;
@@ -26,10 +28,12 @@ public class OutboxEventProcessor {
             EventDispatcher eventDispatcher,
             OutboxEventRepository outboxEventRepository,
             EventWorkerProperties properties,
+            TimeProvider timeProvider,
             MeterRegistry meterRegistry) {
         this.eventDispatcher = eventDispatcher;
         this.outboxEventRepository = outboxEventRepository;
         this.properties = properties;
+        this.timeProvider = timeProvider;
         this.processedCounter = meterRegistry.counter("app.events.worker.processed");
         this.doneCounter = meterRegistry.counter("app.events.worker.done");
         this.failedCounter = meterRegistry.counter("app.events.worker.failed");
@@ -49,7 +53,7 @@ public class OutboxEventProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markDone(ClaimedOutboxEvent event) {
         processedCounter.increment();
-        outboxEventRepository.markDone(event.id(), Instant.now());
+        outboxEventRepository.markDone(event.id(), timeProvider.now());
         doneCounter.increment();
         log.info(
                 "Outbox event processed successfully. id={}, eventId={}, eventType={}, attemptCount={}",
@@ -62,9 +66,9 @@ public class OutboxEventProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markFailed(ClaimedOutboxEvent event, Throwable errorCause) {
         processedCounter.increment();
-        Instant nextAttemptAt = Instant.now().plusMillis(computeBackoffMs(event.attemptCount()));
+        Instant nextAttemptAt = timeProvider.now().plusMillis(computeBackoffMs(event.attemptCount()));
         String error = truncatedError(errorCause);
-        outboxEventRepository.markFailed(event.id(), nextAttemptAt, error, Instant.now());
+        outboxEventRepository.markFailed(event.id(), nextAttemptAt, error, timeProvider.now());
         failedCounter.increment();
         if (event.attemptCount() < properties.getMaxAttempts()) {
             retryScheduledCounter.increment();

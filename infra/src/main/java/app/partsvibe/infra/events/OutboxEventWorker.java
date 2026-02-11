@@ -1,5 +1,6 @@
 package app.partsvibe.infra.events;
 
+import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -30,6 +31,7 @@ public class OutboxEventWorker {
     private final EventWorkerProperties properties;
     private final OutboxEventClaimService claimService;
     private final OutboxEventProcessor processor;
+    private final TimeProvider timeProvider;
     private final ThreadPoolTaskExecutor executor;
     private final CompletionService<EventExecutionOutcome> completionService;
     private final Semaphore inFlightSlots;
@@ -45,11 +47,13 @@ public class OutboxEventWorker {
             EventWorkerProperties properties,
             OutboxEventClaimService claimService,
             OutboxEventProcessor processor,
+            TimeProvider timeProvider,
             @Qualifier("outboxEventExecutor") ThreadPoolTaskExecutor executor,
             MeterRegistry meterRegistry) {
         this.properties = properties;
         this.claimService = claimService;
         this.processor = processor;
+        this.timeProvider = timeProvider;
         this.executor = executor;
         Executor completionExecutor =
                 executor.getThreadPoolExecutor() != null ? executor.getThreadPoolExecutor() : executor;
@@ -140,7 +144,7 @@ public class OutboxEventWorker {
                     event.eventType(),
                     event.attemptCount());
             Future<EventExecutionOutcome> future = completionService.submit(() -> executeEvent(event));
-            runningTasks.put(future, new RunningTask(event, Instant.now()));
+            runningTasks.put(future, new RunningTask(event, timeProvider.now()));
         } catch (RuntimeException ex) {
             inFlightSlots.release();
             executorRejectedCounter.increment();
@@ -224,7 +228,7 @@ public class OutboxEventWorker {
             return;
         }
 
-        Instant now = Instant.now();
+        Instant now = timeProvider.now();
         for (Map.Entry<Future<EventExecutionOutcome>, RunningTask> entry : runningTasks.entrySet()) {
             Future<EventExecutionOutcome> future = entry.getKey();
             RunningTask task = entry.getValue();

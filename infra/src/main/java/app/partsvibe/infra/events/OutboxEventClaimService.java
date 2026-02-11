@@ -1,5 +1,6 @@
 package app.partsvibe.infra.events;
 
+import app.partsvibe.shared.time.TimeProvider;
 import java.time.Instant;
 import java.util.List;
 import org.slf4j.Logger;
@@ -12,14 +13,16 @@ public class OutboxEventClaimService {
     private static final Logger log = LoggerFactory.getLogger(OutboxEventClaimService.class);
 
     private final OutboxEventRepository outboxEventRepository;
+    private final TimeProvider timeProvider;
 
-    public OutboxEventClaimService(OutboxEventRepository outboxEventRepository) {
+    public OutboxEventClaimService(OutboxEventRepository outboxEventRepository, TimeProvider timeProvider) {
         this.outboxEventRepository = outboxEventRepository;
+        this.timeProvider = timeProvider;
     }
 
     @Transactional
     public int requeueStaleProcessing(long processingTimeoutMs) {
-        Instant now = Instant.now();
+        Instant now = timeProvider.now();
         Instant lockedBefore = now.minusMillis(processingTimeoutMs);
         int requeued = outboxEventRepository.requeueStaleProcessing(lockedBefore, now);
         log.debug(
@@ -31,8 +34,9 @@ public class OutboxEventClaimService {
     }
 
     public List<ClaimedOutboxEvent> claimBatch(int batchSize, int maxAttempts, String workerId) {
+        Instant now = timeProvider.now();
         List<ClaimedOutboxEvent> claimed =
-                outboxEventRepository.claimBatchForProcessing(batchSize, maxAttempts, workerId);
+                outboxEventRepository.claimBatchForProcessing(batchSize, maxAttempts, workerId, now);
         log.debug(
                 "Claim batch finished. workerId={}, batchSize={}, maxAttempts={}, claimedCount={}",
                 workerId,
