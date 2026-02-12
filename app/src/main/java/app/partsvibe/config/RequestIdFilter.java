@@ -32,13 +32,10 @@ public class RequestIdFilter extends OncePerRequestFilter {
             requestId = UUID.randomUUID().toString();
         }
 
-        requestIdProvider.set(requestId);
         request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
         response.setHeader(REQUEST_ID_HEADER, requestId);
-        try {
+        try (var ignored = requestIdProvider.withRequestId(requestId)) {
             filterChain.doFilter(request, response);
-        } finally {
-            requestIdProvider.clear();
         }
     }
 }

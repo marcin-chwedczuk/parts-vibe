@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @Data
 public class EventQueueDispatcherProperties {
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     @Min(100)
     private long pollIntervalMs = 1000;

@@ -44,8 +44,7 @@ public class EventQueueConsumer {
         Event event = eventJsonSerializer.deserialize(entry.payload(), eventClass);
         String requestId = event.requestId().filter(value -> !value.isBlank()).orElseGet(() -> UUID.randomUUID()
                 .toString());
-        requestIdProvider.set(requestId);
-        try {
+        try (var ignored = requestIdProvider.withRequestId(requestId)) {
             List<ResolvedHandler> handlers = resolveHandlers(eventClass);
 
             log.debug(
@@ -91,8 +90,6 @@ public class EventQueueConsumer {
                                     .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
                 }
             }
-        } finally {
-            requestIdProvider.clear();
         }
     }
 

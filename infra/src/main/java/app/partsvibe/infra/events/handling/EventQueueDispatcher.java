@@ -125,6 +125,7 @@ public class EventQueueDispatcher {
                 if (timeoutTask != null) {
                     timeoutTask.cancel(false);
                 }
+                processingDurationMetrics.recordDurationBetween(processingStartedAt, timeProvider.now());
 
                 if (future.isCancelled()) {
                     log.debug("Event queue task was cancelled. event={}", event.toStringWithoutPayload());
@@ -140,7 +141,6 @@ public class EventQueueDispatcher {
                 }
             } finally {
                 inFlightSlots.release();
-                processingDurationMetrics.recordDurationBetween(processingStartedAt, timeProvider.now());
             }
         });
 
