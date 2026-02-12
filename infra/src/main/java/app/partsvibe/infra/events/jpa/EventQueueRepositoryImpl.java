@@ -164,7 +164,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         SELECT id
                         FROM event_queue
                         WHERE status IN ('NEW', 'FAILED')
-                          AND next_attempt_at <= now()
+                          AND next_attempt_at <= :now
                           AND attempt_count < :maxAttempts
                         ORDER BY id
                         FOR UPDATE SKIP LOCKED
@@ -172,6 +172,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         """)
                 .setParameter("maxAttempts", maxAttempts)
                 .setParameter("batchSize", batchSize)
+                .setParameter("now", now)
                 .getResultList();
 
         if (idRows.isEmpty()) {
