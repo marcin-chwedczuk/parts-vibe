@@ -31,7 +31,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int markDone(long id, Instant now) {
+    public int markEntryAsDone(long id, Instant now) {
         return entityManager
                 .createQuery(
                         """
@@ -44,8 +44,8 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         WHERE e.id = :id
                           AND e.status = :processingStatus
                         """)
-                .setParameter("doneStatus", EventQueueStatus.DONE)
-                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("doneStatus", EventQueueEntryStatus.DONE)
+                .setParameter("processingStatus", EventQueueEntryStatus.PROCESSING)
                 .setParameter("id", id)
                 .setParameter("now", now)
                 .executeUpdate();
@@ -53,7 +53,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int markFailed(long id, Instant nextAttemptAt, String lastError, Instant now) {
+    public int markEntryAsFailed(long id, Instant nextAttemptAt, String lastError, Instant now) {
         return entityManager
                 .createQuery(
                         """
@@ -67,8 +67,8 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         WHERE e.id = :id
                           AND e.status = :processingStatus
                         """)
-                .setParameter("failedStatus", EventQueueStatus.FAILED)
-                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("failedStatus", EventQueueEntryStatus.FAILED)
+                .setParameter("processingStatus", EventQueueEntryStatus.PROCESSING)
                 .setParameter("id", id)
                 .setParameter("nextAttemptAt", nextAttemptAt)
                 .setParameter("lastError", lastError)
@@ -78,7 +78,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int releaseForRetry(long id, Instant nextAttemptAt, Instant now) {
+    public int releaseClaimedEntry(long id, Instant nextAttemptAt, Instant now) {
         return entityManager
                 .createQuery(
                         """
@@ -91,8 +91,8 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         WHERE e.id = :id
                           AND e.status = :processingStatus
                         """)
-                .setParameter("newStatus", EventQueueStatus.NEW)
-                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("newStatus", EventQueueEntryStatus.NEW)
+                .setParameter("processingStatus", EventQueueEntryStatus.PROCESSING)
                 .setParameter("id", id)
                 .setParameter("nextAttemptAt", nextAttemptAt)
                 .setParameter("now", now)
@@ -101,7 +101,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int recoverTimedOutProcessing(Instant lockedBefore, Instant now) {
+    public int recoverTimedOutProcessingEntries(Instant lockedBefore, Instant now) {
         return entityManager
                 .createQuery(
                         """
@@ -115,8 +115,8 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                         WHERE e.status = :processingStatus
                           AND e.lockedAt < :lockedBefore
                         """)
-                .setParameter("failedStatus", EventQueueStatus.FAILED)
-                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("failedStatus", EventQueueEntryStatus.FAILED)
+                .setParameter("processingStatus", EventQueueEntryStatus.PROCESSING)
                 .setParameter("lastError", "Processing lock timeout reached.")
                 .setParameter("lockedBefore", lockedBefore)
                 .setParameter("now", now)
@@ -125,7 +125,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int deleteByStatusOlderThan(EventQueueStatus status, Instant cutoff, int limit) {
+    public int deleteEntriesByStatusOlderThan(EventQueueEntryStatus status, Instant cutoff, int limit) {
         if (limit <= 0) {
             return 0;
         }
@@ -150,7 +150,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public List<ClaimedEventQueueEntry> claimBatchForProcessing(
+    public List<ClaimedEventQueueEntry> claimEntriesForProcessing(
             int batchSize, int maxAttempts, String workerId, Instant now) {
         if (batchSize <= 0) {
             log.debug("Claim batch skipped because batchSize <= 0");
@@ -193,7 +193,7 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                             e.updatedAt = :now
                         WHERE e.id IN :ids
                         """)
-                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("processingStatus", EventQueueEntryStatus.PROCESSING)
                 .setParameter("now", now)
                 .setParameter("workerId", workerId)
                 .setParameter("ids", ids)

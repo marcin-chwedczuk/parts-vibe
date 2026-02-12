@@ -6,15 +6,13 @@ import java.util.List;
 public interface EventQueueRepository {
     EventQueueEntry save(EventQueueEntry entry);
 
-    int markDone(long id, Instant now);
+    int markEntryAsDone(long id, Instant now);
+    int markEntryAsFailed(long id, Instant nextAttemptAt, String lastError, Instant now);
 
-    int markFailed(long id, Instant nextAttemptAt, String lastError, Instant now);
+    int recoverTimedOutProcessingEntries(Instant lockedBefore, Instant now);
 
-    int releaseForRetry(long id, Instant nextAttemptAt, Instant now);
+    int deleteEntriesByStatusOlderThan(EventQueueEntryStatus status, Instant cutoff, int limit);
 
-    int recoverTimedOutProcessing(Instant lockedBefore, Instant now);
-
-    int deleteByStatusOlderThan(EventQueueStatus status, Instant cutoff, int limit);
-
-    List<ClaimedEventQueueEntry> claimBatchForProcessing(int batchSize, int maxAttempts, String workerId, Instant now);
+    List<ClaimedEventQueueEntry> claimEntriesForProcessing(int batchSize, int maxAttempts, String workerId, Instant now);
+    int releaseClaimedEntry(long id, Instant nextAttemptAt, Instant now);
 }

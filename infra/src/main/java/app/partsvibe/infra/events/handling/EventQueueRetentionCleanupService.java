@@ -1,7 +1,7 @@
 package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
-import app.partsvibe.infra.events.jpa.EventQueueStatus;
+import app.partsvibe.infra.events.jpa.EventQueueEntryStatus;
 import app.partsvibe.shared.time.TimeProvider;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -51,9 +51,9 @@ public class EventQueueRetentionCleanupService {
         int batchesExecuted = 0;
         while (true) {
             int doneDeleted =
-                    eventQueueRepository.deleteByStatusOlderThan(EventQueueStatus.DONE, doneCutoff, batchSize);
+                    eventQueueRepository.deleteEntriesByStatusOlderThan(EventQueueEntryStatus.DONE, doneCutoff, batchSize);
             int failedDeleted =
-                    eventQueueRepository.deleteByStatusOlderThan(EventQueueStatus.FAILED, failedCutoff, batchSize);
+                    eventQueueRepository.deleteEntriesByStatusOlderThan(EventQueueEntryStatus.FAILED, failedCutoff, batchSize);
             totalDoneDeleted += doneDeleted;
             totalFailedDeleted += failedDeleted;
             batchesExecuted++;

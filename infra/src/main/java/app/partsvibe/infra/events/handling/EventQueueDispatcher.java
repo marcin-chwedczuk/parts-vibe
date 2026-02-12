@@ -90,7 +90,7 @@ public class EventQueueDispatcher {
         }
 
         Instant claimedAt = timeProvider.now();
-        List<ClaimedEventQueueEntry> claimed = eventQueueRepository.claimBatchForProcessing(
+        List<ClaimedEventQueueEntry> claimed = eventQueueRepository.claimEntriesForProcessing(
                 capacity, properties.getMaxAttempts(), dispatcherId, claimedAt);
         if (claimed.isEmpty()) {
             log.debug("No event queue entries claimed. dispatcherId={}", dispatcherId);
@@ -114,7 +114,7 @@ public class EventQueueDispatcher {
             future = CompletableFuture.runAsync(() -> eventQueueConsumer.handle(event), eventQueueExecutor);
         } catch (RejectedExecutionException ex) {
             inFlightSlots.release();
-            releaseEventClaim(event, ex);
+            releaseClaimedEntry(event, ex);
             return;
         }
 
@@ -179,7 +179,7 @@ public class EventQueueDispatcher {
 
     private void markDone(ClaimedEventQueueEntry entry) {
         Instant now = timeProvider.now();
-        int updated = eventQueueRepository.markDone(entry.id(), now);
+        int updated = eventQueueRepository.markEntryAsDone(entry.id(), now);
         if (updated > 0) {
             doneCounter.increment();
             log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
@@ -194,7 +194,7 @@ public class EventQueueDispatcher {
         Instant now = timeProvider.now();
         Instant nextAttemptAt = now.plusMillis(backoffCalculator.computeDelayMs(entry.attemptCount()));
         String error = truncatedError(errorCause);
-        int updated = eventQueueRepository.markFailed(entry.id(), nextAttemptAt, error, now);
+        int updated = eventQueueRepository.markEntryAsFailed(entry.id(), nextAttemptAt, error, now);
         if (updated > 0) {
             failedCounter.increment();
             if (entry.attemptCount() < properties.getMaxAttempts()) {
@@ -229,9 +229,9 @@ public class EventQueueDispatcher {
         queueLagMetrics.recordDurationBetween(entry.occurredAt(), claimedAt);
     }
 
-    private void releaseEventClaim(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
+    private void releaseClaimedEntry(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
         Instant now = timeProvider.now();
-        int updated = eventQueueRepository.releaseForRetry(entry.id(), now, now);
+        int updated = eventQueueRepository.releaseClaimedEntry(entry.id(), now, now);
         if (updated > 0) {
             log.warn(
                     "Event queue entry released for retry after executor rejection. entry={}",

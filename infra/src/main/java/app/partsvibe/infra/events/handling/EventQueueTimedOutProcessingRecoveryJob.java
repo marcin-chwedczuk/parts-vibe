@@ -35,7 +35,7 @@ public class EventQueueTimedOutProcessingRecoveryJob {
         Instant now = timeProvider.now();
         Instant lockedBefore = now.minusMillis(properties.getProcessingTimeoutMs());
 
-        int recovered = eventQueueRepository.recoverTimedOutProcessing(lockedBefore, now);
+        int recovered = eventQueueRepository.recoverTimedOutProcessingEntries(lockedBefore, now);
         if (recovered > 0) {
             log.warn(
                     "Recovered timed-out PROCESSING event queue entries. count={}, processingTimeoutMs={}, lockedBefore={}",

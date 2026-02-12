@@ -1,6 +1,6 @@
 package app.partsvibe.infra.events.jpa;
 
-public enum EventQueueStatus {
+public enum EventQueueEntryStatus {
     NEW,
     PROCESSING,
     DONE,

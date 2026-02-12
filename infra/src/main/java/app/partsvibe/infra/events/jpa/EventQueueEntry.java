@@ -61,7 +61,7 @@ public class EventQueueEntry {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    private EventQueueStatus status;
+    private EventQueueEntryStatus status;
 
     @Column(name = "attempt_count", nullable = false)
     private int attemptCount;
@@ -111,7 +111,7 @@ public class EventQueueEntry {
         entity.occurredAt = occurredAt;
         entity.requestId = requestId;
         entity.payload = payload;
-        entity.status = EventQueueStatus.NEW;
+        entity.status = EventQueueEntryStatus.NEW;
         entity.attemptCount = 0;
         entity.nextAttemptAt = Instant.now();
         return entity;
@@ -145,7 +145,7 @@ public class EventQueueEntry {
         return payload;
     }
 
-    public EventQueueStatus getStatus() {
+    public EventQueueEntryStatus getStatus() {
         return status;
     }
 
