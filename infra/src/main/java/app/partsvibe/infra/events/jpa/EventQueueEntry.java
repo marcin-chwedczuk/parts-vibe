@@ -28,6 +28,8 @@ import org.hibernate.type.SqlTypes;
             @Index(name = "idx_event_queue_occurred_at", columnList = "occurred_at")
         })
 public class EventQueueEntry {
+    public static final int LAST_ERROR_MAX_LENGTH = 2000;
+
     @Id
     // TODO: Investigate why event_queue.id DB schema is inconsistent with IDENTITY generation in local env.
     // IDENTITY currently causes INSERT failures with id=NULL, while this sequence mapping works reliably.
@@ -73,7 +75,7 @@ public class EventQueueEntry {
     @Column(name = "locked_by", length = 120)
     private String lockedBy;
 
-    @Column(name = "last_error", length = 2000)
+    @Column(name = "last_error", length = LAST_ERROR_MAX_LENGTH)
     private String lastError;
 
     @Column(name = "created_at", nullable = false, columnDefinition = "timestamp with time zone")
