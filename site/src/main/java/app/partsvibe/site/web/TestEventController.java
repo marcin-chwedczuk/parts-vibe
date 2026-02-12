@@ -46,7 +46,7 @@ public class TestEventController {
             return "test-event";
         }
 
-        String requestId = requestIdProvider.requestId();
+        String requestId = requestIdProvider.currentOrElse("unknown");
         UUID eventId = testEventService.publishTestEvent(requestId, testEventForm.getMessage());
         log.info("Test event published. eventId={}, requestId={}", eventId, requestId);
 

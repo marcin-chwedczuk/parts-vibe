@@ -50,7 +50,7 @@ public class EventQueueEntry {
     @Column(name = "occurred_at", nullable = false, columnDefinition = "timestamp with time zone")
     private Instant occurredAt;
 
-    @Column(name = "request_id", nullable = false, length = 64)
+    @Column(name = "request_id", length = 64)
     private String requestId;
 
     // TODO: Verify if this is correct approach, looks like we are casting to jsonb on DB side

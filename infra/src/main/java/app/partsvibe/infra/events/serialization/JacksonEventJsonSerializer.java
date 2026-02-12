@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
 
     public JacksonEventJsonSerializer() {
         this.objectMapper = JsonMapper.builder()
+                .addModule(new Jdk8Module())
                 .addModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 // TODO: Do we really need this? Seems fishy?
@@ -48,7 +50,7 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
                     event.eventId(),
                     eventType,
                     schemaVersion,
-                    event.requestId(),
+                    event.requestId().orElse("<none>"),
                     e);
             throw new EventPublisherException(
                     "Failed to serialize event payload. eventId=%s, eventName=%s, schemaVersion=%d"

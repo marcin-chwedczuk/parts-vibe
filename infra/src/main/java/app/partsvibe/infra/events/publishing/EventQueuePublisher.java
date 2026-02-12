@@ -50,7 +50,7 @@ public class EventQueuePublisher implements EventPublisher {
                     metadata.eventName(),
                     metadata.schemaVersion(),
                     event.occurredAt(),
-                    event.requestId(),
+                    event.requestId().orElse(null),
                     payloadJson);
             repository.save(entry);
             publishSuccessCounter.increment();
@@ -59,7 +59,7 @@ public class EventQueuePublisher implements EventPublisher {
                     event.eventId(),
                     metadata.eventName(),
                     metadata.schemaVersion(),
-                    event.requestId());
+                    event.requestId().orElse("<none>"));
         } catch (EventPublisherException e) {
             publishErrorsCounter.increment();
             throw e;

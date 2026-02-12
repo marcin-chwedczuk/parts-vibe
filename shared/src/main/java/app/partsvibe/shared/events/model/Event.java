@@ -1,6 +1,7 @@
 package app.partsvibe.shared.events.model;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface Event {
@@ -8,6 +9,5 @@ public interface Event {
 
     Instant occurredAt();
 
-    // TODO: Make Optional
-    String requestId();
+    Optional<String> requestId();
 }

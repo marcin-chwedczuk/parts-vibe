@@ -5,8 +5,10 @@ import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.infra.utils.ThrowableUtils;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.request.RequestIdProvider;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -23,64 +25,74 @@ public class EventQueueConsumer {
     private final EventTypeRegistry eventTypeRegistry;
     private final EventJsonSerializer eventJsonSerializer;
     private final ListableBeanFactory beanFactory;
+    private final RequestIdProvider requestIdProvider;
 
     public EventQueueConsumer(
             EventTypeRegistry eventTypeRegistry,
             EventJsonSerializer eventJsonSerializer,
-            ListableBeanFactory beanFactory) {
+            ListableBeanFactory beanFactory,
+            RequestIdProvider requestIdProvider) {
         this.eventTypeRegistry = eventTypeRegistry;
         this.eventJsonSerializer = eventJsonSerializer;
         this.beanFactory = beanFactory;
+        this.requestIdProvider = requestIdProvider;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ClaimedEventQueueEntry entry) {
         Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(entry.eventType(), entry.schemaVersion());
         Event event = eventJsonSerializer.deserialize(entry.payload(), eventClass);
-        List<ResolvedHandler> handlers = resolveHandlers(eventClass);
+        String requestId = event.requestId().filter(value -> !value.isBlank()).orElseGet(() -> UUID.randomUUID()
+                .toString());
+        requestIdProvider.set(requestId);
+        try {
+            List<ResolvedHandler> handlers = resolveHandlers(eventClass);
 
-        log.debug(
-                "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
-                entry.toStringWithoutPayload(),
-                handlers.size());
-
-        for (ResolvedHandler resolvedHandler : handlers) {
-            String handlerClassName = handlerClassName(resolvedHandler.handler());
             log.debug(
-                    "Invoking event handler. entry={}, handlerBeanName={}, handlerClass={}",
+                    "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
                     entry.toStringWithoutPayload(),
-                    resolvedHandler.beanName(),
-                    handlerClassName);
-            try {
-                invokeHandler(resolvedHandler.handler(), event);
-            } catch (RuntimeException ex) {
-                String causeMessage = ThrowableUtils.safeMessage(ex);
-                log.error(
-                        "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
+                    handlers.size());
+
+            for (ResolvedHandler resolvedHandler : handlers) {
+                String handlerClassName = handlerClassName(resolvedHandler.handler());
+                log.debug(
+                        "Invoking event handler. entry={}, handlerBeanName={}, handlerClass={}",
                         entry.toStringWithoutPayload(),
                         resolvedHandler.beanName(),
-                        handlerClassName,
-                        ex.getClass().getSimpleName(),
-                        causeMessage,
-                        ex);
-                throw new EventDispatchException(
-                        "Event handler failed. eventId=%s, eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
-                                .formatted(
-                                        entry.eventId(),
-                                        entry.eventType(),
-                                        entry.schemaVersion(),
-                                        resolvedHandler.beanName(),
-                                        handlerClassName,
-                                        ex.getClass().getSimpleName(),
-                                        causeMessage),
-                        ex);
-            }
+                        handlerClassName);
+                try {
+                    invokeHandler(resolvedHandler.handler(), event);
+                } catch (RuntimeException ex) {
+                    String causeMessage = ThrowableUtils.safeMessage(ex);
+                    log.error(
+                            "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
+                            entry.toStringWithoutPayload(),
+                            resolvedHandler.beanName(),
+                            handlerClassName,
+                            ex.getClass().getSimpleName(),
+                            causeMessage,
+                            ex);
+                    throw new EventDispatchException(
+                            "Event handler failed. eventId=%s, eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
+                                    .formatted(
+                                            entry.eventId(),
+                                            entry.eventType(),
+                                            entry.schemaVersion(),
+                                            resolvedHandler.beanName(),
+                                            handlerClassName,
+                                            ex.getClass().getSimpleName(),
+                                            causeMessage),
+                            ex);
+                }
 
-            if (Thread.currentThread().isInterrupted()) {
-                throw new EventDispatchException(
-                        "Event handling thread interrupted. eventId=%s, eventName=%s, schemaVersion=%d"
-                                .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new EventDispatchException(
+                            "Event handling thread interrupted. eventId=%s, eventName=%s, schemaVersion=%d"
+                                    .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
+                }
             }
+        } finally {
+            requestIdProvider.clear();
         }
     }
 
