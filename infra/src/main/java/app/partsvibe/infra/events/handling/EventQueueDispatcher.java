@@ -4,17 +4,20 @@ import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,12 @@ public class EventQueueDispatcher {
     private final Semaphore inFlightSlots;
     private final String workerId;
     private final Counter claimedCounter;
+    private final Counter doneCounter;
+    private final Counter failedCounter;
     private final Counter timeoutCancelledCounter;
+    private final DistributionSummary lagSummary;
+    private final AtomicLong lastLagMs;
+    private final AtomicLong lastProcessedEpochMs;
 
     public EventQueueDispatcher(
             EventQueueDispatcherProperties properties,
@@ -55,7 +63,23 @@ public class EventQueueDispatcher {
         this.workerId = "worker-" + UUID.randomUUID();
 
         this.claimedCounter = meterRegistry.counter("app.event-queue.events.claimed");
+        this.doneCounter = meterRegistry.counter("app.event-queue.events.done");
+        this.failedCounter = meterRegistry.counter("app.event-queue.events.failed");
         this.timeoutCancelledCounter = meterRegistry.counter("app.event-queue.events.timed-out");
+
+        this.lagSummary = DistributionSummary.builder("app.event-queue.events.lag.ms")
+                .baseUnit("milliseconds")
+                .register(meterRegistry);
+        this.lastLagMs = new AtomicLong(0);
+        this.lastProcessedEpochMs = new AtomicLong(0);
+        meterRegistry.gauge("app.event-queue.events.lag.last.ms", lastLagMs, AtomicLong::get);
+        meterRegistry.gauge("app.event-queue.events.last-processed.age.seconds", lastProcessedEpochMs, value -> {
+            long last = value.get();
+            if (last <= 0) {
+                return -1.0;
+            }
+            return Math.max(0.0, (System.currentTimeMillis() - last) / 1000.0);
+        });
 
         log.info("Event queue dispatcher initialized. properties={}", properties);
     }
@@ -93,7 +117,7 @@ public class EventQueueDispatcher {
 
         CompletableFuture<Void> future;
         try {
-            future = CompletableFuture.runAsync(() -> eventQueueConsumer.consume(entry), eventQueueExecutor);
+            future = CompletableFuture.runAsync(() -> eventQueueConsumer.handle(entry), eventQueueExecutor);
         } catch (RejectedExecutionException ex) {
             inFlightSlots.release();
             releaseEventClaim(entry, ex);
@@ -102,17 +126,30 @@ public class EventQueueDispatcher {
 
         AtomicReference<ScheduledFuture<?>> timeoutTaskRef = new AtomicReference<>();
         future.whenComplete((ignored, throwable) -> {
-            ScheduledFuture<?> timeoutTask = timeoutTaskRef.get();
-            if (timeoutTask != null) {
-                timeoutTask.cancel(false);
-            }
-            inFlightSlots.release();
+            try {
+                ScheduledFuture<?> timeoutTask = timeoutTaskRef.get();
+                if (timeoutTask != null) {
+                    timeoutTask.cancel(false);
+                }
 
-            if (throwable != null) {
+                if (throwable == null) {
+                    markDone(entry);
+                    return;
+                }
+
+                if (future.isCancelled()) {
+                    log.debug("Event queue task was cancelled. entry={}", entry.toStringWithoutPayload());
+                    return;
+                }
+
+                Throwable cause = unwrapCompletionThrowable(throwable);
+                markFailed(entry, cause);
                 log.debug(
-                        "Event queue task completed exceptionally (failure already handled by consumer or timeout fallback). entry={}, errorType={}",
+                        "Event queue task completed exceptionally. entry={}, errorType={}",
                         entry.toStringWithoutPayload(),
-                        throwable.getClass().getSimpleName());
+                        cause.getClass().getSimpleName());
+            } finally {
+                inFlightSlots.release();
             }
         });
 
@@ -124,7 +161,7 @@ public class EventQueueDispatcher {
                             if (future.isDone()) {
                                 return;
                             }
-                            eventQueueConsumer.markTimedOutIfProcessing(entry, timeoutMs);
+                            markTimedOut(entry, timeoutMs);
                             if (future.cancel(true)) {
                                 timeoutCancelledCounter.increment();
                                 log.warn(
@@ -137,7 +174,7 @@ public class EventQueueDispatcher {
                         TimeUnit.MILLISECONDS);
                 timeoutTaskRef.set(timeoutTask);
             } catch (RuntimeException ex) {
-                // Timeout watchdog is best-effort. If scheduler rejects, keep processing and rely on stale recovery.
+                // Timeout watchdog is best-effort. If scheduler fails, keep processing and rely on stale recovery.
                 log.warn(
                         "Timeout watchdog scheduling failed. entry={}, timeoutMs={}",
                         entry.toStringWithoutPayload(),
@@ -147,6 +184,63 @@ public class EventQueueDispatcher {
         }
 
         log.debug("Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
+    }
+
+    private void markDone(ClaimedEventQueueEntry entry) {
+        Instant now = timeProvider.now();
+        int updated = eventQueueRepository.markDone(entry.id(), now);
+        if (updated > 0) {
+            doneCounter.increment();
+            recordLag(entry, now);
+            log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
+        } else {
+            log.debug(
+                    "Skipping DONE transition because event queue entry is no longer PROCESSING. entry={}",
+                    entry.toStringWithoutPayload());
+        }
+    }
+
+    private void markFailed(ClaimedEventQueueEntry entry, Throwable errorCause) {
+        Instant now = timeProvider.now();
+        Instant nextAttemptAt = now.plusMillis(computeBackoffMs(entry.attemptCount()));
+        String error = truncatedError(errorCause);
+        int updated = eventQueueRepository.markFailed(entry.id(), nextAttemptAt, error, now);
+        if (updated > 0) {
+            failedCounter.increment();
+            recordLag(entry, now);
+            if (entry.attemptCount() < properties.getMaxAttempts()) {
+                log.debug(
+                        "Scheduled event queue retry. entry={}, nextAttemptAt={}",
+                        entry.toStringWithoutPayload(),
+                        nextAttemptAt);
+            } else {
+                log.warn(
+                        "Event queue entry reached max attempts and will remain FAILED. entry={}",
+                        entry.toStringWithoutPayload());
+            }
+            log.error(
+                    "Event queue processing failed. entry={}, nextAttemptAt={}, errorSummary={}",
+                    entry.toStringWithoutPayload(),
+                    nextAttemptAt,
+                    error,
+                    errorCause);
+        } else {
+            log.debug(
+                    "Skipping FAILED transition because event queue entry is no longer PROCESSING. entry={}, errorSummary={}",
+                    entry.toStringWithoutPayload(),
+                    error);
+        }
+    }
+
+    private void markTimedOut(ClaimedEventQueueEntry entry, long timeoutMs) {
+        markFailed(entry, new IllegalStateException("Event handler timed out after %d ms".formatted(timeoutMs)));
+    }
+
+    private void recordLag(ClaimedEventQueueEntry entry, Instant now) {
+        long lagMs = Math.max(0L, now.toEpochMilli() - entry.occurredAt().toEpochMilli());
+        lagSummary.record(lagMs);
+        lastLagMs.set(lagMs);
+        lastProcessedEpochMs.set(now.toEpochMilli());
     }
 
     private void releaseEventClaim(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
@@ -163,5 +257,48 @@ public class EventQueueDispatcher {
                     entry.toStringWithoutPayload(),
                     ex);
         }
+    }
+
+    private long computeBackoffMs(int attemptCount) {
+        double scaled = properties.getBackoffInitialMs()
+                * Math.pow(properties.getBackoffMultiplier(), Math.max(0, attemptCount - 1));
+        long backoff = Math.round(scaled);
+        return Math.min(backoff, properties.getBackoffMaxMs());
+    }
+
+    private static Throwable unwrapCompletionThrowable(Throwable throwable) {
+        if (throwable instanceof CompletionException completionException && completionException.getCause() != null) {
+            return completionException.getCause();
+        }
+        return throwable;
+    }
+
+    private static String truncatedError(Throwable throwable) {
+        String text = throwable == null ? null : throwable.getMessage();
+        String rootCauseSummary = rootCauseSummary(throwable);
+        if (text == null || text.isBlank()) {
+            text = rootCauseSummary;
+        } else if (!text.contains(rootCauseSummary)) {
+            text = text + " | rootCause=" + rootCauseSummary;
+        }
+        if (text.length() <= 2000) {
+            return text;
+        }
+        return text.substring(0, 2000);
+    }
+
+    private static String rootCauseSummary(Throwable throwable) {
+        if (throwable == null) {
+            return "<no-cause>";
+        }
+        Throwable root = throwable;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        String rootMessage = root.getMessage();
+        if (rootMessage == null || rootMessage.isBlank()) {
+            rootMessage = "<no-message>";
+        }
+        return root.getClass().getSimpleName() + ": " + rootMessage;
     }
 }

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
@@ -30,7 +31,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int markDone(long id, Instant now) {
         // TODO: Can be just operation on entire entity, use Spring Data repo
         return entityManager
@@ -53,7 +54,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int markFailed(long id, Instant nextAttemptAt, String lastError, Instant now) {
         return entityManager
                 .createQuery(
@@ -78,7 +79,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int releaseForRetry(long id, Instant nextAttemptAt, Instant now) {
         return entityManager
                 .createQuery(

@@ -1,26 +1,16 @@
 package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
-import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
-import app.partsvibe.shared.time.TimeProvider;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ClassUtils;
 
 @Component
@@ -29,74 +19,18 @@ public class EventQueueConsumer {
 
     private final EventTypeRegistry eventTypeRegistry;
     private final EventJsonSerializer eventJsonSerializer;
-    private final EventQueueRepository eventQueueRepository;
     private final ListableBeanFactory beanFactory;
-    private final EventQueueDispatcherProperties properties;
-    private final TimeProvider timeProvider;
-    private final TransactionTemplate requiresNewTx;
-    private final Counter doneCounter;
-    private final Counter failedCounter;
-    private final DistributionSummary lagSummary;
-    private final AtomicLong lastLagMs;
-    private final AtomicLong lastProcessedEpochMs;
 
     public EventQueueConsumer(
             EventTypeRegistry eventTypeRegistry,
             EventJsonSerializer eventJsonSerializer,
-            EventQueueRepository eventQueueRepository,
-            ListableBeanFactory beanFactory,
-            EventQueueDispatcherProperties properties,
-            TimeProvider timeProvider,
-            PlatformTransactionManager transactionManager,
-            MeterRegistry meterRegistry) {
+            ListableBeanFactory beanFactory) {
         this.eventTypeRegistry = eventTypeRegistry;
         this.eventJsonSerializer = eventJsonSerializer;
-        this.eventQueueRepository = eventQueueRepository;
         this.beanFactory = beanFactory;
-        this.properties = properties;
-        this.timeProvider = timeProvider;
-        this.requiresNewTx = new TransactionTemplate(transactionManager);
-        this.requiresNewTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        this.doneCounter = meterRegistry.counter("app.event-queue.events.done");
-        this.failedCounter = meterRegistry.counter("app.event-queue.events.failed");
-        this.lagSummary = DistributionSummary.builder("app.event-queue.events.lag.ms")
-                .baseUnit("milliseconds")
-                .register(meterRegistry);
-        this.lastLagMs = new AtomicLong(0);
-        this.lastProcessedEpochMs = new AtomicLong(0);
-        meterRegistry.gauge("app.event-queue.events.lag.last.ms", lastLagMs, AtomicLong::get);
-        meterRegistry.gauge("app.event-queue.events.last-processed.age.seconds", lastProcessedEpochMs, value -> {
-            long last = value.get();
-            if (last <= 0) {
-                return -1.0;
-            }
-            return Math.max(0.0, (System.currentTimeMillis() - last) / 1000.0);
-        });
     }
 
-    public void consume(ClaimedEventQueueEntry entry) {
-        try {
-            dispatchToHandlers(entry);
-            markDone(entry);
-        } catch (RuntimeException ex) {
-            markFailed(entry, ex);
-            throw ex;
-        } catch (Error ex) {
-            markFailed(entry, ex);
-            throw ex;
-        }
-    }
-
-    public void markTimedOutIfProcessing(ClaimedEventQueueEntry entry, long timeoutMs) {
-        Throwable timeoutError = new IllegalStateException("Event handler timed out after %d ms".formatted(timeoutMs));
-        markFailedIfProcessing(entry, timeoutError);
-    }
-
-    public void markFailedIfProcessing(ClaimedEventQueueEntry entry, Throwable errorCause) {
-        markFailed(entry, errorCause);
-    }
-
-    private void dispatchToHandlers(ClaimedEventQueueEntry entry) {
+    public void handle(ClaimedEventQueueEntry entry) {
         Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(entry.eventType(), entry.schemaVersion());
         Event event = eventJsonSerializer.deserialize(entry.payload(), eventClass);
         List<ResolvedHandler> handlers = resolveHandlers(eventClass);
@@ -144,98 +78,6 @@ public class EventQueueConsumer {
                                 .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
             }
         }
-    }
-
-    private void markDone(ClaimedEventQueueEntry entry) {
-        requiresNewTx.executeWithoutResult(status -> {
-            int updated = eventQueueRepository.markDone(entry.id(), timeProvider.now());
-            if (updated > 0) {
-                doneCounter.increment();
-                recordLag(entry, timeProvider.now());
-                log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
-            } else {
-                log.debug(
-                        "Skipping DONE transition because event queue entry is no longer PROCESSING. entry={}",
-                        entry.toStringWithoutPayload());
-            }
-        });
-    }
-
-    private void markFailed(ClaimedEventQueueEntry entry, Throwable errorCause) {
-        requiresNewTx.executeWithoutResult(status -> {
-            Instant now = timeProvider.now();
-            Instant nextAttemptAt = now.plusMillis(computeBackoffMs(entry.attemptCount()));
-            String error = truncatedError(errorCause);
-            int updated = eventQueueRepository.markFailed(entry.id(), nextAttemptAt, error, now);
-            if (updated > 0) {
-                failedCounter.increment();
-                recordLag(entry, now);
-                if (entry.attemptCount() < properties.getMaxAttempts()) {
-                    log.debug(
-                            "Scheduled event queue retry. entry={}, nextAttemptAt={}",
-                            entry.toStringWithoutPayload(),
-                            nextAttemptAt);
-                } else {
-                    log.warn(
-                            "Event queue entry reached max attempts and will remain FAILED. entry={}",
-                            entry.toStringWithoutPayload());
-                }
-                log.error(
-                        "Event queue processing failed. entry={}, nextAttemptAt={}, errorSummary={}",
-                        entry.toStringWithoutPayload(),
-                        nextAttemptAt,
-                        error,
-                        errorCause);
-            } else {
-                log.debug(
-                        "Skipping FAILED transition because event queue entry is no longer PROCESSING. entry={}, errorSummary={}",
-                        entry.toStringWithoutPayload(),
-                        error);
-            }
-        });
-    }
-
-    private void recordLag(ClaimedEventQueueEntry entry, Instant now) {
-        long lagMs = Math.max(0L, now.toEpochMilli() - entry.occurredAt().toEpochMilli());
-        lagSummary.record(lagMs);
-        lastLagMs.set(lagMs);
-        lastProcessedEpochMs.set(now.toEpochMilli());
-    }
-
-    private long computeBackoffMs(int attemptCount) {
-        double scaled = properties.getBackoffInitialMs()
-                * Math.pow(properties.getBackoffMultiplier(), Math.max(0, attemptCount - 1));
-        long backoff = Math.round(scaled);
-        return Math.min(backoff, properties.getBackoffMaxMs());
-    }
-
-    private static String truncatedError(Throwable throwable) {
-        String text = throwable == null ? null : throwable.getMessage();
-        String rootCauseSummary = rootCauseSummary(throwable);
-        if (text == null || text.isBlank()) {
-            text = rootCauseSummary;
-        } else if (!text.contains(rootCauseSummary)) {
-            text = text + " | rootCause=" + rootCauseSummary;
-        }
-        if (text.length() <= 2000) {
-            return text;
-        }
-        return text.substring(0, 2000);
-    }
-
-    private static String rootCauseSummary(Throwable throwable) {
-        if (throwable == null) {
-            return "<no-cause>";
-        }
-        Throwable root = throwable;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        String rootMessage = root.getMessage();
-        if (rootMessage == null || rootMessage.isBlank()) {
-            rootMessage = "<no-message>";
-        }
-        return root.getClass().getSimpleName() + ": " + rootMessage;
     }
 
     private static String safeMessage(Throwable throwable) {
