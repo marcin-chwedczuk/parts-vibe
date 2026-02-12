@@ -14,14 +14,14 @@ import org.springframework.stereotype.Component;
 public class EventQueueRetentionCleanupJob {
     private static final Logger log = LoggerFactory.getLogger(EventQueueRetentionCleanupJob.class);
 
-    private final EventQueueWorkerProperties properties;
+    private final EventQueueDispatcherProperties properties;
     private final EventQueueRepository eventQueueRepository;
     private final TimeProvider timeProvider;
     private final Counter doneDeletedCounter;
     private final Counter failedDeletedCounter;
 
     public EventQueueRetentionCleanupJob(
-            EventQueueWorkerProperties properties,
+            EventQueueDispatcherProperties properties,
             EventQueueRepository eventQueueRepository,
             TimeProvider timeProvider,
             MeterRegistry meterRegistry) {
@@ -32,7 +32,7 @@ public class EventQueueRetentionCleanupJob {
         this.failedDeletedCounter = meterRegistry.counter("app.events.worker.retention.failed.deleted");
     }
 
-    @Scheduled(fixedDelayString = "${app.events.worker.retention-cleanup-interval-ms:3600000}")
+    @Scheduled(fixedDelayString = "${app.events.dispatcher.retention-cleanup-interval-ms:3600000}")
     public void cleanup() {
         if (!properties.isEnabled()) {
             return;

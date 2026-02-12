@@ -11,13 +11,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 public class EventQueueExecutorConfig {
     @Bean(name = "eventQueueExecutor")
-    public ThreadPoolTaskExecutor eventQueueExecutor(EventQueueWorkerProperties properties) {
+    public ThreadPoolTaskExecutor eventQueueExecutor(EventQueueDispatcherProperties properties) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setThreadNamePrefix("event-handling-worker-");
         executor.setDaemon(true);
-        executor.setCorePoolSize(properties.getPoolSize());
-        executor.setMaxPoolSize(properties.getPoolSize());
-        executor.setQueueCapacity(properties.getQueueCapacity());
+        executor.setCorePoolSize(properties.getThreadPoolSize());
+        executor.setMaxPoolSize(properties.getThreadPoolSize());
+        executor.setQueueCapacity(properties.getThreadPoolQueueCapacity());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(30);
         executor.initialize();

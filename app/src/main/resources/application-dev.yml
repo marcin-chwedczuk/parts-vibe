@@ -14,7 +14,7 @@ spring:
 
 app:
   events:
-    worker:
+    dispatcher:
       enabled: true
 
 logging:

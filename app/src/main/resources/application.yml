@@ -70,20 +70,23 @@ app:
     connect-timeout-ms: ${CLAMAV_CONNECT_TIMEOUT_MS:2000}
     read-timeout-ms: ${CLAMAV_READ_TIMEOUT_MS:10000}
   events:
-    worker:
-      enabled: ${APP_EVENTS_WORKER_ENABLED:false}
-      poll-interval-ms: ${APP_EVENTS_WORKER_POLL_INTERVAL_MS:1000}
-      stale-recovery-interval-ms: ${APP_EVENTS_WORKER_STALE_RECOVERY_INTERVAL_MS:60000}
-      retention-cleanup-interval-ms: ${APP_EVENTS_WORKER_RETENTION_CLEANUP_INTERVAL_MS:3600000}
-      batch-size: ${APP_EVENTS_WORKER_BATCH_SIZE:20}
-      pool-size: ${APP_EVENTS_WORKER_POOL_SIZE:4}
-      queue-capacity: ${APP_EVENTS_WORKER_QUEUE_CAPACITY:200}
-      retention-delete-batch-size: ${APP_EVENTS_WORKER_RETENTION_DELETE_BATCH_SIZE:500}
-      done-retention-days: ${APP_EVENTS_WORKER_DONE_RETENTION_DAYS:30}
-      failed-retention-days: ${APP_EVENTS_WORKER_FAILED_RETENTION_DAYS:90}
-      processing-timeout-ms: ${APP_EVENTS_WORKER_PROCESSING_TIMEOUT_MS:120000}
-      max-attempts: ${APP_EVENTS_WORKER_MAX_ATTEMPTS:10}
-      backoff-initial-ms: ${APP_EVENTS_WORKER_BACKOFF_INITIAL_MS:1000}
-      backoff-multiplier: ${APP_EVENTS_WORKER_BACKOFF_MULTIPLIER:2.0}
-      backoff-max-ms: ${APP_EVENTS_WORKER_BACKOFF_MAX_MS:300000}
-      handler-timeout-ms: ${APP_EVENTS_WORKER_HANDLER_TIMEOUT_MS:60000}
+    dispatcher:
+      enabled: ${APP_EVENTS_DISPATCHER_ENABLED:false}
+      poll-interval-ms: ${APP_EVENTS_DISPATCHER_POLL_INTERVAL_MS:1000}
+      max-attempts: ${APP_EVENTS_DISPATCHER_MAX_ATTEMPTS:10}
+      thread-pool-size: ${APP_EVENTS_DISPATCHER_THREAD_POOL_SIZE:32}
+      thread-pool-queue-capacity: ${APP_EVENTS_DISPATCHER_THREAD_POOL_QUEUE_CAPACITY:8}
+      # Max time for a single handler execution before timeout/cancel is requested.
+      handler-timeout-ms: ${APP_EVENTS_DISPATCHER_HANDLER_TIMEOUT_MS:60000}
+      # If a PROCESSING row stays locked longer than this, stale-recovery marks it FAILED for retry.
+      processing-timeout-ms: ${APP_EVENTS_DISPATCHER_PROCESSING_TIMEOUT_MS:120000}
+      # Retry backoff: nextAttemptAt = initial * multiplier^(attempt-1), capped by backoff-max.
+      backoff-initial-ms: ${APP_EVENTS_DISPATCHER_BACKOFF_INITIAL_MS:1000}
+      backoff-multiplier: ${APP_EVENTS_DISPATCHER_BACKOFF_MULTIPLIER:2.0}
+      backoff-max-ms: ${APP_EVENTS_DISPATCHER_BACKOFF_MAX_MS:300000}
+      # Separate maintenance jobs to keep dispatcher loop lightweight.
+      stale-recovery-interval-ms: ${APP_EVENTS_DISPATCHER_STALE_RECOVERY_INTERVAL_MS:60000}
+      retention-cleanup-interval-ms: ${APP_EVENTS_DISPATCHER_RETENTION_CLEANUP_INTERVAL_MS:3600000}
+      retention-delete-batch-size: ${APP_EVENTS_DISPATCHER_RETENTION_DELETE_BATCH_SIZE:500}
+      done-retention-days: ${APP_EVENTS_DISPATCHER_DONE_RETENTION_DAYS:30}
+      failed-retention-days: ${APP_EVENTS_DISPATCHER_FAILED_RETENTION_DAYS:90}

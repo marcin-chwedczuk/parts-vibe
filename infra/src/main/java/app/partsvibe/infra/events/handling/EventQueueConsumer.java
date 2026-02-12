@@ -29,7 +29,7 @@ public class EventQueueConsumer {
     private final EventJsonSerializer eventJsonSerializer;
     private final EventQueueRepository eventQueueRepository;
     private final ListableBeanFactory beanFactory;
-    private final EventQueueWorkerProperties properties;
+    private final EventQueueDispatcherProperties properties;
     private final TimeProvider timeProvider;
     private final TransactionTemplate requiresNewTx;
     private final Counter dispatchAttemptsCounter;
@@ -45,7 +45,7 @@ public class EventQueueConsumer {
             EventJsonSerializer eventJsonSerializer,
             EventQueueRepository eventQueueRepository,
             ListableBeanFactory beanFactory,
-            EventQueueWorkerProperties properties,
+            EventQueueDispatcherProperties properties,
             TimeProvider timeProvider,
             PlatformTransactionManager transactionManager,
             MeterRegistry meterRegistry) {
@@ -148,8 +148,7 @@ public class EventQueueConsumer {
             int updated = eventQueueRepository.markDone(entry.id(), timeProvider.now());
             if (updated > 0) {
                 doneCounter.increment();
-                log.info(
-                        "Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
+                log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
             } else {
                 log.debug(
                         "Skipping DONE transition because event queue entry is no longer PROCESSING. entry={}",

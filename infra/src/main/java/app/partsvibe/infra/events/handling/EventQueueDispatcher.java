@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 public class EventQueueDispatcher {
     private static final Logger log = LoggerFactory.getLogger(EventQueueDispatcher.class);
 
-    private final EventQueueWorkerProperties properties;
+    private final EventQueueDispatcherProperties properties;
     private final EventQueueRepository eventQueueRepository;
     private final EventQueueConsumer eventQueueConsumer;
     private final TimeProvider timeProvider;
@@ -39,7 +39,7 @@ public class EventQueueDispatcher {
     private final Counter timeoutCancelledCounter;
 
     public EventQueueDispatcher(
-            EventQueueWorkerProperties properties,
+            EventQueueDispatcherProperties properties,
             EventQueueRepository eventQueueRepository,
             EventQueueConsumer eventQueueConsumer,
             TimeProvider timeProvider,
@@ -52,7 +52,7 @@ public class EventQueueDispatcher {
         this.timeProvider = timeProvider;
         this.eventQueueExecutor = eventQueueExecutor;
         this.eventQueueTimeoutScheduler = eventQueueTimeoutScheduler;
-        this.inFlightSlots = new Semaphore(properties.getPoolSize() + properties.getQueueCapacity());
+        this.inFlightSlots = new Semaphore(properties.getThreadPoolSize());
         this.inFlightTasks = new AtomicInteger(0);
         this.workerId = "worker-" + UUID.randomUUID();
 
@@ -64,18 +64,10 @@ public class EventQueueDispatcher {
         meterRegistry.gauge("app.events.worker.inflight", inFlightTasks, AtomicInteger::get);
         meterRegistry.gauge("app.events.worker.permits.available", inFlightSlots, Semaphore::availablePermits);
 
-        log.info(
-                "Event queue dispatcher initialized. enabled={}, pollIntervalMs={}, batchSize={}, poolSize={}, queueCapacity={}, maxAttempts={}, handlerTimeoutMs={}",
-                properties.isEnabled(),
-                properties.getPollIntervalMs(),
-                properties.getBatchSize(),
-                properties.getPoolSize(),
-                properties.getQueueCapacity(),
-                properties.getMaxAttempts(),
-                properties.getHandlerTimeoutMs());
+        log.info("Event queue dispatcher initialized. properties={}", properties);
     }
 
-    @Scheduled(fixedDelayString = "${app.events.worker.poll-interval-ms:1000}")
+    @Scheduled(fixedDelayString = "${app.events.dispatcher.poll-interval-ms:1000}")
     public void pollAndDispatch() {
         if (!properties.isEnabled()) {
             log.debug("Event queue dispatcher poll skipped because worker is disabled");
@@ -89,7 +81,7 @@ public class EventQueueDispatcher {
             return;
         }
 
-        int claimSize = Math.min(properties.getBatchSize(), capacity);
+        int claimSize = capacity;
         List<ClaimedEventQueueEntry> claimed = eventQueueRepository.claimBatchForProcessing(
                 claimSize, properties.getMaxAttempts(), workerId, timeProvider.now());
         if (claimed.isEmpty()) {
@@ -146,16 +138,12 @@ public class EventQueueDispatcher {
                 }
             });
 
-            log.debug(
-                    "Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
+            log.debug("Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
         } catch (RejectedExecutionException ex) {
             inFlightTasks.decrementAndGet();
             inFlightSlots.release();
             executorRejectedCounter.increment();
-            log.error(
-                    "Failed to submit event queue entry to executor. entry={}",
-                    entry.toStringWithoutPayload(),
-                    ex);
+            log.error("Failed to submit event queue entry to executor. entry={}", entry.toStringWithoutPayload(), ex);
             eventQueueConsumer.markFailedIfProcessing(
                     entry, new IllegalStateException("Event queue executor rejected submitted task", ex));
         }

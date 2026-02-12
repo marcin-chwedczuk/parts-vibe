@@ -14,13 +14,13 @@ import org.springframework.stereotype.Component;
 public class EventQueueStaleRecoveryJob {
     private static final Logger log = LoggerFactory.getLogger(EventQueueStaleRecoveryJob.class);
 
-    private final EventQueueWorkerProperties properties;
+    private final EventQueueDispatcherProperties properties;
     private final EventQueueRepository eventQueueRepository;
     private final TimeProvider timeProvider;
     private final Counter staleRequeuedCounter;
 
     public EventQueueStaleRecoveryJob(
-            EventQueueWorkerProperties properties,
+            EventQueueDispatcherProperties properties,
             EventQueueRepository eventQueueRepository,
             TimeProvider timeProvider,
             MeterRegistry meterRegistry) {
@@ -30,7 +30,7 @@ public class EventQueueStaleRecoveryJob {
         this.staleRequeuedCounter = meterRegistry.counter("app.events.worker.stale.requeued");
     }
 
-    @Scheduled(fixedDelayString = "${app.events.worker.stale-recovery-interval-ms:60000}")
+    @Scheduled(fixedDelayString = "${app.events.dispatcher.stale-recovery-interval-ms:60000}")
     public void requeueStaleProcessing() {
         if (!properties.isEnabled()) {
             return;
