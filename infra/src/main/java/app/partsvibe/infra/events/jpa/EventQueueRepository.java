@@ -13,5 +13,9 @@ public interface EventQueueRepository {
 
     int requeueStaleProcessing(Instant lockedBefore, Instant now);
 
+    int deleteDoneOlderThan(Instant cutoff, int limit);
+
+    int deleteFailedOlderThan(Instant cutoff, int limit);
+
     List<ClaimedEventQueueEntry> claimBatchForProcessing(int batchSize, int maxAttempts, String workerId, Instant now);
 }

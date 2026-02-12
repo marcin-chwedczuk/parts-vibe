@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -28,7 +29,11 @@ import org.hibernate.type.SqlTypes;
         })
 public class EventQueueEntry {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    // TODO: Investigate why event_queue.id DB schema is inconsistent with IDENTITY generation in local env.
+    // IDENTITY currently causes INSERT failures with id=NULL, while this sequence mapping works reliably.
+    // Align DB DDL/migrations so we can use one consistent strategy across entities.
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_queue_id_seq_gen")
+    @SequenceGenerator(name = "event_queue_id_seq_gen", sequenceName = "event_queue_id_seq", allocationSize = 1)
     private Long id;
 
     @Column(name = "event_id", nullable = false, updatable = false)

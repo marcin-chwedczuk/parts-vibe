@@ -73,9 +73,14 @@ app:
     worker:
       enabled: ${APP_EVENTS_WORKER_ENABLED:false}
       poll-interval-ms: ${APP_EVENTS_WORKER_POLL_INTERVAL_MS:1000}
+      stale-recovery-interval-ms: ${APP_EVENTS_WORKER_STALE_RECOVERY_INTERVAL_MS:60000}
+      retention-cleanup-interval-ms: ${APP_EVENTS_WORKER_RETENTION_CLEANUP_INTERVAL_MS:3600000}
       batch-size: ${APP_EVENTS_WORKER_BATCH_SIZE:20}
       pool-size: ${APP_EVENTS_WORKER_POOL_SIZE:4}
       queue-capacity: ${APP_EVENTS_WORKER_QUEUE_CAPACITY:200}
+      retention-delete-batch-size: ${APP_EVENTS_WORKER_RETENTION_DELETE_BATCH_SIZE:500}
+      done-retention-days: ${APP_EVENTS_WORKER_DONE_RETENTION_DAYS:30}
+      failed-retention-days: ${APP_EVENTS_WORKER_FAILED_RETENTION_DAYS:90}
       processing-timeout-ms: ${APP_EVENTS_WORKER_PROCESSING_TIMEOUT_MS:120000}
       max-attempts: ${APP_EVENTS_WORKER_MAX_ATTEMPTS:10}
       backoff-initial-ms: ${APP_EVENTS_WORKER_BACKOFF_INITIAL_MS:1000}

@@ -35,9 +35,8 @@ public class SecurityConfig {
                         .authenticated())
                 .formLogin(form ->
                         form.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
-                .exceptionHandling(ex -> ex.accessDeniedHandler(
-                        (request, response, accessDeniedException) ->
-                                response.sendError(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN)))
+                .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) ->
+                        response.sendError(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN)))
                 .logout(logout -> logout.logoutSuccessUrl("/"));
 
         return http.build();

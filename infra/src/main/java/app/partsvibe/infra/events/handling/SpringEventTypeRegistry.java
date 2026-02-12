@@ -22,7 +22,7 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
         for (Class<?> discoveredClass : classpathScanner.findAnnotatedClasses(PublishableEvent.class)) {
             if (!Event.class.isAssignableFrom(discoveredClass)) {
                 throw new IllegalStateException(
-                        "@EventDescriptor class must implement Event: " + discoveredClass.getName());
+                        "@PublishableEvent class must implement Event: " + discoveredClass.getName());
             }
             @SuppressWarnings("unchecked")
             Class<? extends Event> eventClass = (Class<? extends Event>) discoveredClass;

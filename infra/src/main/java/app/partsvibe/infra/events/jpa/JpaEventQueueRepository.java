@@ -43,8 +43,10 @@ public class JpaEventQueueRepository implements EventQueueRepository {
                             e.lastError = NULL,
                             e.updatedAt = :now
                         WHERE e.id = :id
+                          AND e.status = :processingStatus
                         """)
                 .setParameter("doneStatus", EventQueueStatus.DONE)
+                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
                 .setParameter("id", id)
                 .setParameter("now", now)
                 .executeUpdate();
@@ -64,8 +66,10 @@ public class JpaEventQueueRepository implements EventQueueRepository {
                             e.lockedBy = NULL,
                             e.updatedAt = :now
                         WHERE e.id = :id
+                          AND e.status = :processingStatus
                         """)
                 .setParameter("failedStatus", EventQueueStatus.FAILED)
+                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
                 .setParameter("id", id)
                 .setParameter("nextAttemptAt", nextAttemptAt)
                 .setParameter("lastError", lastError)
@@ -94,6 +98,54 @@ public class JpaEventQueueRepository implements EventQueueRepository {
                 .setParameter("lastError", "Processing lock timeout reached.")
                 .setParameter("lockedBefore", lockedBefore)
                 .setParameter("now", now)
+                .executeUpdate();
+    }
+
+    @Override
+    @Transactional
+    public int deleteDoneOlderThan(Instant cutoff, int limit) {
+        if (limit <= 0) {
+            return 0;
+        }
+        return entityManager
+                .createNativeQuery(
+                        """
+                        DELETE FROM event_queue
+                        WHERE id IN (
+                            SELECT id
+                            FROM event_queue
+                            WHERE status = 'DONE'
+                              AND updated_at < :cutoff
+                            ORDER BY id
+                            LIMIT :limit
+                        )
+                        """)
+                .setParameter("cutoff", cutoff)
+                .setParameter("limit", limit)
+                .executeUpdate();
+    }
+
+    @Override
+    @Transactional
+    public int deleteFailedOlderThan(Instant cutoff, int limit) {
+        if (limit <= 0) {
+            return 0;
+        }
+        return entityManager
+                .createNativeQuery(
+                        """
+                        DELETE FROM event_queue
+                        WHERE id IN (
+                            SELECT id
+                            FROM event_queue
+                            WHERE status = 'FAILED'
+                              AND updated_at < :cutoff
+                            ORDER BY id
+                            LIMIT :limit
+                        )
+                        """)
+                .setParameter("cutoff", cutoff)
+                .setParameter("limit", limit)
                 .executeUpdate();
     }
 
