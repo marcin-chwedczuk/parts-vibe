@@ -33,6 +33,7 @@ public class EventQueueStaleRecoveryJob {
 
         Instant now = timeProvider.now();
         Instant lockedBefore = now.minusMillis(properties.getProcessingTimeoutMs());
+        // TODO: Respect max attempts, use batch size
         int requeued = eventQueueRepository.requeueStaleProcessing(lockedBefore, now);
         if (requeued > 0) {
             log.warn(

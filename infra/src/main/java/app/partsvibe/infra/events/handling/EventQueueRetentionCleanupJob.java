@@ -41,6 +41,7 @@ public class EventQueueRetentionCleanupJob {
         Instant doneCutoff = now.minusSeconds((long) properties.getDoneRetentionDays() * 24 * 60 * 60);
         Instant failedCutoff = now.minusSeconds((long) properties.getFailedRetentionDays() * 24 * 60 * 60);
 
+        // TODO: Do this in a loop
         int doneDeleted = eventQueueRepository.deleteDoneOlderThan(doneCutoff, batchSize);
         int failedDeleted = eventQueueRepository.deleteFailedOlderThan(failedCutoff, batchSize);
 

@@ -10,11 +10,11 @@ public class DurationMetrics {
     private final AtomicLong lastMs;
 
     public DurationMetrics(MeterRegistry meterRegistry, String metricPrefix) {
-        this.summary = DistributionSummary.builder(metricPrefix + ".ms")
+        this.summary = DistributionSummary.builder(metricPrefix + ".summary-ms")
                 .baseUnit("milliseconds")
                 .register(meterRegistry);
         this.lastMs = new AtomicLong(0);
-        meterRegistry.gauge(metricPrefix + ".last.ms", lastMs, AtomicLong::get);
+        meterRegistry.gauge(metricPrefix + ".last-ms", lastMs, AtomicLong::get);
     }
 
     public void recordDurationBetween(Instant from, Instant to) {
