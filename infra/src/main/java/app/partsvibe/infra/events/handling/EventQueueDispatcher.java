@@ -5,12 +5,14 @@ import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +38,7 @@ public class EventQueueDispatcher {
     private final Counter claimedCounter;
     private final Counter pollSkippedCounter;
     private final Counter executorRejectedCounter;
+    private final Counter executorRejectedReleasedCounter;
     private final Counter timeoutCancelledCounter;
 
     public EventQueueDispatcher(
@@ -59,6 +62,7 @@ public class EventQueueDispatcher {
         this.claimedCounter = meterRegistry.counter("app.events.worker.claimed");
         this.pollSkippedCounter = meterRegistry.counter("app.events.worker.poll.skipped");
         this.executorRejectedCounter = meterRegistry.counter("app.events.worker.executor.rejected");
+        this.executorRejectedReleasedCounter = meterRegistry.counter("app.events.worker.executor.rejected.released");
         this.timeoutCancelledCounter = meterRegistry.counter("app.events.worker.timeout.cancelled");
 
         meterRegistry.gauge("app.events.worker.inflight", inFlightTasks, AtomicInteger::get);
@@ -100,13 +104,34 @@ public class EventQueueDispatcher {
         inFlightSlots.acquireUninterruptibly();
         inFlightTasks.incrementAndGet();
 
+        CompletableFuture<Void> future;
         try {
-            CompletableFuture<Void> future =
-                    CompletableFuture.runAsync(() -> eventQueueConsumer.consume(entry), eventQueueExecutor);
+            future = CompletableFuture.runAsync(() -> eventQueueConsumer.consume(entry), eventQueueExecutor);
+        } catch (RejectedExecutionException ex) {
+            inFlightTasks.decrementAndGet();
+            inFlightSlots.release();
+            executorRejectedCounter.increment();
+            Instant now = timeProvider.now();
+            int updated = eventQueueRepository.releaseForRetry(entry.id(), now, now);
+            if (updated > 0) {
+                executorRejectedReleasedCounter.increment();
+                log.warn(
+                        "Event queue entry released for retry after executor rejection. entry={}",
+                        entry.toStringWithoutPayload(),
+                        ex);
+            } else {
+                log.debug(
+                        "Executor rejected task but event queue entry was not released (status changed concurrently). entry={}",
+                        entry.toStringWithoutPayload(),
+                        ex);
+            }
+            return;
+        }
 
-            long timeoutMs = properties.getHandlerTimeoutMs();
-            java.util.concurrent.ScheduledFuture<?> timeoutTask = null;
-            if (timeoutMs > 0) {
+        long timeoutMs = properties.getHandlerTimeoutMs();
+        ScheduledFuture<?> timeoutTask = null;
+        if (timeoutMs > 0) {
+            try {
                 timeoutTask = eventQueueTimeoutScheduler.schedule(
                         () -> {
                             eventQueueConsumer.markTimedOutIfProcessing(entry, timeoutMs);
@@ -120,32 +145,32 @@ public class EventQueueDispatcher {
                         },
                         timeoutMs,
                         TimeUnit.MILLISECONDS);
+            } catch (RejectedExecutionException ex) {
+                // Timeout watchdog is best-effort. If scheduler rejects, keep processing and rely on stale recovery.
+                log.warn(
+                        "Timeout watchdog scheduling rejected. entry={}, timeoutMs={}",
+                        entry.toStringWithoutPayload(),
+                        timeoutMs,
+                        ex);
             }
+        }
 
-            java.util.concurrent.ScheduledFuture<?> finalTimeoutTask = timeoutTask;
-            future.whenComplete((ignored, throwable) -> {
-                if (finalTimeoutTask != null) {
-                    finalTimeoutTask.cancel(false);
-                }
-                inFlightTasks.decrementAndGet();
-                inFlightSlots.release();
-
-                if (throwable != null) {
-                    log.debug(
-                            "Event queue task completed exceptionally (failure already handled by consumer or timeout fallback). entry={}, errorType={}",
-                            entry.toStringWithoutPayload(),
-                            throwable.getClass().getSimpleName());
-                }
-            });
-
-            log.debug("Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
-        } catch (RejectedExecutionException ex) {
+        ScheduledFuture<?> finalTimeoutTask = timeoutTask;
+        future.whenComplete((ignored, throwable) -> {
+            if (finalTimeoutTask != null) {
+                finalTimeoutTask.cancel(false);
+            }
             inFlightTasks.decrementAndGet();
             inFlightSlots.release();
-            executorRejectedCounter.increment();
-            log.error("Failed to submit event queue entry to executor. entry={}", entry.toStringWithoutPayload(), ex);
-            eventQueueConsumer.markFailedIfProcessing(
-                    entry, new IllegalStateException("Event queue executor rejected submitted task", ex));
-        }
+
+            if (throwable != null) {
+                log.debug(
+                        "Event queue task completed exceptionally (failure already handled by consumer or timeout fallback). entry={}, errorType={}",
+                        entry.toStringWithoutPayload(),
+                        throwable.getClass().getSimpleName());
+            }
+        });
+
+        log.debug("Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
     }
 }

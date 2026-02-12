@@ -79,6 +79,29 @@ public class JpaEventQueueRepository implements EventQueueRepository {
 
     @Override
     @Transactional
+    public int releaseForRetry(long id, Instant nextAttemptAt, Instant now) {
+        return entityManager
+                .createQuery(
+                        """
+                        UPDATE EventQueueEntry e
+                        SET e.status = :newStatus,
+                            e.nextAttemptAt = :nextAttemptAt,
+                            e.lockedAt = NULL,
+                            e.lockedBy = NULL,
+                            e.updatedAt = :now
+                        WHERE e.id = :id
+                          AND e.status = :processingStatus
+                        """)
+                .setParameter("newStatus", EventQueueStatus.NEW)
+                .setParameter("processingStatus", EventQueueStatus.PROCESSING)
+                .setParameter("id", id)
+                .setParameter("nextAttemptAt", nextAttemptAt)
+                .setParameter("now", now)
+                .executeUpdate();
+    }
+
+    @Override
+    @Transactional
     public int requeueStaleProcessing(Instant lockedBefore, Instant now) {
         return entityManager
                 .createQuery(

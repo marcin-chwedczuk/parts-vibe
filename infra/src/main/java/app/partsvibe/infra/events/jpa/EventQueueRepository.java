@@ -11,6 +11,8 @@ public interface EventQueueRepository {
 
     int markFailed(long id, Instant nextAttemptAt, String lastError, Instant now);
 
+    int releaseForRetry(long id, Instant nextAttemptAt, Instant now);
+
     int requeueStaleProcessing(Instant lockedBefore, Instant now);
 
     int deleteDoneOlderThan(Instant cutoff, int limit);
