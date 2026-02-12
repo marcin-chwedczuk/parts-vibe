@@ -13,7 +13,7 @@ public class EventQueueExecutorConfig {
     @Bean(name = "eventQueueExecutor")
     public ThreadPoolTaskExecutor eventQueueExecutor(EventQueueDispatcherProperties properties) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setThreadNamePrefix("event-handling-worker-");
+        executor.setThreadNamePrefix("event-queue-worker-");
         executor.setDaemon(true);
         executor.setCorePoolSize(properties.getThreadPoolSize());
         executor.setMaxPoolSize(properties.getThreadPoolSize());
@@ -29,7 +29,7 @@ public class EventQueueExecutorConfig {
         AtomicInteger threadCounter = new AtomicInteger(0);
         ThreadFactory threadFactory = runnable -> {
             Thread thread = new Thread(runnable);
-            thread.setName("event-timeout-scheduler-" + threadCounter.incrementAndGet());
+            thread.setName("event-queue-timeout-worker-" + threadCounter.incrementAndGet());
             thread.setDaemon(true);
             return thread;
         };

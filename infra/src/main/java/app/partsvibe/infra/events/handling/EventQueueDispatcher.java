@@ -15,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -95,53 +96,15 @@ public class EventQueueDispatcher {
             future = CompletableFuture.runAsync(() -> eventQueueConsumer.consume(entry), eventQueueExecutor);
         } catch (RejectedExecutionException ex) {
             inFlightSlots.release();
-            Instant now = timeProvider.now();
-            int updated = eventQueueRepository.releaseForRetry(entry.id(), now, now);
-            if (updated > 0) {
-                log.warn(
-                        "Event queue entry released for retry after executor rejection. entry={}",
-                        entry.toStringWithoutPayload(),
-                        ex);
-            } else {
-                log.debug(
-                        "Executor rejected task but event queue entry was not released (status changed concurrently). entry={}",
-                        entry.toStringWithoutPayload(),
-                        ex);
-            }
+            releaseEventClaim(entry, ex);
             return;
         }
 
-        long timeoutMs = properties.getHandlerTimeoutMs();
-        ScheduledFuture<?> timeoutTask = null;
-        if (timeoutMs > 0) {
-            try {
-                timeoutTask = eventQueueTimeoutScheduler.schedule(
-                        () -> {
-                            eventQueueConsumer.markTimedOutIfProcessing(entry, timeoutMs);
-                            if (future.cancel(true)) {
-                                timeoutCancelledCounter.increment();
-                                log.warn(
-                                        "Cancelled timed out event queue task. entry={}, timeoutMs={}",
-                                        entry.toStringWithoutPayload(),
-                                        timeoutMs);
-                            }
-                        },
-                        timeoutMs,
-                        TimeUnit.MILLISECONDS);
-            } catch (RejectedExecutionException ex) {
-                // Timeout watchdog is best-effort. If scheduler rejects, keep processing and rely on stale recovery.
-                log.warn(
-                        "Timeout watchdog scheduling rejected. entry={}, timeoutMs={}",
-                        entry.toStringWithoutPayload(),
-                        timeoutMs,
-                        ex);
-            }
-        }
-
-        ScheduledFuture<?> finalTimeoutTask = timeoutTask;
+        AtomicReference<ScheduledFuture<?>> timeoutTaskRef = new AtomicReference<>();
         future.whenComplete((ignored, throwable) -> {
-            if (finalTimeoutTask != null) {
-                finalTimeoutTask.cancel(false);
+            ScheduledFuture<?> timeoutTask = timeoutTaskRef.get();
+            if (timeoutTask != null) {
+                timeoutTask.cancel(false);
             }
             inFlightSlots.release();
 
@@ -153,6 +116,52 @@ public class EventQueueDispatcher {
             }
         });
 
+        long timeoutMs = properties.getHandlerTimeoutMs();
+        if (timeoutMs > 0) {
+            try {
+                ScheduledFuture<?> timeoutTask = eventQueueTimeoutScheduler.schedule(
+                        () -> {
+                            if (future.isDone()) {
+                                return;
+                            }
+                            eventQueueConsumer.markTimedOutIfProcessing(entry, timeoutMs);
+                            if (future.cancel(true)) {
+                                timeoutCancelledCounter.increment();
+                                log.warn(
+                                        "Cancelled timed out event queue task. entry={}, timeoutMs={}",
+                                        entry.toStringWithoutPayload(),
+                                        timeoutMs);
+                            }
+                        },
+                        timeoutMs,
+                        TimeUnit.MILLISECONDS);
+                timeoutTaskRef.set(timeoutTask);
+            } catch (RuntimeException ex) {
+                // Timeout watchdog is best-effort. If scheduler rejects, keep processing and rely on stale recovery.
+                log.warn(
+                        "Timeout watchdog scheduling failed. entry={}, timeoutMs={}",
+                        entry.toStringWithoutPayload(),
+                        timeoutMs,
+                        ex);
+            }
+        }
+
         log.debug("Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
+    }
+
+    private void releaseEventClaim(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
+        Instant now = timeProvider.now();
+        int updated = eventQueueRepository.releaseForRetry(entry.id(), now, now);
+        if (updated > 0) {
+            log.warn(
+                    "Event queue entry released for retry after executor rejection. entry={}",
+                    entry.toStringWithoutPayload(),
+                    ex);
+        } else {
+            log.debug(
+                    "Executor rejected task but event queue entry was not released (status changed concurrently). entry={}",
+                    entry.toStringWithoutPayload(),
+                    ex);
+        }
     }
 }
