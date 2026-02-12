@@ -12,7 +12,7 @@ public record EventMetadata(String eventName, int schemaVersion) {
         PublishableEvent annotation = eventClass.getAnnotation(PublishableEvent.class);
         if (annotation == null || annotation.name().isBlank()) {
             throw new IllegalStateException(
-                    "Event class must be annotated with @EventDescriptor and non-blank name: " + eventClass.getName());
+                    "Event class must be annotated with @PublishableEvent and non-blank name: " + eventClass.getName());
         }
         if (annotation.version() <= 0) {
             throw new IllegalStateException(
