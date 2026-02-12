@@ -46,6 +46,7 @@ public class EventQueueEntry {
     @Column(name = "request_id", nullable = false, length = 64)
     private String requestId;
 
+    // TODO: Verify if this is correct approach, looks like we are casting to jsonb on DB side
     @JdbcTypeCode(SqlTypes.JSON)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")

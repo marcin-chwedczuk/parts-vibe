@@ -24,6 +24,7 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
         this.objectMapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                // TODO: Do we really need this? Seems fishy?
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
     }
@@ -37,20 +38,20 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
             int schemaVersion = -1;
             try {
                 EventMetadata metadata = EventMetadata.fromEvent(event);
-                eventType = metadata.eventType();
+                eventType = metadata.eventName();
                 schemaVersion = metadata.schemaVersion();
             } catch (RuntimeException ignored) {
                 // Keep fallback metadata values when annotation lookup fails.
             }
             log.error(
-                    "Event JSON serialization failed. eventId={}, eventType={}, schemaVersion={}, requestId={}",
+                    "Event JSON serialization failed. eventId={}, eventName={}, schemaVersion={}, requestId={}",
                     event.eventId(),
                     eventType,
                     schemaVersion,
                     event.requestId(),
                     e);
             throw new EventPublisherException(
-                    "Failed to serialize event payload. eventId=%s, eventType=%s, schemaVersion=%d"
+                    "Failed to serialize event payload. eventId=%s, eventName=%s, schemaVersion=%d"
                             .formatted(event.eventId(), eventType, schemaVersion),
                     e);
         }

@@ -2,13 +2,10 @@ package app.partsvibe.infra.events.jpa;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
+// TODO: Migrate to Spring Data repo
 public interface EventQueueRepository {
     EventQueueEntry save(EventQueueEntry entry);
-
-    Optional<EventQueueEntry> findByEventId(UUID eventId);
 
     int markDone(long id, Instant now);
 

@@ -140,7 +140,7 @@ public class EventQueueWorker {
         inFlightSlots.acquireUninterruptibly();
         try {
             log.debug(
-                    "Submitting event queue entry to executor. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
+                    "Submitting event queue entry to executor. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -152,7 +152,7 @@ public class EventQueueWorker {
             inFlightSlots.release();
             executorRejectedCounter.increment();
             log.error(
-                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventType={}, schemaVersion={}",
+                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventName={}, schemaVersion={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -196,7 +196,7 @@ public class EventQueueWorker {
                     : new IllegalStateException("Event handler task was cancelled");
             processor.markFailed(event, cancellationReason);
             log.warn(
-                    "Event queue task cancelled. id={}, eventId={}, eventType={}, schemaVersion={}, timeoutCancellation={}",
+                    "Event queue task cancelled. id={}, eventId={}, eventName={}, schemaVersion={}, timeoutCancellation={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -216,7 +216,7 @@ public class EventQueueWorker {
             Thread.currentThread().interrupt();
             processor.markFailed(event, ex);
             log.warn(
-                    "Interrupted while draining completed event queue task. id={}, eventId={}, eventType={}, schemaVersion={}",
+                    "Interrupted while draining completed event queue task. id={}, eventId={}, eventName={}, schemaVersion={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -249,7 +249,7 @@ public class EventQueueWorker {
             if (cancelled) {
                 timeoutCancelledCounter.increment();
                 log.warn(
-                        "Cancelled timed out event queue task. id={}, eventId={}, eventType={}, schemaVersion={}, runningMs={}, timeoutMs={}",
+                        "Cancelled timed out event queue task. id={}, eventId={}, eventName={}, schemaVersion={}, runningMs={}, timeoutMs={}",
                         task.event().id(),
                         task.event().eventId(),
                         task.event().eventType(),
@@ -258,7 +258,7 @@ public class EventQueueWorker {
                         timeoutMs);
             } else {
                 log.debug(
-                        "Timed out event queue task could not be cancelled because it already completed. id={}, eventId={}, eventType={}, schemaVersion={}",
+                        "Timed out event queue task could not be cancelled because it already completed. id={}, eventId={}, eventName={}, schemaVersion={}",
                         task.event().id(),
                         task.event().eventId(),
                         task.event().eventType(),

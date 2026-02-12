@@ -19,8 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class EventQueuePublisher implements EventPublisher {
+    private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("^[a-z0-9]+(_[a-z0-9]+)*$");
+
     private static final Logger log = LoggerFactory.getLogger(EventQueuePublisher.class);
-    private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("^[a-z0-9]+(?:_[a-z0-9]+)*$");
 
     private final EventQueueRepository repository;
     private final EventJsonSerializer eventJsonSerializer;
@@ -44,19 +45,19 @@ public class EventQueuePublisher implements EventPublisher {
         try {
             EventMetadata metadata = validate(event);
             String payloadJson = eventJsonSerializer.serialize(event);
-            EventQueueEntry entity = EventQueueEntry.newEvent(
+            EventQueueEntry entry = EventQueueEntry.newEvent(
                     event.eventId(),
-                    metadata.eventType(),
+                    metadata.eventName(),
                     metadata.schemaVersion(),
                     event.occurredAt(),
                     event.requestId(),
                     payloadJson);
-            repository.save(entity);
+            repository.save(entry);
             publishSuccessCounter.increment();
             log.info(
-                    "Published event to event queue. eventId={}, eventType={}, schemaVersion={}, requestId={}",
+                    "Published event to event queue. eventId={}, eventName={}, schemaVersion={}, requestId={}",
                     event.eventId(),
-                    metadata.eventType(),
+                    metadata.eventName(),
                     metadata.schemaVersion(),
                     event.requestId());
         } catch (EventPublisherException e) {
@@ -69,7 +70,7 @@ public class EventQueuePublisher implements EventPublisher {
             if (event != null) {
                 try {
                     EventMetadata metadata = EventMetadata.fromEvent(event);
-                    eventType = metadata.eventType();
+                    eventType = metadata.eventName();
                     schemaVersion = metadata.schemaVersion();
                 } catch (RuntimeException ignored) {
                     // Fallback to unknown values when metadata extraction fails.
@@ -77,7 +78,7 @@ public class EventQueuePublisher implements EventPublisher {
             }
             String eventId = (event == null) ? "unknown" : String.valueOf(event.eventId());
             throw new EventPublisherException(
-                    "Failed to publish event. eventId=%s, eventType=%s, schemaVersion=%d"
+                    "Failed to publish event. eventId=%s, eventName=%s, schemaVersion=%d"
                             .formatted(eventId, eventType, schemaVersion),
                     e);
         }
@@ -93,16 +94,16 @@ public class EventQueuePublisher implements EventPublisher {
         if (event.occurredAt() == null) {
             throw new EventPublisherException("Event occurredAt must not be null.");
         }
-        if (isBlank(event.requestId())) {
-            throw new EventPublisherException("Event requestId must not be blank.");
-        }
+
         EventMetadata metadata = EventMetadata.fromEvent(event);
-        if (isBlank(metadata.eventType())) {
-            throw new EventPublisherException("Event eventType must not be blank.");
+
+        // TODO: EventMetadata - already does some validation, we repeat it here
+        if (isBlank(metadata.eventName())) {
+            throw new EventPublisherException("Event eventName must not be blank.");
         }
-        if (!EVENT_TYPE_PATTERN.matcher(metadata.eventType()).matches()) {
+        if (!EVENT_TYPE_PATTERN.matcher(metadata.eventName()).matches()) {
             throw new EventPublisherException(
-                    "Event eventType must be snake_case. eventType=%s".formatted(metadata.eventType()));
+                    "Event eventName must be snake_case. eventName=%s".formatted(metadata.eventName()));
         }
         if (metadata.schemaVersion() <= 0) {
             throw new EventPublisherException("Event schemaVersion must be greater than 0.");

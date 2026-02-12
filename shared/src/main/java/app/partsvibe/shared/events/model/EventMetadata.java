@@ -1,6 +1,6 @@
 package app.partsvibe.shared.events.model;
 
-public record EventMetadata(String eventType, int schemaVersion) {
+public record EventMetadata(String eventName, int schemaVersion) {
     public static EventMetadata fromEvent(Event event) {
         if (event == null) {
             throw new IllegalArgumentException("Event must not be null.");
@@ -9,7 +9,7 @@ public record EventMetadata(String eventType, int schemaVersion) {
     }
 
     public static EventMetadata fromEventClass(Class<? extends Event> eventClass) {
-        EventDescriptor annotation = eventClass.getAnnotation(EventDescriptor.class);
+        PublishableEvent annotation = eventClass.getAnnotation(PublishableEvent.class);
         if (annotation == null || annotation.name().isBlank()) {
             throw new IllegalStateException(
                     "Event class must be annotated with @EventDescriptor and non-blank name: " + eventClass.getName());

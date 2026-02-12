@@ -2,8 +2,8 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.spring.ClasspathScanner;
 import app.partsvibe.shared.events.model.Event;
-import app.partsvibe.shared.events.model.EventDescriptor;
 import app.partsvibe.shared.events.model.EventMetadata;
+import app.partsvibe.shared.events.model.PublishableEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,7 +19,7 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
 
     public SpringEventTypeRegistry(ClasspathScanner classpathScanner) {
         Map<EventTypeKey, Class<? extends Event>> byType = new LinkedHashMap<>();
-        for (Class<?> discoveredClass : classpathScanner.findAnnotatedClasses(EventDescriptor.class)) {
+        for (Class<?> discoveredClass : classpathScanner.findAnnotatedClasses(PublishableEvent.class)) {
             if (!Event.class.isAssignableFrom(discoveredClass)) {
                 throw new IllegalStateException(
                         "@EventDescriptor class must implement Event: " + discoveredClass.getName());
@@ -27,12 +27,12 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
             @SuppressWarnings("unchecked")
             Class<? extends Event> eventClass = (Class<? extends Event>) discoveredClass;
             EventMetadata metadata = EventMetadata.fromEventClass(eventClass);
-            EventTypeKey eventTypeKey = new EventTypeKey(metadata.eventType(), metadata.schemaVersion());
+            EventTypeKey eventTypeKey = new EventTypeKey(metadata.eventName(), metadata.schemaVersion());
 
             Class<? extends Event> existingClass = byType.get(eventTypeKey);
             if (existingClass != null && !existingClass.equals(eventClass)) {
                 throw new IllegalStateException(
-                        "Duplicate event type mapping to different classes. eventType=%s, schemaVersion=%d, classes=%s,%s"
+                        "Duplicate event type mapping to different classes. eventName=%s, schemaVersion=%d, classes=%s,%s"
                                 .formatted(
                                         eventTypeKey.eventType(),
                                         eventTypeKey.schemaVersion(),

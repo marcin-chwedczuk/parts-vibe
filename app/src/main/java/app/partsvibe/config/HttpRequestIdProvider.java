@@ -13,6 +13,7 @@ public class HttpRequestIdProvider implements RequestIdProvider {
 
     @Override
     public String requestId() {
+        // TODO: Move to threadLocal and explict setRequestId method
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
             HttpServletRequest request = servletRequestAttributes.getRequest();

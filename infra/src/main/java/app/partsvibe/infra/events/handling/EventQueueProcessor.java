@@ -43,7 +43,7 @@ public class EventQueueProcessor {
 
     public void dispatch(ClaimedEventQueueEntry event) {
         log.debug(
-                "Dispatching claimed event queue entry started. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
+                "Dispatching claimed event queue entry started. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
@@ -58,7 +58,7 @@ public class EventQueueProcessor {
         eventQueueRepository.markDone(event.id(), timeProvider.now());
         doneCounter.increment();
         log.info(
-                "Event queue entry processed successfully. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
+                "Event queue entry processed successfully. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),
@@ -76,7 +76,7 @@ public class EventQueueProcessor {
         if (event.attemptCount() < properties.getMaxAttempts()) {
             retryScheduledCounter.increment();
             log.debug(
-                    "Scheduled event queue retry. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}",
+                    "Scheduled event queue retry. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -85,7 +85,7 @@ public class EventQueueProcessor {
                     nextAttemptAt);
         } else {
             log.warn(
-                    "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}",
+                    "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
                     event.id(),
                     event.eventId(),
                     event.eventType(),
@@ -93,7 +93,7 @@ public class EventQueueProcessor {
                     event.attemptCount());
         }
         log.error(
-                "Event queue processing failed. id={}, eventId={}, eventType={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
+                "Event queue processing failed. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
                 event.id(),
                 event.eventId(),
                 event.eventType(),

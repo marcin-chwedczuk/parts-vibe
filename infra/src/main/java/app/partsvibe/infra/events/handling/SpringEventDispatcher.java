@@ -47,14 +47,14 @@ public class SpringEventDispatcher implements EventDispatcher {
         try {
             Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(eventType, schemaVersion);
             log.debug(
-                    "Resolved event class for dispatch. eventType={}, schemaVersion={}, eventClass={}",
+                    "Resolved event class for dispatch. eventName={}, schemaVersion={}, eventClass={}",
                     eventType,
                     schemaVersion,
                     eventClass.getName());
             Event event = eventJsonSerializer.deserialize(payloadJson, eventClass);
             List<ResolvedHandler> handlers = resolveHandlers(eventClass);
             log.debug(
-                    "Dispatching event to handlers. eventType={}, schemaVersion={}, eventClass={}, handlersCount={}",
+                    "Dispatching event to handlers. eventName={}, schemaVersion={}, eventClass={}, handlersCount={}",
                     eventType,
                     schemaVersion,
                     eventClass.getName(),
@@ -62,7 +62,7 @@ public class SpringEventDispatcher implements EventDispatcher {
             for (ResolvedHandler resolvedHandler : handlers) {
                 String handlerClassName = handlerClassName(resolvedHandler.handler());
                 log.debug(
-                        "Invoking event handler. eventType={}, schemaVersion={}, handlerBeanName={}, handlerClass={}",
+                        "Invoking event handler. eventName={}, schemaVersion={}, handlerBeanName={}, handlerClass={}",
                         eventType,
                         schemaVersion,
                         resolvedHandler.beanName(),
@@ -73,7 +73,7 @@ public class SpringEventDispatcher implements EventDispatcher {
                     dispatchErrorsCounter.increment();
                     String causeMessage = safeMessage(ex);
                     log.error(
-                            "Event handler execution failed. eventType={}, schemaVersion={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
+                            "Event handler execution failed. eventName={}, schemaVersion={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
                             eventType,
                             schemaVersion,
                             resolvedHandler.beanName(),
@@ -82,7 +82,7 @@ public class SpringEventDispatcher implements EventDispatcher {
                             causeMessage,
                             ex);
                     throw new EventDispatchException(
-                            "Event handler failed. eventType=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
+                            "Event handler failed. eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
                                     .formatted(
                                             eventType,
                                             schemaVersion,
@@ -95,7 +95,7 @@ public class SpringEventDispatcher implements EventDispatcher {
             }
             dispatchSuccessCounter.increment();
             log.info(
-                    "Dispatched event. eventType={}, schemaVersion={}, handlersCount={}",
+                    "Dispatched event. eventName={}, schemaVersion={}, handlersCount={}",
                     eventType,
                     schemaVersion,
                     handlers.size());
@@ -105,14 +105,14 @@ public class SpringEventDispatcher implements EventDispatcher {
             dispatchErrorsCounter.increment();
             String causeMessage = safeMessage(e);
             log.error(
-                    "Event dispatch failed before handler execution. eventType={}, schemaVersion={}, errorType={}, errorMessage={}",
+                    "Event dispatch failed before handler execution. eventName={}, schemaVersion={}, errorType={}, errorMessage={}",
                     eventType,
                     schemaVersion,
                     e.getClass().getSimpleName(),
                     causeMessage,
                     e);
             throw new EventDispatchException(
-                    "Event dispatch failed. eventType=%s, schemaVersion=%d, cause=%s: %s"
+                    "Event dispatch failed. eventName=%s, schemaVersion=%d, cause=%s: %s"
                             .formatted(eventType, schemaVersion, e.getClass().getSimpleName(), causeMessage),
                     e);
         }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
+// TODO: Create Playwrite fixture per entire test suite
 abstract class BaseE2ETest {
     private static Playwright playwright;
     private static Browser browser;

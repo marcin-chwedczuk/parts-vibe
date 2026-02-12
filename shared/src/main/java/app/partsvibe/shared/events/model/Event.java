@@ -8,5 +8,6 @@ public interface Event {
 
     Instant occurredAt();
 
+    // TODO: Make Optional
     String requestId();
 }

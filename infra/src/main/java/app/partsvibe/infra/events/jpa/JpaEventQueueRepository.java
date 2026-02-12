@@ -5,8 +5,6 @@ import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +22,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     @Transactional
     public EventQueueEntry save(EventQueueEntry entry) {
         if (entry.getId() == null) {
+            // TODO: Will this set proper ID? Verify
             entityManager.persist(entry);
             return entry;
         }
@@ -31,18 +30,9 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    public Optional<EventQueueEntry> findByEventId(UUID eventId) {
-        List<EventQueueEntry> results = entityManager
-                .createQuery("SELECT e FROM EventQueueEntry e WHERE e.eventId = :eventId", EventQueueEntry.class)
-                .setParameter("eventId", eventId)
-                .setMaxResults(1)
-                .getResultList();
-        return results.stream().findFirst();
-    }
-
-    @Override
     @Transactional
     public int markDone(long id, Instant now) {
+        // TODO: Can be just operation on entire entity, use Spring Data repo
         return entityManager
                 .createQuery(
                         """
