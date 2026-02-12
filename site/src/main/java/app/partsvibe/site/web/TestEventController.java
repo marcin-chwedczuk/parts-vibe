@@ -1,7 +1,8 @@
 package app.partsvibe.site.web;
 
+import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.request.RequestIdProvider;
-import app.partsvibe.site.service.TestEventService;
+import app.partsvibe.site.commands.testevent.PublishTestEventCommand;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -20,11 +21,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class TestEventController {
     private static final Logger log = LoggerFactory.getLogger(TestEventController.class);
 
-    private final TestEventService testEventService;
+    private final Mediator mediator;
     private final RequestIdProvider requestIdProvider;
 
-    public TestEventController(TestEventService testEventService, RequestIdProvider requestIdProvider) {
-        this.testEventService = testEventService;
+    public TestEventController(Mediator mediator, RequestIdProvider requestIdProvider) {
+        this.mediator = mediator;
         this.requestIdProvider = requestIdProvider;
     }
 
@@ -47,7 +48,8 @@ public class TestEventController {
         }
 
         String requestId = requestIdProvider.currentOrElse("unknown");
-        UUID eventId = testEventService.publishTestEvent(requestId, testEventForm.getMessage());
+        UUID eventId = mediator.executeCommand(new PublishTestEventCommand(requestId, testEventForm.getMessage()))
+                .eventId();
         log.info("Test event published. eventId={}, requestId={}", eventId, requestId);
 
         redirectAttributes.addAttribute("submitted", "1");

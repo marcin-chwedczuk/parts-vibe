@@ -1,4 +1,4 @@
-package app.partsvibe.site.service.impl;
+package app.partsvibe.site.events.handling;
 
 import app.partsvibe.shared.events.handling.BaseEventHandler;
 import app.partsvibe.site.events.TestEvent;

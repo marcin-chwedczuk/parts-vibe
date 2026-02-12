@@ -1,6 +1,7 @@
 package app.partsvibe.site.web;
 
-import app.partsvibe.site.service.ContactService;
+import app.partsvibe.shared.cqrs.Mediator;
+import app.partsvibe.site.commands.contact.SubmitContactMessageCommand;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/contact")
 public class ContactController {
     private static final Logger log = LoggerFactory.getLogger(ContactController.class);
-    private final ContactService contactService;
 
-    public ContactController(ContactService contactService) {
-        this.contactService = contactService;
+    private final Mediator mediator;
+
+    public ContactController(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @GetMapping
@@ -38,8 +40,10 @@ public class ContactController {
             return "contact";
         }
 
-        Long messageId =
-                contactService.submitMessage(contactForm.getName(), contactForm.getEmail(), contactForm.getMessage());
+        var messageId = mediator.executeCommand(
+                        new SubmitContactMessageCommand(
+                                contactForm.getName(), contactForm.getEmail(), contactForm.getMessage()))
+                .messageId();
         log.info("Contact message saved: id={}", messageId);
         return "contact-success";
     }
