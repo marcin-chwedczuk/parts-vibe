@@ -4,7 +4,6 @@ import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +39,8 @@ public class EventQueueDispatcher {
     private final Counter doneCounter;
     private final Counter failedCounter;
     private final Counter timeoutCancelledCounter;
-    private final DistributionSummary lagSummary;
-    private final AtomicLong lastLagMs;
-    private final AtomicLong lastProcessedEpochMs;
+    private final DurationMetrics queueLagMetrics;
+    private final DurationMetrics processingDurationMetrics;
 
     public EventQueueDispatcher(
             EventQueueDispatcherProperties properties,
@@ -67,19 +64,8 @@ public class EventQueueDispatcher {
         this.failedCounter = meterRegistry.counter("app.event-queue.events.failed");
         this.timeoutCancelledCounter = meterRegistry.counter("app.event-queue.events.timed-out");
 
-        this.lagSummary = DistributionSummary.builder("app.event-queue.events.lag.ms")
-                .baseUnit("milliseconds")
-                .register(meterRegistry);
-        this.lastLagMs = new AtomicLong(0);
-        this.lastProcessedEpochMs = new AtomicLong(0);
-        meterRegistry.gauge("app.event-queue.events.lag.last.ms", lastLagMs, AtomicLong::get);
-        meterRegistry.gauge("app.event-queue.events.last-processed.age.seconds", lastProcessedEpochMs, value -> {
-            long last = value.get();
-            if (last <= 0) {
-                return -1.0;
-            }
-            return Math.max(0.0, (System.currentTimeMillis() - last) / 1000.0);
-        });
+        this.queueLagMetrics = new DurationMetrics(meterRegistry, "app.event-queue.events.lag");
+        this.processingDurationMetrics = new DurationMetrics(meterRegistry, "app.event-queue.events.processing-time");
 
         log.info("Event queue dispatcher initialized. properties={}", properties);
     }
@@ -98,8 +84,9 @@ public class EventQueueDispatcher {
         }
 
         int claimSize = capacity;
+        Instant claimedAt = timeProvider.now();
         List<ClaimedEventQueueEntry> claimed = eventQueueRepository.claimBatchForProcessing(
-                claimSize, properties.getMaxAttempts(), workerId, timeProvider.now());
+                claimSize, properties.getMaxAttempts(), workerId, claimedAt);
         if (claimed.isEmpty()) {
             log.debug("No event queue entries claimed. workerId={}", workerId);
             return;
@@ -108,12 +95,14 @@ public class EventQueueDispatcher {
         claimedCounter.increment(claimed.size());
         log.debug("Claimed event queue entries. workerId={}, claimedCount={}", workerId, claimed.size());
         for (ClaimedEventQueueEntry entry : claimed) {
+            recordQueueLag(entry, claimedAt);
             submitEvent(entry);
         }
     }
 
     private void submitEvent(ClaimedEventQueueEntry entry) {
         inFlightSlots.acquireUninterruptibly();
+        Instant processingStartedAt = timeProvider.now();
 
         CompletableFuture<Void> future;
         try {
@@ -134,22 +123,19 @@ public class EventQueueDispatcher {
 
                 if (throwable == null) {
                     markDone(entry);
-                    return;
-                }
-
-                if (future.isCancelled()) {
+                } else if (future.isCancelled()) {
                     log.debug("Event queue task was cancelled. entry={}", entry.toStringWithoutPayload());
-                    return;
+                } else {
+                    Throwable cause = unwrapCompletionThrowable(throwable);
+                    markFailed(entry, cause);
+                    log.debug(
+                            "Event queue task completed exceptionally. entry={}, errorType={}",
+                            entry.toStringWithoutPayload(),
+                            cause.getClass().getSimpleName());
                 }
-
-                Throwable cause = unwrapCompletionThrowable(throwable);
-                markFailed(entry, cause);
-                log.debug(
-                        "Event queue task completed exceptionally. entry={}, errorType={}",
-                        entry.toStringWithoutPayload(),
-                        cause.getClass().getSimpleName());
             } finally {
                 inFlightSlots.release();
+                processingDurationMetrics.recordDurationBetween(processingStartedAt, timeProvider.now());
             }
         });
 
@@ -173,7 +159,7 @@ public class EventQueueDispatcher {
                         timeoutMs,
                         TimeUnit.MILLISECONDS);
                 timeoutTaskRef.set(timeoutTask);
-            } catch (RuntimeException ex) {
+            } catch (Exception ex) {
                 // Timeout watchdog is best-effort. If scheduler fails, keep processing and rely on stale recovery.
                 log.warn(
                         "Timeout watchdog scheduling failed. entry={}, timeoutMs={}",
@@ -191,7 +177,6 @@ public class EventQueueDispatcher {
         int updated = eventQueueRepository.markDone(entry.id(), now);
         if (updated > 0) {
             doneCounter.increment();
-            recordLag(entry, now);
             log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
         } else {
             log.debug(
@@ -207,7 +192,6 @@ public class EventQueueDispatcher {
         int updated = eventQueueRepository.markFailed(entry.id(), nextAttemptAt, error, now);
         if (updated > 0) {
             failedCounter.increment();
-            recordLag(entry, now);
             if (entry.attemptCount() < properties.getMaxAttempts()) {
                 log.debug(
                         "Scheduled event queue retry. entry={}, nextAttemptAt={}",
@@ -236,11 +220,8 @@ public class EventQueueDispatcher {
         markFailed(entry, new IllegalStateException("Event handler timed out after %d ms".formatted(timeoutMs)));
     }
 
-    private void recordLag(ClaimedEventQueueEntry entry, Instant now) {
-        long lagMs = Math.max(0L, now.toEpochMilli() - entry.occurredAt().toEpochMilli());
-        lagSummary.record(lagMs);
-        lastLagMs.set(lagMs);
-        lastProcessedEpochMs.set(now.toEpochMilli());
+    private void recordQueueLag(ClaimedEventQueueEntry entry, Instant claimedAt) {
+        queueLagMetrics.recordDurationBetween(entry.occurredAt(), claimedAt);
     }
 
     private void releaseEventClaim(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
