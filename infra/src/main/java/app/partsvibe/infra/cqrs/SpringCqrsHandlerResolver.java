@@ -24,7 +24,7 @@ public class SpringCqrsHandlerResolver {
     @SuppressWarnings("unchecked")
     <C extends Command<R>, R> CommandHandler<C, R> resolveCommandHandler(C command) {
         var commandType = command.getClass();
-        var matchingBeanNames = findMatchingBeanNames(CommandHandler.class, commandType);
+        var matchingBeanNames = findMatchingBeanNames(CommandHandler.class, commandType, false);
 
         if (matchingBeanNames.isEmpty()) {
             throw new CqrsHandlerResolutionException(
@@ -41,7 +41,7 @@ public class SpringCqrsHandlerResolver {
     @SuppressWarnings("unchecked")
     <Q extends Query<R>, R> QueryHandler<Q, R> resolveQueryHandler(Q query) {
         var queryType = query.getClass();
-        var matchingBeanNames = findMatchingBeanNames(QueryHandler.class, queryType);
+        var matchingBeanNames = findMatchingBeanNames(QueryHandler.class, queryType, false);
 
         if (matchingBeanNames.isEmpty()) {
             throw new CqrsHandlerResolutionException(
@@ -57,7 +57,10 @@ public class SpringCqrsHandlerResolver {
 
     @SuppressWarnings("unchecked")
     <C extends Command<R>, R> List<CommandBehavior<C, R>> resolveCommandBehaviors(C command) {
-        var matchingBeanNames = findMatchingBeanNames(CommandBehavior.class, command.getClass());
+        // Behaviors can be generic (e.g. <C extends Command<R>, R>) and then Spring does not
+        // expose a concrete request generic type at runtime. We treat unresolved generic type
+        // as a global behavior that should match every command.
+        var matchingBeanNames = findMatchingBeanNames(CommandBehavior.class, command.getClass(), true);
         var behaviors = new ArrayList<CommandBehavior<C, R>>();
         for (var beanName : matchingBeanNames) {
             behaviors.add((CommandBehavior<C, R>) beanFactory.getBean(beanName, CommandBehavior.class));
@@ -68,7 +71,9 @@ public class SpringCqrsHandlerResolver {
 
     @SuppressWarnings("unchecked")
     <Q extends Query<R>, R> List<QueryBehavior<Q, R>> resolveQueryBehaviors(Q query) {
-        var matchingBeanNames = findMatchingBeanNames(QueryBehavior.class, query.getClass());
+        // Same rule as for command behaviors: unresolved generic request type means
+        // this behavior is global and should apply to every query.
+        var matchingBeanNames = findMatchingBeanNames(QueryBehavior.class, query.getClass(), true);
         var behaviors = new ArrayList<QueryBehavior<Q, R>>();
         for (var beanName : matchingBeanNames) {
             behaviors.add((QueryBehavior<Q, R>) beanFactory.getBean(beanName, QueryBehavior.class));
@@ -77,7 +82,8 @@ public class SpringCqrsHandlerResolver {
         return List.copyOf(behaviors);
     }
 
-    private List<String> findMatchingBeanNames(Class<?> rawType, Class<?> requestType) {
+    private List<String> findMatchingBeanNames(
+            Class<?> rawType, Class<?> requestType, boolean includeUnresolvedAsMatch) {
         var matchingBeanNames = new ArrayList<String>();
         for (var beanName : beanFactory.getBeanNamesForType(rawType)) {
             var beanClass = beanFactory.getType(beanName);
@@ -92,6 +98,11 @@ public class SpringCqrsHandlerResolver {
 
             var supportedRequestType = resolvedBeanType.getGeneric(0);
             if (supportedRequestType == ResolvableType.NONE) {
+                continue;
+            }
+
+            if (includeUnresolvedAsMatch && supportedRequestType.resolve() == null) {
+                matchingBeanNames.add(beanName);
                 continue;
             }
 
