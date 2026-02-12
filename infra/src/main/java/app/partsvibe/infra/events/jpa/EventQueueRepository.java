@@ -3,7 +3,6 @@ package app.partsvibe.infra.events.jpa;
 import java.time.Instant;
 import java.util.List;
 
-// TODO: Migrate to Spring Data repo
 public interface EventQueueRepository {
     EventQueueEntry save(EventQueueEntry entry);
 
@@ -15,9 +14,7 @@ public interface EventQueueRepository {
 
     int recoverTimedOutProcessing(Instant lockedBefore, Instant now);
 
-    int deleteDoneOlderThan(Instant cutoff, int limit);
-
-    int deleteFailedOlderThan(Instant cutoff, int limit);
+    int deleteByStatusOlderThan(EventQueueStatus status, Instant cutoff, int limit);
 
     List<ClaimedEventQueueEntry> claimBatchForProcessing(int batchSize, int maxAttempts, String workerId, Instant now);
 }

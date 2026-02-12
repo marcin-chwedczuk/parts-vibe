@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class JpaEventQueueRepository implements EventQueueRepository {
-    private static final Logger log = LoggerFactory.getLogger(JpaEventQueueRepository.class);
+public class EventQueueRepositoryImpl implements EventQueueRepository {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueRepositoryImpl.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -23,7 +23,6 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     @Transactional
     public EventQueueEntry save(EventQueueEntry entry) {
         if (entry.getId() == null) {
-            // TODO: Will this set proper ID? Verify
             entityManager.persist(entry);
             return entry;
         }
@@ -33,7 +32,6 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int markDone(long id, Instant now) {
-        // TODO: Can be just operation on entire entity, use Spring Data repo
         return entityManager
                 .createQuery(
                         """
@@ -102,7 +100,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int recoverTimedOutProcessing(Instant lockedBefore, Instant now) {
         return entityManager
                 .createQuery(
@@ -126,8 +124,8 @@ public class JpaEventQueueRepository implements EventQueueRepository {
     }
 
     @Override
-    @Transactional
-    public int deleteDoneOlderThan(Instant cutoff, int limit) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int deleteByStatusOlderThan(EventQueueStatus status, Instant cutoff, int limit) {
         if (limit <= 0) {
             return 0;
         }
@@ -138,43 +136,20 @@ public class JpaEventQueueRepository implements EventQueueRepository {
                         WHERE id IN (
                             SELECT id
                             FROM event_queue
-                            WHERE status = 'DONE'
+                            WHERE status = :status
                               AND updated_at < :cutoff
                             ORDER BY id
                             LIMIT :limit
                         )
                         """)
+                .setParameter("status", status.name())
                 .setParameter("cutoff", cutoff)
                 .setParameter("limit", limit)
                 .executeUpdate();
     }
 
     @Override
-    @Transactional
-    public int deleteFailedOlderThan(Instant cutoff, int limit) {
-        if (limit <= 0) {
-            return 0;
-        }
-        return entityManager
-                .createNativeQuery(
-                        """
-                        DELETE FROM event_queue
-                        WHERE id IN (
-                            SELECT id
-                            FROM event_queue
-                            WHERE status = 'FAILED'
-                              AND updated_at < :cutoff
-                            ORDER BY id
-                            LIMIT :limit
-                        )
-                        """)
-                .setParameter("cutoff", cutoff)
-                .setParameter("limit", limit)
-                .executeUpdate();
-    }
-
-    @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<ClaimedEventQueueEntry> claimBatchForProcessing(
             int batchSize, int maxAttempts, String workerId, Instant now) {
         if (batchSize <= 0) {
