@@ -33,9 +33,9 @@ public class EventQueuePublisher implements EventPublisher {
             EventQueueRepository repository, EventJsonSerializer eventJsonSerializer, MeterRegistry meterRegistry) {
         this.repository = repository;
         this.eventJsonSerializer = eventJsonSerializer;
-        this.publishAttemptsCounter = meterRegistry.counter("app.events.publish.attempts");
-        this.publishSuccessCounter = meterRegistry.counter("app.events.publish.success");
-        this.publishErrorsCounter = meterRegistry.counter("app.events.publish.errors");
+        this.publishAttemptsCounter = meterRegistry.counter("app.event-queue.publish.attempts");
+        this.publishSuccessCounter = meterRegistry.counter("app.event-queue.publish.success");
+        this.publishErrorsCounter = meterRegistry.counter("app.event-queue.publish.errors");
     }
 
     @Override

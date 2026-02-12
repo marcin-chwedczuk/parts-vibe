@@ -7,10 +7,12 @@ import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -32,13 +34,11 @@ public class EventQueueConsumer {
     private final EventQueueDispatcherProperties properties;
     private final TimeProvider timeProvider;
     private final TransactionTemplate requiresNewTx;
-    private final Counter dispatchAttemptsCounter;
-    private final Counter dispatchSuccessCounter;
-    private final Counter dispatchErrorsCounter;
-    private final Counter processedCounter;
     private final Counter doneCounter;
     private final Counter failedCounter;
-    private final Counter retryScheduledCounter;
+    private final DistributionSummary lagSummary;
+    private final AtomicLong lastLagMs;
+    private final AtomicLong lastProcessedEpochMs;
 
     public EventQueueConsumer(
             EventTypeRegistry eventTypeRegistry,
@@ -57,27 +57,31 @@ public class EventQueueConsumer {
         this.timeProvider = timeProvider;
         this.requiresNewTx = new TransactionTemplate(transactionManager);
         this.requiresNewTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        this.dispatchAttemptsCounter = meterRegistry.counter("app.events.dispatch.attempts");
-        this.dispatchSuccessCounter = meterRegistry.counter("app.events.dispatch.success");
-        this.dispatchErrorsCounter = meterRegistry.counter("app.events.dispatch.errors");
-        this.processedCounter = meterRegistry.counter("app.events.worker.processed");
-        this.doneCounter = meterRegistry.counter("app.events.worker.done");
-        this.failedCounter = meterRegistry.counter("app.events.worker.failed");
-        this.retryScheduledCounter = meterRegistry.counter("app.events.worker.retry.scheduled");
+        this.doneCounter = meterRegistry.counter("app.event-queue.events.done");
+        this.failedCounter = meterRegistry.counter("app.event-queue.events.failed");
+        this.lagSummary = DistributionSummary.builder("app.event-queue.events.lag.ms")
+                .baseUnit("milliseconds")
+                .register(meterRegistry);
+        this.lastLagMs = new AtomicLong(0);
+        this.lastProcessedEpochMs = new AtomicLong(0);
+        meterRegistry.gauge("app.event-queue.events.lag.last.ms", lastLagMs, AtomicLong::get);
+        meterRegistry.gauge("app.event-queue.events.last-processed.age.seconds", lastProcessedEpochMs, value -> {
+            long last = value.get();
+            if (last <= 0) {
+                return -1.0;
+            }
+            return Math.max(0.0, (System.currentTimeMillis() - last) / 1000.0);
+        });
     }
 
     public void consume(ClaimedEventQueueEntry entry) {
-        dispatchAttemptsCounter.increment();
         try {
             dispatchToHandlers(entry);
-            dispatchSuccessCounter.increment();
             markDone(entry);
         } catch (RuntimeException ex) {
-            dispatchErrorsCounter.increment();
             markFailed(entry, ex);
             throw ex;
         } catch (Error ex) {
-            dispatchErrorsCounter.increment();
             markFailed(entry, ex);
             throw ex;
         }
@@ -144,10 +148,10 @@ public class EventQueueConsumer {
 
     private void markDone(ClaimedEventQueueEntry entry) {
         requiresNewTx.executeWithoutResult(status -> {
-            processedCounter.increment();
             int updated = eventQueueRepository.markDone(entry.id(), timeProvider.now());
             if (updated > 0) {
                 doneCounter.increment();
+                recordLag(entry, timeProvider.now());
                 log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
             } else {
                 log.debug(
@@ -159,15 +163,14 @@ public class EventQueueConsumer {
 
     private void markFailed(ClaimedEventQueueEntry entry, Throwable errorCause) {
         requiresNewTx.executeWithoutResult(status -> {
-            processedCounter.increment();
             Instant now = timeProvider.now();
             Instant nextAttemptAt = now.plusMillis(computeBackoffMs(entry.attemptCount()));
             String error = truncatedError(errorCause);
             int updated = eventQueueRepository.markFailed(entry.id(), nextAttemptAt, error, now);
             if (updated > 0) {
                 failedCounter.increment();
+                recordLag(entry, now);
                 if (entry.attemptCount() < properties.getMaxAttempts()) {
-                    retryScheduledCounter.increment();
                     log.debug(
                             "Scheduled event queue retry. entry={}, nextAttemptAt={}",
                             entry.toStringWithoutPayload(),
@@ -190,6 +193,13 @@ public class EventQueueConsumer {
                         error);
             }
         });
+    }
+
+    private void recordLag(ClaimedEventQueueEntry entry, Instant now) {
+        long lagMs = Math.max(0L, now.toEpochMilli() - entry.occurredAt().toEpochMilli());
+        lagSummary.record(lagMs);
+        lastLagMs.set(lagMs);
+        lastProcessedEpochMs.set(now.toEpochMilli());
     }
 
     private long computeBackoffMs(int attemptCount) {

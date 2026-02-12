@@ -2,8 +2,6 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,19 +15,14 @@ public class EventQueueRetentionCleanupJob {
     private final EventQueueDispatcherProperties properties;
     private final EventQueueRepository eventQueueRepository;
     private final TimeProvider timeProvider;
-    private final Counter doneDeletedCounter;
-    private final Counter failedDeletedCounter;
 
     public EventQueueRetentionCleanupJob(
             EventQueueDispatcherProperties properties,
             EventQueueRepository eventQueueRepository,
-            TimeProvider timeProvider,
-            MeterRegistry meterRegistry) {
+            TimeProvider timeProvider) {
         this.properties = properties;
         this.eventQueueRepository = eventQueueRepository;
         this.timeProvider = timeProvider;
-        this.doneDeletedCounter = meterRegistry.counter("app.events.worker.retention.done.deleted");
-        this.failedDeletedCounter = meterRegistry.counter("app.events.worker.retention.failed.deleted");
     }
 
     @Scheduled(fixedDelayString = "${app.events.dispatcher.retention-cleanup-interval-ms:3600000}")
@@ -50,13 +43,6 @@ public class EventQueueRetentionCleanupJob {
 
         int doneDeleted = eventQueueRepository.deleteDoneOlderThan(doneCutoff, batchSize);
         int failedDeleted = eventQueueRepository.deleteFailedOlderThan(failedCutoff, batchSize);
-
-        if (doneDeleted > 0) {
-            doneDeletedCounter.increment(doneDeleted);
-        }
-        if (failedDeleted > 0) {
-            failedDeletedCounter.increment(failedDeleted);
-        }
 
         log.info(
                 "Event queue retention cleanup finished. doneDeleted={}, failedDeleted={}, doneCutoff={}, failedCutoff={}, batchSize={}",

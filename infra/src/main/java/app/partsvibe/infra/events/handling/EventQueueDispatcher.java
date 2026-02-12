@@ -15,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,12 +32,8 @@ public class EventQueueDispatcher {
     private final Executor eventQueueExecutor;
     private final ScheduledExecutorService eventQueueTimeoutScheduler;
     private final Semaphore inFlightSlots;
-    private final AtomicInteger inFlightTasks;
     private final String workerId;
     private final Counter claimedCounter;
-    private final Counter pollSkippedCounter;
-    private final Counter executorRejectedCounter;
-    private final Counter executorRejectedReleasedCounter;
     private final Counter timeoutCancelledCounter;
 
     public EventQueueDispatcher(
@@ -56,17 +51,10 @@ public class EventQueueDispatcher {
         this.eventQueueExecutor = eventQueueExecutor;
         this.eventQueueTimeoutScheduler = eventQueueTimeoutScheduler;
         this.inFlightSlots = new Semaphore(properties.getThreadPoolSize());
-        this.inFlightTasks = new AtomicInteger(0);
         this.workerId = "worker-" + UUID.randomUUID();
 
-        this.claimedCounter = meterRegistry.counter("app.events.worker.claimed");
-        this.pollSkippedCounter = meterRegistry.counter("app.events.worker.poll.skipped");
-        this.executorRejectedCounter = meterRegistry.counter("app.events.worker.executor.rejected");
-        this.executorRejectedReleasedCounter = meterRegistry.counter("app.events.worker.executor.rejected.released");
-        this.timeoutCancelledCounter = meterRegistry.counter("app.events.worker.timeout.cancelled");
-
-        meterRegistry.gauge("app.events.worker.inflight", inFlightTasks, AtomicInteger::get);
-        meterRegistry.gauge("app.events.worker.permits.available", inFlightSlots, Semaphore::availablePermits);
+        this.claimedCounter = meterRegistry.counter("app.event-queue.events.claimed");
+        this.timeoutCancelledCounter = meterRegistry.counter("app.event-queue.events.timed-out");
 
         log.info("Event queue dispatcher initialized. properties={}", properties);
     }
@@ -80,7 +68,6 @@ public class EventQueueDispatcher {
 
         int capacity = inFlightSlots.availablePermits();
         if (capacity <= 0) {
-            pollSkippedCounter.increment();
             log.debug("Event queue dispatcher poll skipped due to no in-flight capacity. workerId={}", workerId);
             return;
         }
@@ -102,19 +89,15 @@ public class EventQueueDispatcher {
 
     private void submitEvent(ClaimedEventQueueEntry entry) {
         inFlightSlots.acquireUninterruptibly();
-        inFlightTasks.incrementAndGet();
 
         CompletableFuture<Void> future;
         try {
             future = CompletableFuture.runAsync(() -> eventQueueConsumer.consume(entry), eventQueueExecutor);
         } catch (RejectedExecutionException ex) {
-            inFlightTasks.decrementAndGet();
             inFlightSlots.release();
-            executorRejectedCounter.increment();
             Instant now = timeProvider.now();
             int updated = eventQueueRepository.releaseForRetry(entry.id(), now, now);
             if (updated > 0) {
-                executorRejectedReleasedCounter.increment();
                 log.warn(
                         "Event queue entry released for retry after executor rejection. entry={}",
                         entry.toStringWithoutPayload(),
@@ -160,7 +143,6 @@ public class EventQueueDispatcher {
             if (finalTimeoutTask != null) {
                 finalTimeoutTask.cancel(false);
             }
-            inFlightTasks.decrementAndGet();
             inFlightSlots.release();
 
             if (throwable != null) {
