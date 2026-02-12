@@ -9,14 +9,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EventQueueStaleRecoveryJob {
-    private static final Logger log = LoggerFactory.getLogger(EventQueueStaleRecoveryJob.class);
+public class EventQueueTimedOutProcessingRecoveryJob {
+    private static final Logger log = LoggerFactory.getLogger(EventQueueTimedOutProcessingRecoveryJob.class);
 
     private final EventQueueDispatcherProperties properties;
     private final EventQueueRepository eventQueueRepository;
     private final TimeProvider timeProvider;
 
-    public EventQueueStaleRecoveryJob(
+    public EventQueueTimedOutProcessingRecoveryJob(
             EventQueueDispatcherProperties properties,
             EventQueueRepository eventQueueRepository,
             TimeProvider timeProvider) {
@@ -26,23 +26,22 @@ public class EventQueueStaleRecoveryJob {
     }
 
     @Scheduled(fixedDelayString = "${app.events.dispatcher.stale-recovery-interval-ms:60000}")
-    public void requeueStaleProcessing() {
+    public void recoverTimedOutProcessing() {
         if (!properties.isEnabled()) {
+            log.warn("EventQueueTimedOutProcessingRecoveryJob is disabled.");
             return;
         }
 
         Instant now = timeProvider.now();
         Instant lockedBefore = now.minusMillis(properties.getProcessingTimeoutMs());
-        // TODO: Respect max attempts, use batch size
-        int requeued = eventQueueRepository.requeueStaleProcessing(lockedBefore, now);
-        if (requeued > 0) {
+
+        int recovered = eventQueueRepository.recoverTimedOutProcessing(lockedBefore, now);
+        if (recovered > 0) {
             log.warn(
-                    "Recovered stale PROCESSING event queue entries. count={}, processingTimeoutMs={}, lockedBefore={}",
-                    requeued,
+                    "Recovered timed-out PROCESSING event queue entries. count={}, processingTimeoutMs={}, lockedBefore={}",
+                    recovered,
                     properties.getProcessingTimeoutMs(),
                     lockedBefore);
-        } else {
-            log.debug("No stale PROCESSING event queue entries found");
         }
     }
 }

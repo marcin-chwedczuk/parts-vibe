@@ -103,7 +103,7 @@ public class JpaEventQueueRepository implements EventQueueRepository {
 
     @Override
     @Transactional
-    public int requeueStaleProcessing(Instant lockedBefore, Instant now) {
+    public int recoverTimedOutProcessing(Instant lockedBefore, Instant now) {
         return entityManager
                 .createQuery(
                         """

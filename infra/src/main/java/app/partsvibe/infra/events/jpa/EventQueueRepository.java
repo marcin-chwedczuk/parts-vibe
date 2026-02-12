@@ -13,7 +13,7 @@ public interface EventQueueRepository {
 
     int releaseForRetry(long id, Instant nextAttemptAt, Instant now);
 
-    int requeueStaleProcessing(Instant lockedBefore, Instant now);
+    int recoverTimedOutProcessing(Instant lockedBefore, Instant now);
 
     int deleteDoneOlderThan(Instant cutoff, int limit);
 

@@ -78,7 +78,7 @@ app:
       thread-pool-queue-capacity: ${APP_EVENTS_DISPATCHER_THREAD_POOL_QUEUE_CAPACITY:8}
       # Max time for a single handler execution before timeout/cancel is requested.
       handler-timeout-ms: ${APP_EVENTS_DISPATCHER_HANDLER_TIMEOUT_MS:60000}
-      # If a PROCESSING row stays locked longer than this, stale-recovery marks it FAILED for retry.
+      # If a PROCESSING row stays locked longer than this, timed-out-processing recovery marks it FAILED for retry.
       processing-timeout-ms: ${APP_EVENTS_DISPATCHER_PROCESSING_TIMEOUT_MS:120000}
       # Retry backoff: nextAttemptAt = initial * multiplier^(attempt-1), capped by backoff-max.
       backoff-initial-ms: ${APP_EVENTS_DISPATCHER_BACKOFF_INITIAL_MS:1000}
