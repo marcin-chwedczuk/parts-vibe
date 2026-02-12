@@ -98,21 +98,15 @@ public class EventQueueConsumer {
         List<ResolvedHandler> handlers = resolveHandlers(eventClass);
 
         log.debug(
-                "Dispatching event queue entry to handlers. id={}, eventId={}, eventName={}, schemaVersion={}, handlersCount={}",
-                entry.id(),
-                entry.eventId(),
-                entry.eventType(),
-                entry.schemaVersion(),
+                "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
+                entry.toStringWithoutPayload(),
                 handlers.size());
 
         for (ResolvedHandler resolvedHandler : handlers) {
             String handlerClassName = handlerClassName(resolvedHandler.handler());
             log.debug(
-                    "Invoking event handler. id={}, eventId={}, eventName={}, schemaVersion={}, handlerBeanName={}, handlerClass={}",
-                    entry.id(),
-                    entry.eventId(),
-                    entry.eventType(),
-                    entry.schemaVersion(),
+                    "Invoking event handler. entry={}, handlerBeanName={}, handlerClass={}",
+                    entry.toStringWithoutPayload(),
                     resolvedHandler.beanName(),
                     handlerClassName);
             try {
@@ -120,11 +114,8 @@ public class EventQueueConsumer {
             } catch (RuntimeException ex) {
                 String causeMessage = safeMessage(ex);
                 log.error(
-                        "Event handler execution failed. id={}, eventId={}, eventName={}, schemaVersion={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
-                        entry.id(),
-                        entry.eventId(),
-                        entry.eventType(),
-                        entry.schemaVersion(),
+                        "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
+                        entry.toStringWithoutPayload(),
                         resolvedHandler.beanName(),
                         handlerClassName,
                         ex.getClass().getSimpleName(),
@@ -158,19 +149,11 @@ public class EventQueueConsumer {
             if (updated > 0) {
                 doneCounter.increment();
                 log.info(
-                        "Event queue entry processed successfully. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
-                        entry.id(),
-                        entry.eventId(),
-                        entry.eventType(),
-                        entry.schemaVersion(),
-                        entry.attemptCount());
+                        "Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
             } else {
                 log.debug(
-                        "Skipping DONE transition because event queue entry is no longer PROCESSING. id={}, eventId={}, eventName={}, schemaVersion={}",
-                        entry.id(),
-                        entry.eventId(),
-                        entry.eventType(),
-                        entry.schemaVersion());
+                        "Skipping DONE transition because event queue entry is no longer PROCESSING. entry={}",
+                        entry.toStringWithoutPayload());
             }
         });
     }
@@ -187,39 +170,24 @@ public class EventQueueConsumer {
                 if (entry.attemptCount() < properties.getMaxAttempts()) {
                     retryScheduledCounter.increment();
                     log.debug(
-                            "Scheduled event queue retry. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}",
-                            entry.id(),
-                            entry.eventId(),
-                            entry.eventType(),
-                            entry.schemaVersion(),
-                            entry.attemptCount(),
+                            "Scheduled event queue retry. entry={}, nextAttemptAt={}",
+                            entry.toStringWithoutPayload(),
                             nextAttemptAt);
                 } else {
                     log.warn(
-                            "Event queue entry reached max attempts and will remain FAILED. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
-                            entry.id(),
-                            entry.eventId(),
-                            entry.eventType(),
-                            entry.schemaVersion(),
-                            entry.attemptCount());
+                            "Event queue entry reached max attempts and will remain FAILED. entry={}",
+                            entry.toStringWithoutPayload());
                 }
                 log.error(
-                        "Event queue processing failed. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}, nextAttemptAt={}, errorSummary={}",
-                        entry.id(),
-                        entry.eventId(),
-                        entry.eventType(),
-                        entry.schemaVersion(),
-                        entry.attemptCount(),
+                        "Event queue processing failed. entry={}, nextAttemptAt={}, errorSummary={}",
+                        entry.toStringWithoutPayload(),
                         nextAttemptAt,
                         error,
                         errorCause);
             } else {
                 log.debug(
-                        "Skipping FAILED transition because event queue entry is no longer PROCESSING. id={}, eventId={}, eventName={}, schemaVersion={}, errorSummary={}",
-                        entry.id(),
-                        entry.eventId(),
-                        entry.eventType(),
-                        entry.schemaVersion(),
+                        "Skipping FAILED transition because event queue entry is no longer PROCESSING. entry={}, errorSummary={}",
+                        entry.toStringWithoutPayload(),
                         error);
             }
         });

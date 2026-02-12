@@ -121,11 +121,8 @@ public class EventQueueDispatcher {
                             if (future.cancel(true)) {
                                 timeoutCancelledCounter.increment();
                                 log.warn(
-                                        "Cancelled timed out event queue task. id={}, eventId={}, eventName={}, schemaVersion={}, timeoutMs={}",
-                                        entry.id(),
-                                        entry.eventId(),
-                                        entry.eventType(),
-                                        entry.schemaVersion(),
+                                        "Cancelled timed out event queue task. entry={}, timeoutMs={}",
+                                        entry.toStringWithoutPayload(),
                                         timeoutMs);
                             }
                         },
@@ -143,32 +140,21 @@ public class EventQueueDispatcher {
 
                 if (throwable != null) {
                     log.debug(
-                            "Event queue task completed exceptionally (failure already handled by consumer or timeout fallback). id={}, eventId={}, eventName={}, schemaVersion={}, errorType={}",
-                            entry.id(),
-                            entry.eventId(),
-                            entry.eventType(),
-                            entry.schemaVersion(),
+                            "Event queue task completed exceptionally (failure already handled by consumer or timeout fallback). entry={}, errorType={}",
+                            entry.toStringWithoutPayload(),
                             throwable.getClass().getSimpleName());
                 }
             });
 
             log.debug(
-                    "Submitted event queue entry to executor. id={}, eventId={}, eventName={}, schemaVersion={}, attemptCount={}",
-                    entry.id(),
-                    entry.eventId(),
-                    entry.eventType(),
-                    entry.schemaVersion(),
-                    entry.attemptCount());
+                    "Submitted event queue entry to executor. entry={}", entry.toStringWithoutPayload());
         } catch (RejectedExecutionException ex) {
             inFlightTasks.decrementAndGet();
             inFlightSlots.release();
             executorRejectedCounter.increment();
             log.error(
-                    "Failed to submit event queue entry to executor. id={}, eventId={}, eventName={}, schemaVersion={}",
-                    entry.id(),
-                    entry.eventId(),
-                    entry.eventType(),
-                    entry.schemaVersion(),
+                    "Failed to submit event queue entry to executor. entry={}",
+                    entry.toStringWithoutPayload(),
                     ex);
             eventQueueConsumer.markFailedIfProcessing(
                     entry, new IllegalStateException("Event queue executor rejected submitted task", ex));

@@ -20,4 +20,9 @@ public record ClaimedEventQueueEntry(
                 entity.getRequestId(),
                 entity.getAttemptCount());
     }
+
+    public String toStringWithoutPayload() {
+        return "ClaimedEventQueueEntry{id=%d, eventId=%s, eventType='%s', schemaVersion=%d, requestId='%s', attemptCount=%d}"
+                .formatted(id, eventId, eventType, schemaVersion, requestId, attemptCount);
+    }
 }
