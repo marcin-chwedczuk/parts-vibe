@@ -40,9 +40,8 @@ public class ContactController {
             return "contact";
         }
 
-        var messageId = mediator.executeCommand(
-                        new SubmitContactMessageCommand(
-                                contactForm.getName(), contactForm.getEmail(), contactForm.getMessage()))
+        var messageId = mediator.executeCommand(new SubmitContactMessageCommand(
+                        contactForm.getName(), contactForm.getEmail(), contactForm.getMessage()))
                 .messageId();
         log.info("Contact message saved: id={}", messageId);
         return "contact-success";

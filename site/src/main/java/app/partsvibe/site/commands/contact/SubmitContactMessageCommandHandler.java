@@ -20,7 +20,8 @@ class SubmitContactMessageCommandHandler
 
     @Override
     protected SubmitContactMessageCommandResult doHandle(SubmitContactMessageCommand command) {
-        var saved = contactMessageRepository.save(new ContactMessage(command.name(), command.email(), command.message()));
+        var saved =
+                contactMessageRepository.save(new ContactMessage(command.name(), command.email(), command.message()));
         sendConfirmationEmail(command.name(), command.email(), command.message());
         return new SubmitContactMessageCommandResult(saved.getId());
     }

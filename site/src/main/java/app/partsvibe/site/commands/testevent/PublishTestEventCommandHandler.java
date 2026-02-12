@@ -6,7 +6,8 @@ import app.partsvibe.site.events.TestEvent;
 import org.springframework.stereotype.Component;
 
 @Component
-class PublishTestEventCommandHandler extends BaseCommandHandler<PublishTestEventCommand, PublishTestEventCommandResult> {
+class PublishTestEventCommandHandler
+        extends BaseCommandHandler<PublishTestEventCommand, PublishTestEventCommandResult> {
     private final EventPublisher eventPublisher;
 
     PublishTestEventCommandHandler(EventPublisher eventPublisher) {

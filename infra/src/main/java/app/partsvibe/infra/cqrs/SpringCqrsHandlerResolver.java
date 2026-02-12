@@ -31,9 +31,8 @@ public class SpringCqrsHandlerResolver {
                     "No command handler found. commandClass=%s".formatted(commandType.getName()));
         }
         if (matchingBeanNames.size() > 1) {
-            throw new CqrsHandlerResolutionException(
-                    "Multiple command handlers found. commandClass=%s, handlerBeans=%s"
-                            .formatted(commandType.getName(), matchingBeanNames));
+            throw new CqrsHandlerResolutionException("Multiple command handlers found. commandClass=%s, handlerBeans=%s"
+                    .formatted(commandType.getName(), matchingBeanNames));
         }
 
         return (CommandHandler<C, R>) beanFactory.getBean(matchingBeanNames.getFirst(), CommandHandler.class);
@@ -49,9 +48,8 @@ public class SpringCqrsHandlerResolver {
                     "No query handler found. queryClass=%s".formatted(queryType.getName()));
         }
         if (matchingBeanNames.size() > 1) {
-            throw new CqrsHandlerResolutionException(
-                    "Multiple query handlers found. queryClass=%s, handlerBeans=%s"
-                            .formatted(queryType.getName(), matchingBeanNames));
+            throw new CqrsHandlerResolutionException("Multiple query handlers found. queryClass=%s, handlerBeans=%s"
+                    .formatted(queryType.getName(), matchingBeanNames));
         }
 
         return (QueryHandler<Q, R>) beanFactory.getBean(matchingBeanNames.getFirst(), QueryHandler.class);
