@@ -2,6 +2,7 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.events.jpa.ClaimedEventQueueEntry;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
+import app.partsvibe.infra.utils.ThrowableUtils;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
 
 @Component
@@ -30,6 +33,7 @@ public class EventQueueConsumer {
         this.beanFactory = beanFactory;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ClaimedEventQueueEntry entry) {
         Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(entry.eventType(), entry.schemaVersion());
         Event event = eventJsonSerializer.deserialize(entry.payload(), eventClass);
@@ -50,7 +54,7 @@ public class EventQueueConsumer {
             try {
                 invokeHandler(resolvedHandler.handler(), event);
             } catch (RuntimeException ex) {
-                String causeMessage = safeMessage(ex);
+                String causeMessage = ThrowableUtils.safeMessage(ex);
                 log.error(
                         "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
                         entry.toStringWithoutPayload(),
@@ -78,14 +82,6 @@ public class EventQueueConsumer {
                                 .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
             }
         }
-    }
-
-    private static String safeMessage(Throwable throwable) {
-        String message = throwable.getMessage();
-        if (message == null || message.isBlank()) {
-            return "<no-message>";
-        }
-        return message;
     }
 
     private static String handlerClassName(EventHandler<? extends Event> handler) {

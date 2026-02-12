@@ -25,4 +25,15 @@ public final class ThrowableUtils {
         }
         return throwable;
     }
+
+    public static String safeMessage(Throwable throwable) {
+        if (throwable == null) {
+            return "<null-throwable>";
+        }
+        String message = throwable.getMessage();
+        if (message == null || message.isBlank()) {
+            return "<no-message>";
+        }
+        return message;
+    }
 }
