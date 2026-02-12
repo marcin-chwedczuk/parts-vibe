@@ -8,6 +8,16 @@
   <div>
     <h1 class="h4 mb-3" th:text="#{admin.heading}">Admin area</h1>
     <p class="mb-4" th:text="#{admin.body}">Only ROLE_ADMIN can access this page.</p>
+    <div class="alert alert-success mb-3" th:if="${retentionCleanupTriggered}">
+      <span th:text="#{admin.retentionCleanup.triggered}">Retention cleanup was queued.</span>
+      <code class="ms-2" th:text="${retentionCleanupEventId}">event-id</code>
+    </div>
+    <form th:action="@{/admin/event-queue/retention-cleanup}" method="post" class="mb-3">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <button type="submit" class="btn btn-warning" th:text="#{admin.retentionCleanup.trigger}">
+        Trigger retention cleanup
+      </button>
+    </form>
     <a class="btn btn-outline-primary" th:href="@{/}" th:text="#{admin.backHome}">Back home</a>
   </div>
 </section>
