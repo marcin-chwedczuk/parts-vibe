@@ -2,8 +2,6 @@ package app.partsvibe.infra.events.handling;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -26,13 +24,10 @@ public class EventQueueExecutorConfig {
 
     @Bean(name = "eventQueueTimeoutScheduler", destroyMethod = "shutdown")
     public ScheduledExecutorService eventQueueTimeoutScheduler() {
-        AtomicInteger threadCounter = new AtomicInteger(0);
-        ThreadFactory threadFactory = runnable -> {
-            Thread thread = new Thread(runnable);
-            thread.setName("event-queue-timeout-worker-" + threadCounter.incrementAndGet());
-            thread.setDaemon(true);
-            return thread;
-        };
+        var threadFactory = Thread.ofPlatform()
+                .name("event-queue-timeout-worker-", 1)
+                .daemon(true)
+                .factory();
         return Executors.newSingleThreadScheduledExecutor(threadFactory);
     }
 }

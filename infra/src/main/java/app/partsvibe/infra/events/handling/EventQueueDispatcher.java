@@ -9,7 +9,6 @@ import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -78,19 +77,19 @@ public class EventQueueDispatcher {
     @Scheduled(fixedDelayString = "${app.events.dispatcher.poll-interval-ms:1000}")
     public void pollAndDispatch() {
         if (!properties.isEnabled()) {
-            log.debug("Event queue dispatcher poll skipped because worker is disabled");
+            log.debug("Event queue dispatcher poll skipped because dispatcher is disabled");
             return;
         }
 
-        int capacity = inFlightSlots.availablePermits();
+        var capacity = inFlightSlots.availablePermits();
         if (capacity <= 0) {
             log.debug(
                     "Event queue dispatcher poll skipped due to no in-flight capacity. dispatcherId={}", dispatcherId);
             return;
         }
 
-        Instant claimedAt = timeProvider.now();
-        List<ClaimedEventQueueEntry> claimed = eventQueueRepository.claimEntriesForProcessing(
+        var claimedAt = timeProvider.now();
+        var claimed = eventQueueRepository.claimEntriesForProcessing(
                 capacity, properties.getMaxAttempts(), dispatcherId, claimedAt);
         if (claimed.isEmpty()) {
             log.debug("No event queue entries claimed. dispatcherId={}", dispatcherId);
@@ -107,7 +106,7 @@ public class EventQueueDispatcher {
 
     private void submitEvent(ClaimedEventQueueEntry event) {
         inFlightSlots.acquireUninterruptibly();
-        Instant processingStartedAt = timeProvider.now();
+        var processingStartedAt = timeProvider.now();
 
         CompletableFuture<Void> future;
         try {
@@ -144,7 +143,7 @@ public class EventQueueDispatcher {
             }
         });
 
-        long timeoutMs = properties.getHandlerTimeoutMs();
+        var timeoutMs = properties.getHandlerTimeoutMs();
         if (timeoutMs > 0) {
             try {
                 ScheduledFuture<?> timeoutTask = eventQueueTimeoutScheduler.schedule(
@@ -178,8 +177,8 @@ public class EventQueueDispatcher {
     }
 
     private void markDone(ClaimedEventQueueEntry entry) {
-        Instant now = timeProvider.now();
-        int updated = eventQueueRepository.markEntryAsDone(entry.id(), now);
+        var now = timeProvider.now();
+        var updated = eventQueueRepository.markEntryAsDone(entry.id(), now);
         if (updated > 0) {
             doneCounter.increment();
             log.info("Event queue entry processed successfully. entry={}", entry.toStringWithoutPayload());
@@ -191,10 +190,10 @@ public class EventQueueDispatcher {
     }
 
     private void markFailed(ClaimedEventQueueEntry entry, Throwable errorCause) {
-        Instant now = timeProvider.now();
-        Instant nextAttemptAt = now.plusMillis(backoffCalculator.computeDelayMs(entry.attemptCount()));
-        String error = truncatedError(errorCause);
-        int updated = eventQueueRepository.markEntryAsFailed(entry.id(), nextAttemptAt, error, now);
+        var now = timeProvider.now();
+        var nextAttemptAt = now.plusMillis(backoffCalculator.computeDelayMs(entry.attemptCount()));
+        var error = truncatedError(errorCause);
+        var updated = eventQueueRepository.markEntryAsFailed(entry.id(), nextAttemptAt, error, now);
         if (updated > 0) {
             failedCounter.increment();
             if (entry.attemptCount() < properties.getMaxAttempts()) {
@@ -230,8 +229,8 @@ public class EventQueueDispatcher {
     }
 
     private void releaseClaimedEntry(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {
-        Instant now = timeProvider.now();
-        int updated = eventQueueRepository.releaseClaimedEntry(entry.id(), now, now);
+        var now = timeProvider.now();
+        var updated = eventQueueRepository.releaseClaimedEntry(entry.id(), now, now);
         if (updated > 0) {
             log.warn(
                     "Event queue entry released for retry after executor rejection. entry={}",

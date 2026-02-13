@@ -2,7 +2,6 @@ package app.partsvibe.infra.events.handling;
 
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -32,10 +31,10 @@ public class EventQueueTimedOutProcessingRecoveryJob {
             return;
         }
 
-        Instant now = timeProvider.now();
-        Instant lockedBefore = now.minusMillis(properties.getProcessingTimeoutMs());
+        var now = timeProvider.now();
+        var lockedBefore = now.minusMillis(properties.getProcessingTimeoutMs());
 
-        int recovered = eventQueueRepository.recoverTimedOutProcessingEntries(lockedBefore, now);
+        var recovered = eventQueueRepository.recoverTimedOutProcessingEntries(lockedBefore, now);
         if (recovered > 0) {
             log.warn(
                     "Recovered timed-out PROCESSING event queue entries. count={}, processingTimeoutMs={}, lockedBefore={}",

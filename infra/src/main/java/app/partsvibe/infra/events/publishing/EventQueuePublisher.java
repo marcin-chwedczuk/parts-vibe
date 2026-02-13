@@ -43,9 +43,9 @@ public class EventQueuePublisher implements EventPublisher {
     public void publish(Event event) {
         publishAttemptsCounter.increment();
         try {
-            EventMetadata metadata = validate(event);
-            String payloadJson = eventJsonSerializer.serialize(event);
-            EventQueueEntry entry = EventQueueEntry.newEvent(
+            var metadata = validate(event);
+            var payloadJson = eventJsonSerializer.serialize(event);
+            var entry = EventQueueEntry.newEvent(
                     event.eventId(),
                     metadata.eventName(),
                     metadata.schemaVersion(),
@@ -65,21 +65,21 @@ public class EventQueuePublisher implements EventPublisher {
             throw e;
         } catch (RuntimeException e) {
             publishErrorsCounter.increment();
-            String eventType = "unknown";
+            String eventName = "unknown";
             int schemaVersion = -1;
             if (event != null) {
                 try {
-                    EventMetadata metadata = EventMetadata.fromEvent(event);
-                    eventType = metadata.eventName();
+                    var metadata = EventMetadata.fromEvent(event);
+                    eventName = metadata.eventName();
                     schemaVersion = metadata.schemaVersion();
                 } catch (RuntimeException ignored) {
                     // Fallback to unknown values when metadata extraction fails.
                 }
             }
-            String eventId = (event == null) ? "unknown" : String.valueOf(event.eventId());
+            var eventId = (event == null) ? "unknown" : String.valueOf(event.eventId());
             throw new EventPublisherException(
                     "Failed to publish event. eventId=%s, eventName=%s, schemaVersion=%d"
-                            .formatted(eventId, eventType, schemaVersion),
+                            .formatted(eventId, eventName, schemaVersion),
                     e);
         }
     }
@@ -95,7 +95,7 @@ public class EventQueuePublisher implements EventPublisher {
             throw new EventPublisherException("Event occurredAt must not be null.");
         }
 
-        EventMetadata metadata = EventMetadata.fromEvent(event);
+        var metadata = EventMetadata.fromEvent(event);
 
         // TODO: EventMetadata - already does some validation, we repeat it here
         if (isBlank(metadata.eventName())) {

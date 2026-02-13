@@ -3,9 +3,7 @@ package app.partsvibe.infra.events.jpa;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -154,11 +152,11 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
             int batchSize, int maxAttempts, String workerId, Instant now) {
         if (batchSize <= 0) {
             log.debug("Claim batch skipped because batchSize <= 0");
-            return Collections.emptyList();
+            return List.of();
         }
 
         @SuppressWarnings("unchecked")
-        List<Number> idRows = entityManager
+        var idRows = (List<Number>) entityManager
                 .createNativeQuery(
                         """
                         SELECT id
@@ -177,10 +175,10 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
 
         if (idRows.isEmpty()) {
             log.debug("No event queue entry IDs selected for claiming");
-            return Collections.emptyList();
+            return List.of();
         }
 
-        List<Long> ids = idRows.stream().map(Number::longValue).toList();
+        var ids = idRows.stream().map(Number::longValue).toList();
 
         entityManager
                 .createQuery(
@@ -199,12 +197,12 @@ public class EventQueueRepositoryImpl implements EventQueueRepository {
                 .setParameter("ids", ids)
                 .executeUpdate();
 
-        List<ClaimedEventQueueEntry> claimed = entityManager
+        var claimed = entityManager
                 .createQuery("SELECT e FROM EventQueueEntry e WHERE e.id IN :ids", EventQueueEntry.class)
                 .setParameter("ids", ids)
                 .getResultStream()
                 .map(ClaimedEventQueueEntry::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
         log.debug(
                 "Claimed event queue rows and marked as PROCESSING. workerId={}, requestedBatchSize={}, selectedCount={}, claimedCount={}",
                 workerId,

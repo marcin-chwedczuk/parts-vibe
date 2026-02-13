@@ -3,7 +3,7 @@ package app.partsvibe.infra.events.handling;
 import app.partsvibe.infra.events.jpa.EventQueueEntryStatus;
 import app.partsvibe.infra.events.jpa.EventQueueRepository;
 import app.partsvibe.shared.time.TimeProvider;
-import java.time.Instant;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EventQueueRetentionCleanupService {
     private static final Logger log = LoggerFactory.getLogger(EventQueueRetentionCleanupService.class);
-    private static final long DELETE_BATCH_PAUSE_MS = 50L;
+    private static final Duration DELETE_BATCH_PAUSE = Duration.ofMillis(50);
     private static final int DEFAULT_RETENTION_DELETE_BATCH_SIZE = 500;
 
     private final EventQueueDispatcherProperties properties;
@@ -33,8 +33,8 @@ public class EventQueueRetentionCleanupService {
             return new RetentionCleanupResult(0, 0, 0, false);
         }
 
-        int configuredBatchSize = properties.getRetentionDeleteBatchSize();
-        int batchSize = configuredBatchSize > 0 ? configuredBatchSize : DEFAULT_RETENTION_DELETE_BATCH_SIZE;
+        var configuredBatchSize = properties.getRetentionDeleteBatchSize();
+        var batchSize = configuredBatchSize > 0 ? configuredBatchSize : DEFAULT_RETENTION_DELETE_BATCH_SIZE;
         if (configuredBatchSize <= 0) {
             log.warn(
                     "Invalid retentionDeleteBatchSize configured ({}). Falling back to default batchSize={}.",
@@ -42,17 +42,17 @@ public class EventQueueRetentionCleanupService {
                     DEFAULT_RETENTION_DELETE_BATCH_SIZE);
         }
 
-        Instant now = timeProvider.now();
-        Instant doneCutoff = now.minusSeconds((long) properties.getDoneRetentionDays() * 24 * 60 * 60);
-        Instant failedCutoff = now.minusSeconds((long) properties.getFailedRetentionDays() * 24 * 60 * 60);
+        var now = timeProvider.now();
+        var doneCutoff = now.minus(Duration.ofDays(properties.getDoneRetentionDays()));
+        var failedCutoff = now.minus(Duration.ofDays(properties.getFailedRetentionDays()));
 
-        int totalDoneDeleted = 0;
-        int totalFailedDeleted = 0;
-        int batchesExecuted = 0;
+        var totalDoneDeleted = 0;
+        var totalFailedDeleted = 0;
+        var batchesExecuted = 0;
         while (true) {
-            int doneDeleted = eventQueueRepository.deleteEntriesByStatusOlderThan(
+            var doneDeleted = eventQueueRepository.deleteEntriesByStatusOlderThan(
                     EventQueueEntryStatus.DONE, doneCutoff, batchSize);
-            int failedDeleted = eventQueueRepository.deleteEntriesByStatusOlderThan(
+            var failedDeleted = eventQueueRepository.deleteEntriesByStatusOlderThan(
                     EventQueueEntryStatus.FAILED, failedCutoff, batchSize);
             totalDoneDeleted += doneDeleted;
             totalFailedDeleted += failedDeleted;
@@ -62,7 +62,7 @@ public class EventQueueRetentionCleanupService {
                 break;
             }
             try {
-                Thread.sleep(DELETE_BATCH_PAUSE_MS);
+                Thread.sleep(DELETE_BATCH_PAUSE);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 log.warn("Event queue retention cleanup interrupted between delete batches. trigger={}", trigger);

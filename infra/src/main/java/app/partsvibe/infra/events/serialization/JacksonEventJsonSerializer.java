@@ -36,11 +36,11 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
-            String eventType = "unknown";
+            String eventName = "unknown";
             int schemaVersion = -1;
             try {
-                EventMetadata metadata = EventMetadata.fromEvent(event);
-                eventType = metadata.eventName();
+                var metadata = EventMetadata.fromEvent(event);
+                eventName = metadata.eventName();
                 schemaVersion = metadata.schemaVersion();
             } catch (RuntimeException ignored) {
                 // Keep fallback metadata values when annotation lookup fails.
@@ -48,13 +48,13 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
             log.error(
                     "Event JSON serialization failed. eventId={}, eventName={}, schemaVersion={}, requestId={}",
                     event.eventId(),
-                    eventType,
+                    eventName,
                     schemaVersion,
                     event.requestId().orElse("<none>"),
                     e);
             throw new EventPublisherException(
                     "Failed to serialize event payload. eventId=%s, eventName=%s, schemaVersion=%d"
-                            .formatted(event.eventId(), eventType, schemaVersion),
+                            .formatted(event.eventId(), eventName, schemaVersion),
                     e);
         }
     }
