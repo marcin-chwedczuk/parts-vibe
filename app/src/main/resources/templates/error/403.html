@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section}, false)}">
 <head>
   <title th:text="#{error.403.title}">Access denied</title>
 </head>
-<section>
-  <div class="text-center">
-    <h1 class="display-6 mb-3" th:text="#{error.403.heading}">Access denied</h1>
-    <p class="text-muted" th:text="#{error.403.body}">You don’t have permission to view this page.</p>
-    <a class="btn btn-primary" th:href="@{/}" th:text="#{error.403.backHome}">Back home</a>
+<section class="bg-black text-light px-3 py-5 d-flex align-items-center justify-content-center">
+  <div class="container text-center">
+    <img class="img-fluid mb-4"
+         th:src="@{/resources/images/403.png}" src="/resources/images/403.png"
+         alt="403 artwork" style="max-width: 520px;" />
   </div>
 </section>
 </html>
