@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class BaseVersionableEntity extends BaseEntity {
+public abstract class BaseVersionedEntity extends BaseEntity {
     @Version
     private Long version;
 }
