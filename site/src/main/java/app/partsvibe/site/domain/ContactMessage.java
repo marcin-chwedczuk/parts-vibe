@@ -1,21 +1,25 @@
 package app.partsvibe.site.domain;
 
+import app.partsvibe.shared.persistence.BaseAuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "contact_messages")
-public class ContactMessage {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+@SequenceGenerator(
+        name = BaseAuditableEntity.ID_GENERATOR_NAME,
+        sequenceName = "contact_messages_id_seq",
+        allocationSize = BaseAuditableEntity.ID_ALLOCATION_SIZE)
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class ContactMessage extends BaseAuditableEntity {
     @Column(nullable = false, length = 64)
     private String name;
 
@@ -25,53 +29,9 @@ public class ContactMessage {
     @Column(nullable = false, length = 2000)
     private String message;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
-
-    protected ContactMessage() {}
-
     public ContactMessage(String name, String email, String message) {
         this.name = name;
         this.email = email;
         this.message = message;
-    }
-
-    @PrePersist
-    void onCreate() {
-        if (createdAt == null) {
-            createdAt = OffsetDateTime.now();
-        }
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
     }
 }

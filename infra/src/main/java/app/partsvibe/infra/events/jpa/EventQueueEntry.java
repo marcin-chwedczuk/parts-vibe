@@ -1,12 +1,10 @@
 package app.partsvibe.infra.events.jpa;
 
+import app.partsvibe.shared.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -15,6 +13,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -27,16 +27,13 @@ import org.hibernate.type.SqlTypes;
             @Index(name = "idx_event_queue_status_next_attempt_id", columnList = "status,next_attempt_at,id"),
             @Index(name = "idx_event_queue_occurred_at", columnList = "occurred_at")
         })
-public class EventQueueEntry {
+@SequenceGenerator(
+        name = BaseEntity.ID_GENERATOR_NAME,
+        sequenceName = "event_queue_id_seq",
+        allocationSize = BaseEntity.ID_ALLOCATION_SIZE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class EventQueueEntry extends BaseEntity {
     public static final int LAST_ERROR_MAX_LENGTH = 2000;
-
-    @Id
-    // TODO: Investigate why event_queue.id DB schema is inconsistent with IDENTITY generation in local env.
-    // IDENTITY currently causes INSERT failures with id=NULL, while this sequence mapping works reliably.
-    // Align DB DDL/migrations so we can use one consistent strategy across entities.
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_queue_id_seq_gen")
-    @SequenceGenerator(name = "event_queue_id_seq_gen", sequenceName = "event_queue_id_seq", allocationSize = 1)
-    private Long id;
 
     @Column(name = "event_id", nullable = false, updatable = false)
     private UUID eventId;
@@ -84,8 +81,6 @@ public class EventQueueEntry {
     @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp with time zone")
     private Instant updatedAt;
 
-    protected EventQueueEntry() {}
-
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -115,10 +110,6 @@ public class EventQueueEntry {
         entity.attemptCount = 0;
         entity.nextAttemptAt = Instant.now();
         return entity;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public UUID getEventId() {

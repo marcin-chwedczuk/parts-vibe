@@ -5,7 +5,6 @@ import app.partsvibe.users.domain.UserAccount;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserAccountRepository;
 import app.partsvibe.users.service.UserProvisioningService;
-import java.util.HashSet;
 import java.util.Set;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,14 +34,14 @@ public class UserProvisioningServiceImpl implements UserProvisioningService {
                 roleRepository.findByName("ROLE_USER").orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
 
         userAccountRepository.findByUsername(adminUsername).orElseGet(() -> {
-            UserAccount admin = new UserAccount(adminUsername, passwordEncoder.encode(adminPassword));
-            admin.setRoles(new HashSet<>(Set.of(adminRole, userRole)));
+            var admin = new UserAccount(adminUsername, passwordEncoder.encode(adminPassword));
+            admin.getRoles().addAll(Set.of(adminRole, userRole));
             return userAccountRepository.save(admin);
         });
 
         userAccountRepository.findByUsername(userUsername).orElseGet(() -> {
-            UserAccount user = new UserAccount(userUsername, passwordEncoder.encode(userPassword));
-            user.setRoles(new HashSet<>(Set.of(userRole)));
+            var user = new UserAccount(userUsername, passwordEncoder.encode(userPassword));
+            user.getRoles().add(userRole);
             return userAccountRepository.save(user);
         });
     }
