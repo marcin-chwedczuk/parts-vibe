@@ -3,9 +3,11 @@ package app.partsvibe.infra.events.admin;
 import app.partsvibe.infra.events.handling.EventQueueRetentionCleanupService;
 import app.partsvibe.shared.events.admin.TriggerRetentionCleanupEvent;
 import app.partsvibe.shared.events.handling.BaseEventHandler;
+import app.partsvibe.shared.events.handling.HandlesEvent;
 import org.springframework.stereotype.Component;
 
 @Component
+@HandlesEvent(name = TriggerRetentionCleanupEvent.EVENT_NAME)
 public class TriggerRetentionCleanupEventHandler extends BaseEventHandler<TriggerRetentionCleanupEvent> {
     private final EventQueueRetentionCleanupService retentionCleanupService;
 

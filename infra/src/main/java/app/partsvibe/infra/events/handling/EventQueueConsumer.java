@@ -6,13 +6,11 @@ import app.partsvibe.infra.utils.ThrowableUtils;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.request.RequestIdProvider;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,57 +38,67 @@ public class EventQueueConsumer {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ClaimedEventQueueEntry entry) {
-        Class<? extends Event> eventClass = eventTypeRegistry.eventClassFor(entry.eventType(), entry.schemaVersion());
-        Event event = eventJsonSerializer.deserialize(entry.payload(), eventClass);
-        String requestId = event.requestId().filter(value -> !value.isBlank()).orElseGet(() -> UUID.randomUUID()
-                .toString());
-        try (var ignored = requestIdProvider.withRequestId(requestId)) {
-            List<ResolvedHandler> handlers = resolveHandlers(eventClass);
+        List<ResolvedEventHandlerDescriptor> handlers =
+                eventTypeRegistry.handlersFor(entry.eventType(), entry.schemaVersion());
+        log.debug(
+                "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
+                entry.toStringWithoutPayload(),
+                handlers.size());
 
+        for (ResolvedEventHandlerDescriptor descriptor : handlers) {
+            // Deserialize per handler to isolate against mutable payload side effects.
+            Event payload = deserialize(entry, descriptor.payloadClass());
+            String requestId = payload.requestId()
+                    .filter(value -> !value.isBlank())
+                    .orElseGet(() -> UUID.randomUUID().toString());
+            EventHandler<? extends Event> handler = handlerByBeanName(descriptor.beanName());
+            String handlerClassName = handlerClassName(handler);
             log.debug(
-                    "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
+                    "Invoking event handler. entry={}, handlerBeanName={}, handlerClass={}, payloadClass={}",
                     entry.toStringWithoutPayload(),
-                    handlers.size());
-
-            for (ResolvedHandler resolvedHandler : handlers) {
-                String handlerClassName = handlerClassName(resolvedHandler.handler());
-                log.debug(
-                        "Invoking event handler. entry={}, handlerBeanName={}, handlerClass={}",
+                    descriptor.beanName(),
+                    handlerClassName,
+                    descriptor.payloadClass().getName());
+            try (var ignored = requestIdProvider.withRequestId(requestId)) {
+                invokeHandler(handler, payload);
+            } catch (RuntimeException ex) {
+                String causeMessage = ThrowableUtils.safeMessage(ex);
+                log.error(
+                        "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
                         entry.toStringWithoutPayload(),
-                        resolvedHandler.beanName(),
-                        handlerClassName);
-                try {
-                    invokeHandler(resolvedHandler.handler(), event);
-                } catch (RuntimeException ex) {
-                    String causeMessage = ThrowableUtils.safeMessage(ex);
-                    log.error(
-                            "Event handler execution failed. entry={}, handlerBeanName={}, handlerClass={}, errorType={}, errorMessage={}",
-                            entry.toStringWithoutPayload(),
-                            resolvedHandler.beanName(),
-                            handlerClassName,
-                            ex.getClass().getSimpleName(),
-                            causeMessage,
-                            ex);
-                    throw new EventDispatchException(
-                            "Event handler failed. eventId=%s, eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
-                                    .formatted(
-                                            entry.eventId(),
-                                            entry.eventType(),
-                                            entry.schemaVersion(),
-                                            resolvedHandler.beanName(),
-                                            handlerClassName,
-                                            ex.getClass().getSimpleName(),
-                                            causeMessage),
-                            ex);
-                }
+                        descriptor.beanName(),
+                        handlerClassName,
+                        ex.getClass().getSimpleName(),
+                        causeMessage,
+                        ex);
+                throw new EventDispatchException(
+                        "Event handler failed. eventId=%s, eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
+                                .formatted(
+                                        entry.eventId(),
+                                        entry.eventType(),
+                                        entry.schemaVersion(),
+                                        descriptor.beanName(),
+                                        handlerClassName,
+                                        ex.getClass().getSimpleName(),
+                                        causeMessage),
+                        ex);
+            }
 
-                if (Thread.currentThread().isInterrupted()) {
-                    throw new EventDispatchException(
-                            "Event handling thread interrupted. eventId=%s, eventName=%s, schemaVersion=%d"
-                                    .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
-                }
+            if (Thread.currentThread().isInterrupted()) {
+                throw new EventDispatchException(
+                        "Event handling thread interrupted. eventId=%s, eventName=%s, schemaVersion=%d"
+                                .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
             }
         }
+    }
+
+    private Event deserialize(ClaimedEventQueueEntry entry, Class<? extends Event> payloadClass) {
+        return eventJsonSerializer.deserialize(entry.payload(), payloadClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private EventHandler<? extends Event> handlerByBeanName(String beanName) {
+        return (EventHandler<? extends Event>) beanFactory.getBean(beanName, EventHandler.class);
     }
 
     private static String handlerClassName(EventHandler<? extends Event> handler) {
@@ -98,25 +106,8 @@ public class EventQueueConsumer {
     }
 
     @SuppressWarnings("unchecked")
-    private List<ResolvedHandler> resolveHandlers(Class<? extends Event> eventClass) {
-        ResolvableType handlerType = ResolvableType.forClassWithGenerics(EventHandler.class, eventClass);
-        String[] beanNames = beanFactory.getBeanNamesForType(EventHandler.class, true, false);
-        List<ResolvedHandler> handlers = new ArrayList<>();
-        for (String beanName : beanNames) {
-            if (!beanFactory.isTypeMatch(beanName, handlerType)) {
-                continue;
-            }
-            EventHandler<? extends Event> handler = (EventHandler<? extends Event>) beanFactory.getBean(beanName);
-            handlers.add(new ResolvedHandler(beanName, handler));
-        }
-        return handlers;
-    }
-
-    @SuppressWarnings("unchecked")
     private static <E extends Event> void invokeHandler(EventHandler<? extends Event> rawHandler, Event event) {
         EventHandler<E> typedHandler = (EventHandler<E>) rawHandler;
         typedHandler.handle((E) event);
     }
-
-    private record ResolvedHandler(String beanName, EventHandler<? extends Event> handler) {}
 }

@@ -1,7 +1,7 @@
 package app.partsvibe.infra.events.handling;
 
-import app.partsvibe.shared.events.model.Event;
+import java.util.List;
 
 public interface EventTypeRegistry {
-    Class<? extends Event> eventClassFor(String eventType, int schemaVersion);
+    List<ResolvedEventHandlerDescriptor> handlersFor(String eventType, int schemaVersion);
 }
