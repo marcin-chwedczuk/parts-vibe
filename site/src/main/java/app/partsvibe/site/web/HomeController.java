@@ -11,7 +11,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String home() {
-        log.info("Home page requested");
-        return "home";
+        log.info("Home page requested, redirecting to catalog search");
+        return "redirect:/catalog/search";
     }
 }

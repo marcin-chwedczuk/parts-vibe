@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}"
-      th:fragment="layout(title, content, showBorders)">
+      th:fragment="layout(title, content)">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title th:replace="${title}">parts-vibe</title>
   <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" />
+  <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}" />
   <link rel="stylesheet" th:href="@{/resources/css/app.css}" />
 </head>
 <body class="bg-light">
-  <nav class="navbar navbar-expand-lg bg-dark navbar-dark"
-       th:classappend="${showBorders} == false ? '' : ' border-bottom'">
+  <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
     <div class="container-fluid">
       <a class="navbar-brand d-inline-flex align-items-center gap-2 fw-semibold" th:href="@{/}">
         <img th:src="@{/resources/images/logo-128.png}" src="/resources/images/logo-128.png" alt="parts-vibe logo"
@@ -61,8 +61,7 @@
 
   <main class="container-fluid py-4" th:replace="${content}"></main>
 
-  <footer class="bg-dark"
-          th:classappend="${showBorders} == false ? '' : ' border-top'">
+  <footer class="bg-dark">
     <div class="container-fluid py-3 text-light small">
       <span class="text-light"
             th:text="#{footer.version(${appVersion})}">Application version: v0.0.0</span>
