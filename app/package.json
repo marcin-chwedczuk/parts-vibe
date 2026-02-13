@@ -1,0 +1,14 @@
+{
+  "name": "parts-vibe-app-assets",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Frontend asset toolchain for the app module",
+  "scripts": {
+    "build:css": "mkdir -p target/generated-resources/static/resources/css && sass --no-source-map src/main/scss/app.scss target/generated-resources/static/resources/css/app.css",
+    "watch:css": "mkdir -p target/generated-resources/static/resources/css && sass --watch src/main/scss/app.scss:target/generated-resources/static/resources/css/app.css"
+  },
+  "devDependencies": {
+    "bootstrap": "5.3.3",
+    "sass": "1.69.5"
+  }
+}

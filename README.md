@@ -108,6 +108,24 @@ To run with the dev profile (auto-create/update schema from JPA entities):
 SPRING_PROFILES_ACTIVE=dev ./mvnw -pl app spring-boot:run
 ```
 
+## Frontend assets (app module)
+- Static assets follow the PetClinic-style layout under `app/src/main/resources/static/resources/`:
+  - `css/`
+  - `images/`
+  - `fonts/`
+  - `js/`
+- SCSS sources live in `app/src/main/scss/`.
+- CSS is regenerated automatically during normal Maven builds (`generate-resources` phase) using `frontend-maven-plugin` (Dart Sass via npm).
+- The plugin downloads a pinned Node/npm toolchain into `app/target/` for reproducible local builds.
+- Generated CSS is written to `app/target/generated-resources/static/resources/css/` and then packaged as a regular static resource.
+- Manual CSS rebuild (without full install):
+
+```
+./mvnw -pl app generate-resources
+```
+
+- The generated stylesheet is served from `/resources/css/app.css`.
+
 ## Build Docker image (Spring Boot buildpacks)
 The app module can build a local Docker image using the Spring Boot Maven plugin:
 

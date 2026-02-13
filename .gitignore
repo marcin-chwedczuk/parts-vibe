@@ -182,3 +182,6 @@ docker-compose/loki/data/
 docker-compose/promtail/positions/
 docker-compose/solr/
 docker-compose/clamav/
+
+# Frontend assets (app module)
+app/node_modules/

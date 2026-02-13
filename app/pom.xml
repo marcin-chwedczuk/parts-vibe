@@ -18,6 +18,9 @@
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ssXXX</maven.build.timestamp.format>
     <git.commit.id.maven.plugin.version>9.0.1</git.commit.id.maven.plugin.version>
+    <frontend.maven.plugin.version>1.15.1</frontend.maven.plugin.version>
+    <node.version>v22.13.1</node.version>
+    <npm.version>10.9.2</npm.version>
   </properties>
 
   <dependencies>
@@ -129,6 +132,10 @@
   <build>
     <resources>
       <resource>
+        <directory>${project.build.directory}/generated-resources</directory>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
         <includes>
@@ -188,6 +195,50 @@
             <exclude>**/*IT.java</exclude>
           </excludes>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>${frontend.maven.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>install-node-and-npm</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <configuration>
+              <nodeVersion>${node.version}</nodeVersion>
+              <npmVersion>${npm.version}</npmVersion>
+              <installDirectory>${project.build.directory}</installDirectory>
+              <workingDirectory>${project.basedir}</workingDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-install</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <installDirectory>${project.build.directory}</installDirectory>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>install --no-audit --no-fund</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-build-css</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <installDirectory>${project.build.directory}</installDirectory>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>run build:css</arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

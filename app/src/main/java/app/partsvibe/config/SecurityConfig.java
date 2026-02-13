@@ -12,16 +12,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/",
-                                "/login",
-                                "/error",
-                                "/error/**",
-                                "/favicon.ico",
-                                "/logo-*.png",
-                                "/webjars/**",
-                                "/css/**",
-                                "/js/**",
-                                "/images/**")
+                                "/", "/login", "/error", "/error/**", "/favicon.ico", "/resources/**", "/webjars/**")
                         .permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus")
                         .permitAll()
