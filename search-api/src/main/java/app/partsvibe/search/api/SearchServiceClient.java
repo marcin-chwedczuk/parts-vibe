@@ -1,6 +1,6 @@
 package app.partsvibe.search.api;
 
-public interface CatalogSearchService {
+public interface SearchServiceClient {
     String indexText(String text);
 
     CatalogSearchResult search(String queryText, int page, int pageSize);

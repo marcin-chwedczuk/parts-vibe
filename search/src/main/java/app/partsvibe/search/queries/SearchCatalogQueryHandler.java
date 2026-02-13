@@ -1,66 +1,49 @@
-package app.partsvibe.search.solr;
+package app.partsvibe.search.queries;
 
 import app.partsvibe.search.api.CatalogSearchHit;
 import app.partsvibe.search.api.CatalogSearchResult;
-import app.partsvibe.search.api.CatalogSearchService;
 import app.partsvibe.search.solr.config.SolrProperties;
+import app.partsvibe.shared.cqrs.BaseQueryHandler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrInputDocument;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
-public class SolrIndexService implements CatalogSearchService {
+@Component
+class SearchCatalogQueryHandler extends BaseQueryHandler<SearchCatalogQuery, CatalogSearchResult> {
     private static final int MAX_RESULTS = 10;
+
     private final SolrClient solrClient;
     private final SolrProperties solrProperties;
 
-    public SolrIndexService(SolrClient solrClient, SolrProperties solrProperties) {
+    SearchCatalogQueryHandler(SolrClient solrClient, SolrProperties solrProperties) {
         this.solrClient = solrClient;
         this.solrProperties = solrProperties;
     }
 
     @Override
-    public String indexText(String text) {
-        String id = UUID.randomUUID().toString();
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", id);
-        doc.addField("content_txt", text);
-
-        try {
-            solrClient.add(solrProperties.core(), doc);
-            solrClient.commit(solrProperties.core());
-        } catch (SolrServerException | IOException e) {
-            throw new IllegalStateException("Failed to index text into Solr.", e);
+    protected CatalogSearchResult doHandle(SearchCatalogQuery queryRequest) {
+        if (queryRequest.queryText() == null || queryRequest.queryText().isBlank()) {
+            return new CatalogSearchResult(List.of(), 0, queryRequest.page(), queryRequest.pageSize());
         }
 
-        return id;
-    }
-
-    @Override
-    public CatalogSearchResult search(String queryText, int page, int pageSize) {
-        if (queryText == null || queryText.isBlank()) {
-            return new CatalogSearchResult(List.of(), 0, page, pageSize);
-        }
-
-        int maxPage = Math.max(0, (MAX_RESULTS - 1) / pageSize);
-        int safePage = Math.max(0, Math.min(page, maxPage));
-        int start = safePage * pageSize;
+        int maxPage = Math.max(0, (MAX_RESULTS - 1) / queryRequest.pageSize());
+        int safePage = Math.max(0, Math.min(queryRequest.page(), maxPage));
+        int start = safePage * queryRequest.pageSize();
         if (start >= MAX_RESULTS) {
-            return new CatalogSearchResult(List.of(), 0, safePage, pageSize);
+            return new CatalogSearchResult(List.of(), 0, safePage, queryRequest.pageSize());
         }
 
-        SolrQuery query = new SolrQuery();
-        query.setQuery("content_txt:" + ClientUtils.escapeQueryChars(queryText.trim()));
+        var query = new SolrQuery();
+        query.setQuery("content_txt:"
+                + ClientUtils.escapeQueryChars(queryRequest.queryText().trim()));
         query.setStart(start);
-        query.setRows(pageSize);
+        query.setRows(queryRequest.pageSize());
         query.setFields("id", "content_txt");
 
         try {
@@ -82,7 +65,7 @@ public class SolrIndexService implements CatalogSearchService {
                 }
                 hits.add(new CatalogSearchHit(id, content));
             });
-            return new CatalogSearchResult(hits, cappedTotal, safePage, pageSize);
+            return new CatalogSearchResult(hits, cappedTotal, safePage, queryRequest.pageSize());
         } catch (SolrServerException | IOException e) {
             throw new IllegalStateException("Failed to query Solr.", e);
         }
