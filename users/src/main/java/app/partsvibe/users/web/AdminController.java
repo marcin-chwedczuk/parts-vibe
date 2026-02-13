@@ -1,7 +1,7 @@
 package app.partsvibe.users.web;
 
-import app.partsvibe.shared.request.RequestIdProvider;
-import app.partsvibe.users.service.AdminMaintenanceService;
+import app.partsvibe.shared.cqrs.Mediator;
+import app.partsvibe.users.commands.admin.TriggerRetentionCleanupCommand;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +15,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin")
 public class AdminController {
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
-    private final AdminMaintenanceService adminMaintenanceService;
-    private final RequestIdProvider requestIdProvider;
 
-    public AdminController(AdminMaintenanceService adminMaintenanceService, RequestIdProvider requestIdProvider) {
-        this.adminMaintenanceService = adminMaintenanceService;
-        this.requestIdProvider = requestIdProvider;
+    private final Mediator mediator;
+
+    public AdminController(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @GetMapping
@@ -31,14 +30,13 @@ public class AdminController {
 
     @PostMapping("/event-queue/retention-cleanup")
     public String triggerRetentionCleanup(RedirectAttributes redirectAttributes) {
-        String requestId = requestIdProvider.currentOrElse("unknown");
-        UUID eventId = adminMaintenanceService.triggerRetentionCleanup(requestId);
-        log.info(
-                "Retention cleanup trigger event published from admin page. requestId={}, eventId={}",
-                requestId,
-                eventId);
+        UUID eventId =
+                mediator.executeCommand(new TriggerRetentionCleanupCommand()).eventId();
+
+        log.info("Retention cleanup trigger event published from admin page. eventId={}", eventId);
         redirectAttributes.addFlashAttribute("retentionCleanupTriggered", true);
         redirectAttributes.addFlashAttribute("retentionCleanupEventId", eventId);
+
         return "redirect:/admin";
     }
 }

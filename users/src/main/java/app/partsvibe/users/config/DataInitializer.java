@@ -1,6 +1,8 @@
 package app.partsvibe.users.config;
 
-import app.partsvibe.users.service.UserProvisioningService;
+import app.partsvibe.shared.cqrs.Mediator;
+import app.partsvibe.users.commands.provision.SeedUsersCommand;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -8,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
-    private final UserProvisioningService userProvisioningService;
+    private final Mediator mediator;
 
     @Value("${app.security.admin-username}")
     private String adminUsername;
@@ -22,12 +24,14 @@ public class DataInitializer implements ApplicationRunner {
     @Value("${app.security.user-password}")
     private String userPassword;
 
-    public DataInitializer(UserProvisioningService userProvisioningService) {
-        this.userProvisioningService = userProvisioningService;
+    public DataInitializer(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        userProvisioningService.seedUsers(adminUsername, adminPassword, userUsername, userPassword);
+        mediator.executeCommand(new SeedUsersCommand(List.of(
+                new SeedUsersCommand.UserDefinition(adminUsername, adminPassword, true),
+                new SeedUsersCommand.UserDefinition(userUsername, userPassword, false))));
     }
 }
