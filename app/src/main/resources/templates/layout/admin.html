@@ -1,6 +1,6 @@
 <section xmlns:th="http://www.thymeleaf.org"
          th:fragment="body(content)">
-  <div class="d-flex flex-column flex-md-row gap-4">
+  <div class="d-flex flex-column flex-md-row gap-0">
     <aside class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark"
            style="width: 280px;">
       <ul class="nav nav-pills flex-column mb-auto">
@@ -12,7 +12,7 @@
             <span th:text="#{nav.catalog.search}">Catalog Search</span>
           </a>
         </li>
-        <li>
+        <li class="nav-item">
           <a th:href="@{/catalog/index}"
              th:class="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'page' : null">
@@ -20,7 +20,7 @@
             <span th:text="#{nav.catalog.index}">Catalog Index</span>
           </a>
         </li>
-        <li>
+        <li class="nav-item">
           <a th:href="@{/contact}"
              th:class="${currentPath != null and currentPath.startsWith('/contact')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${currentPath != null and currentPath.startsWith('/contact')} ? 'page' : null">
@@ -28,7 +28,7 @@
             <span th:text="#{nav.messages}">Messages</span>
           </a>
         </li>
-        <li>
+        <li class="nav-item">
           <a th:href="@{/admin}"
              th:class="${currentPath != null and currentPath.startsWith('/admin')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${currentPath != null and currentPath.startsWith('/admin')} ? 'page' : null">
@@ -40,8 +40,9 @@
     </aside>
 
     <section class="flex-grow-1">
-      <div class="bg-body rounded-3 border border-secondary-subtle shadow-sm p-4"
-           th:replace="${content}"></div>
+      <div class="border border-secondary-subtle bg-white p-4">
+        <div th:replace="${content}"></div>
+      </div>
     </section>
   </div>
 </section>
