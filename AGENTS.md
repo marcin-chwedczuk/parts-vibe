@@ -163,6 +163,20 @@ Treat it as the default unless explicitly overridden.
 - Maintain Spring Security RBAC model.
 - Use PRG (`POST -> redirect -> GET`) for forms.
 - Static assets (e.g. logos) must be explicitly allowed by security config.
+- Default app entry (`/`) redirects to catalog search (`/catalog/search`).
+
+### Frontend / Thymeleaf Layout
+- Static resources follow `static/resources/*` subdivision (`css`, `images`, `fonts`, `js`).
+- SCSS is compiled during normal Maven build using `frontend-maven-plugin` (Dart Sass), with generated CSS written to `app/target/generated-resources/...` (not to `src/main/resources`).
+- Bootstrap Icons are provided via WebJars (`org.webjars.npm:bootstrap-icons`) and loaded in base layout.
+- Base shell uses sticky-footer layout:
+  - `body`: `d-flex flex-column min-vh-100`
+  - `main`: `flex-grow-1`
+- Sidebar pages use role-specific fragments (`layout/user`, `layout/admin`) and a bordered content pane; sidebar remains borderless between navbar and footer.
+- Thymeleaf rule: do not put `th:replace` on elements that carry critical layout classes (flex/spacing/border wrappers), because replacement removes that element and its classes.
+- Prefer:
+  - keep structural wrapper in DOM
+  - use inner `th:replace` / `th:insert` for fragment content.
 
 ### Local Infrastructure
 - Docker compose setup includes observability stack and optional runtime components.
