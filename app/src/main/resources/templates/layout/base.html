@@ -23,18 +23,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="topbarMenu">
-        <div class="ms-auto d-flex align-items-center gap-3">
-          <form class="d-flex align-items-center gap-2" method="get"
-                th:action="@{${currentPath}}">
-            <label class="text-light small" for="langSelect" th:text="#{nav.language}">Language</label>
-            <select class="form-select form-select-sm" id="langSelect" name="lang"
-                    onchange="this.form.submit()">
-              <option value="en" th:selected="${#locale.language == 'en'}"
-                      th:text="#{lang.english}">English</option>
-              <option value="pl" th:selected="${#locale.language == 'pl'}"
-                      th:text="#{lang.polish}">Polish</option>
-            </select>
-          </form>
+        <div class="ms-auto d-flex align-items-center">
           <ul class="navbar-nav mb-2 mb-lg-0">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="accountMenu" role="button"
@@ -64,9 +53,30 @@
   </main>
 
   <footer class="bg-dark">
-    <div class="container-fluid py-3 text-light small">
-      <span class="text-light"
-            th:text="#{footer.version(${appVersion})}">Application version: v0.0.0</span>
+    <div class="container-fluid py-3 text-light small d-flex align-items-center justify-content-between gap-3">
+      <span class="text-light" th:text="#{footer.version(${appVersion})}">
+        Application version: v0.0.0
+      </span>
+
+      <form method="get" th:action="@{${currentPath}}" class="dropup d-flex align-items-center gap-2">
+        <label class="text-light" for="footerLanguageMenu" th:text="#{nav.changeLanguage}">Change language</label>
+        <input type="hidden" name="lang" value="" />
+        <button class="btn btn-sm text-light border-0 shadow-none p-0 dropdown-toggle" type="button"
+                id="footerLanguageMenu" data-bs-toggle="dropdown" aria-expanded="false">
+          <span th:if="${#locale.language == 'pl'}" th:text="#{lang.polish}">Polski</span>
+          <span th:unless="${#locale.language == 'pl'}" th:text="#{lang.english}">English</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="footerLanguageMenu">
+          <li>
+            <button type="submit" class="dropdown-item"
+                    onclick="this.form.lang.value='en'">🇬🇧 English</button>
+          </li>
+          <li>
+            <button type="submit" class="dropdown-item"
+                    onclick="this.form.lang.value='pl'">🇵🇱 Polski</button>
+          </li>
+        </ul>
+      </form>
     </div>
   </footer>
 
