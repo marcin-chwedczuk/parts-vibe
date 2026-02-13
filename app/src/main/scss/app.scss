@@ -14,10 +14,14 @@
 
 .app-title-font {
   font-family: "Audiowide", sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.6rem;
   line-height: 1;
 }
 
 footer {
   letter-spacing: 0.01em;
+}
+
+.account-menu-toggle::after {
+  display: none;
 }

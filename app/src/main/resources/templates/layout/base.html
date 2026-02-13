@@ -26,18 +26,26 @@
         <div class="ms-auto d-flex align-items-center">
           <ul class="navbar-nav mb-2 mb-lg-0">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="accountMenu" role="button"
+            <a class="nav-link dropdown-toggle account-menu-toggle pe-0" href="#" id="accountMenu" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
-              <span th:text="#{nav.account}">Account</span>
+              <img th:src="@{/resources/images/placeholder.png}" src="/resources/images/placeholder.png"
+                   alt="User menu" width="32" height="32" class="rounded-2 border border-light-subtle" />
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
-              <li><a class="dropdown-item" th:href="@{/profile}" th:text="#{nav.profile}">Profile</a></li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center gap-2" th:href="@{/profile}">
+                  <i class="bi bi-gear" aria-hidden="true"></i>
+                  <span th:text="#{nav.profile}">Profile</span>
+                </a>
+              </li>
               <li><hr class="dropdown-divider" /></li>
               <li>
                 <form th:action="@{/logout}" method="post" class="px-3">
                   <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                  <button class="btn btn-link dropdown-item p-0" type="submit"
-                          th:text="#{nav.logout}">Logout</button>
+                  <button class="btn btn-link dropdown-item p-0 d-flex align-items-center gap-2" type="submit">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span th:text="#{nav.logout}">Logout</span>
+                  </button>
                 </form>
               </li>
             </ul>
