@@ -10,7 +10,7 @@ Multi-module Maven project:
 - `users` (RBAC + users)
 - `site` (home + contact)
 - `search-api` (search contracts)
-- `search-impl` (Solr-backed search implementation)
+- `search` (Solr-backed search implementation)
 - `shared` (shared utilities, currently empty)
 
 ## Requirements

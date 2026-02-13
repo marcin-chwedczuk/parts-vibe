@@ -53,7 +53,7 @@
     </dependency>
     <dependency>
       <groupId>app.partsvibe</groupId>
-      <artifactId>search-impl</artifactId>
+      <artifactId>search</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

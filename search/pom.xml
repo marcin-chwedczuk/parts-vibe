@@ -11,8 +11,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>search-impl</artifactId>
-  <name>search-impl</name>
+  <artifactId>search</artifactId>
+  <name>search</name>
   <description>Search implementation (Solr)</description>
 
   <dependencies>

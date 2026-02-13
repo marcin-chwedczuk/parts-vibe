@@ -304,6 +304,6 @@
     <module>infra</module>
     <module>e2e</module>
     <module>search-api</module>
-    <module>search-impl</module>
+    <module>search</module>
   </modules>
 </project>

@@ -38,7 +38,7 @@ working pattern here like a modulith or 3-layer architecture.
 - Framework: Spring Boot + Thymeleaf
 - Database: PostgreSQL
 - Full text search: Apache Solr
-- Modules: `app`, `shared`, `catalog`, `users`, `site`, `search-api`, `search-impl` (multi-module Maven)
+- Modules: `app`, `shared`, `catalog`, `users`, `site`, `search-api`, `search` (multi-module Maven)
 
 ## Command Rules
 - Always use the Maven Wrapper for Maven-related commands: `./mvnw` (not `mvn`).
