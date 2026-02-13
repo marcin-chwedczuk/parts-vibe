@@ -65,3 +65,105 @@ working pattern here like a modulith or 3-layer architecture.
 ## Extra
 
 See `README.md` for full project usage, services, and environment details.
+
+## Architecture Decisions (Living)
+
+This section captures project decisions made during implementation sessions.
+Treat it as the default unless explicitly overridden.
+
+### Build / Version Metadata
+- Build metadata is generated during Maven build and filtered into a dedicated properties file.
+- Use Spring-style resource filtering delimiters (`@...@`) and filter only the intended file (not all resources).
+- Git metadata resolution in submodules requires correct `.git` path configuration (`maven.multiModuleProjectDirectory`).
+- Expose application version in UI footer using git tag-derived value (`v...` expected).
+
+### Maven / Dev Workflow
+- Keep Maven usage via wrapper only (`./mvnw`).
+- SpotBugs can be skipped during active development via profile (`skip-spotbugs`).
+- User runs tests manually in many flows; do not auto-run Maven unless explicitly requested.
+
+### Module Boundaries
+- The project is a modulith intended for future microservice split.
+- App-wide infrastructure/configuration belongs in `app` (e.g. security/bootstrap), not feature modules.
+- `shared` holds cross-module contracts and base abstractions.
+- `infra` holds implementations/adapters.
+
+### CQRS
+- CQRS contracts live in `app.partsvibe.shared.cqrs`.
+- Spring mediator implementation lives in `infra` and resolves handlers by generic type.
+- Controllers should use `Mediator` instead of direct service interfaces.
+- Command/query handlers can use shared base classes:
+  - `BaseCommandHandler` with transactional boundary (`REQUIRED`)
+  - `BaseQueryHandler` with read-only transactional boundary (`REQUIRED`, `readOnly=true`)
+- Pipeline/decorator style behaviors are supported (`CommandBehavior`, `QueryBehavior`).
+- Command validation is implemented as a high-priority behavior using Bean Validation.
+- Use `NoResult` when command returns no business value.
+
+### Events / Event Queue
+- Naming uses `event queue` terminology (avoid `outbox/inbox` naming drift).
+- Event handling is handler-mapping based, not event-class-only mapping.
+- Event handlers must declare handled events explicitly using `@HandlesEvent(name, version)` (repeatable).
+- Multiple handlers for the same `(event name, version)` are supported.
+- `EventHandler` contract requires idempotency (at-least-once delivery).
+- Event queue consumer deserializes payload separately per handler invocation to isolate mutable side effects.
+- RequestId scope is set per handler call.
+- Event handler discovery/registry is Spring-based:
+  - `EventHandlerRegistry`
+  - `SpringEventHandlerRegistry`
+- Dispatcher/consumer responsibilities are separated:
+  - Dispatcher: claiming/timeout/DB state transitions
+  - Consumer: deserialization + invoking handlers
+
+### Event Metrics / Logging
+- Event queue metric prefix convention: `app.event-queue.*`.
+- Focus metrics:
+  - claimed count
+  - done count
+  - failed count
+  - timed-out count
+  - lag and processing durations
+- Logging conventions:
+  - use placeholders (`{}`), no string concatenation in log templates
+  - include event id/name/version and handler identity in failures
+
+### RequestId
+- RequestId propagation is not MDC-only.
+- Provider uses thread-scoped storage and supports scoped usage (`withRequestId(...)`).
+- Event processing restores RequestId from event payload for handler execution.
+
+### JPA / Hibernate
+- Shared base hierarchy introduced in `shared.persistence`:
+  - `BaseEntity`
+  - `BaseVersionableEntity`
+  - `BaseAuditableEntity`
+- Equality/hashCode for entities follow Hibernate-safe pattern based on effective class + non-null id.
+- Sequence strategy:
+  - Base id uses sequence generator name constant.
+  - Concrete entities define `@SequenceGenerator` with project standard allocation size (`50`).
+- Current entity inheritance policy:
+  - Most entities use `BaseAuditableEntity`.
+  - `EventQueueEntry` currently uses `BaseEntity` (audit intentionally deferred for queue row).
+- Auditing:
+  - Enabled via `@EnableJpaAuditing` in infra.
+  - `AuditorAware<String>` uses authenticated principal when available; fallback is `"system"`.
+- For JPA entities:
+  - use `@NoArgsConstructor(access = PROTECTED)`.
+  - avoid `@Data`; use targeted Lombok annotations.
+  - avoid public setter replacing entire persistent collections.
+  - for collection fields (e.g. `UserAccount.roles`), disable replacement setter (`@Setter(AccessLevel.NONE)`).
+
+### Lombok
+- Root `lombok.config` is required.
+- Preserve Spring DI parameter annotations on Lombok-generated constructors:
+  - `@Qualifier`, `@Value`, `@Autowired`, `@Lazy`, `@Named`.
+- Add `lombok.addLombokGeneratedAnnotation = true`.
+- Keep guardrail `lombok.data.flagUsage = warning`.
+
+### Security / Web
+- Maintain Spring Security RBAC model.
+- Use PRG (`POST -> redirect -> GET`) for forms.
+- Static assets (e.g. logos) must be explicitly allowed by security config.
+
+### Local Infrastructure
+- Docker compose setup includes observability stack and optional runtime components.
+- Antivirus integration uses ClamAV (`clamd`) scanning path in infra.
