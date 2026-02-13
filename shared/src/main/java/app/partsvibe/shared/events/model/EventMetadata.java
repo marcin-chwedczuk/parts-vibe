@@ -9,7 +9,7 @@ public record EventMetadata(String eventName, int schemaVersion) {
     }
 
     public static EventMetadata fromEventClass(Class<? extends Event> eventClass) {
-        PublishableEvent annotation = eventClass.getAnnotation(PublishableEvent.class);
+        IntegrationEvent annotation = eventClass.getAnnotation(IntegrationEvent.class);
         if (annotation == null || annotation.name().isBlank()) {
             throw new IllegalStateException(
                     "Event class must be annotated with @PublishableEvent and non-blank name: " + eventClass.getName());

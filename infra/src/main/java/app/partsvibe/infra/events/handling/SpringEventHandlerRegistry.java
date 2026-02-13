@@ -3,7 +3,11 @@ package app.partsvibe.infra.events.handling;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.handling.HandlesEvent;
 import app.partsvibe.shared.events.model.Event;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,13 +17,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 
 @Component
-public class SpringEventTypeRegistry implements EventTypeRegistry {
-    private static final Logger log = LoggerFactory.getLogger(SpringEventTypeRegistry.class);
+public class SpringEventHandlerRegistry implements EventHandlerRegistry {
+    private static final Logger log = LoggerFactory.getLogger(SpringEventHandlerRegistry.class);
 
-    private final Map<EventTypeKey, List<ResolvedEventHandlerDescriptor>> handlersByType;
+    private final Map<EventSchema, List<ResolvedEventHandlerDescriptor>> handlersByEventSchema;
 
-    public SpringEventTypeRegistry(ListableBeanFactory beanFactory) {
-        Map<EventTypeKey, List<ResolvedEventHandlerDescriptor>> byType = new LinkedHashMap<>();
+    public SpringEventHandlerRegistry(ListableBeanFactory beanFactory) {
+        Map<EventSchema, List<ResolvedEventHandlerDescriptor>> byEventSchema = new LinkedHashMap<>();
         String[] beanNames = beanFactory.getBeanNamesForType(EventHandler.class, true, false);
 
         for (String beanName : beanNames) {
@@ -39,24 +43,26 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
             Class<? extends Event> payloadClass = resolvePayloadClass(userClass, beanName);
             for (HandlesEvent handle : handles) {
                 validateHandleAnnotation(handle, userClass);
-                EventTypeKey key = new EventTypeKey(handle.name(), handle.version());
-                byType.computeIfAbsent(key, ignored -> new ArrayList<>())
+                EventSchema schema = new EventSchema(handle.name(), handle.version());
+                byEventSchema
+                        .computeIfAbsent(schema, ignored -> new ArrayList<>())
                         .add(new ResolvedEventHandlerDescriptor(
                                 handle.name(), handle.version(), beanName, payloadClass));
             }
         }
 
-        this.handlersByType = byType.entrySet().stream()
+        this.handlersByEventSchema = byEventSchema.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> List.copyOf(entry.getValue())));
-        logDiscoveredHandlers(this.handlersByType);
+        logDiscoveredHandlers(this.handlersByEventSchema);
     }
 
     @Override
-    public List<ResolvedEventHandlerDescriptor> handlersFor(String eventType, int schemaVersion) {
-        List<ResolvedEventHandlerDescriptor> handlers = handlersByType.get(new EventTypeKey(eventType, schemaVersion));
+    public List<ResolvedEventHandlerDescriptor> handlersFor(String eventName, int schemaVersion) {
+        List<ResolvedEventHandlerDescriptor> handlers =
+                handlersByEventSchema.get(new EventSchema(eventName, schemaVersion));
         if (handlers == null || handlers.isEmpty()) {
             throw new UnknownEventTypeException(
-                    "No event handlers found for event type: %s, schemaVersion=%d".formatted(eventType, schemaVersion));
+                    "No event handlers found for eventName=%s, schemaVersion=%d".formatted(eventName, schemaVersion));
         }
         return handlers;
     }
@@ -90,18 +96,19 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
         return (Class<? extends Event>) resolved;
     }
 
-    private static void logDiscoveredHandlers(Map<EventTypeKey, List<ResolvedEventHandlerDescriptor>> handlersByType) {
-        if (handlersByType.isEmpty()) {
+    private static void logDiscoveredHandlers(
+            Map<EventSchema, List<ResolvedEventHandlerDescriptor>> handlersByEventSchema) {
+        if (handlersByEventSchema.isEmpty()) {
             log.info("Discovered event handlers: none");
             return;
         }
-        String discovered = handlersByType.entrySet().stream()
-                .sorted(Comparator.comparing((Map.Entry<EventTypeKey, ?> entry) ->
-                                entry.getKey().eventType())
+        String discovered = handlersByEventSchema.entrySet().stream()
+                .sorted(Comparator.comparing((Map.Entry<EventSchema, ?> entry) ->
+                                entry.getKey().eventName())
                         .thenComparingInt(entry -> entry.getKey().schemaVersion()))
                 .map(entry -> "%s@v%d=[%s]"
                         .formatted(
-                                entry.getKey().eventType(),
+                                entry.getKey().eventName(),
                                 entry.getKey().schemaVersion(),
                                 entry.getValue().stream()
                                         .map(descriptor -> "%s:%s"
@@ -113,8 +120,8 @@ public class SpringEventTypeRegistry implements EventTypeRegistry {
                                         .sorted()
                                         .collect(Collectors.joining(", "))))
                 .collect(Collectors.joining(", "));
-        log.info("Discovered event handlers. routes={}, mappings=[{}]", handlersByType.size(), discovered);
+        log.info("Discovered event handlers. schemas={}, mappings=[{}]", handlersByEventSchema.size(), discovered);
     }
 
-    private record EventTypeKey(String eventType, int schemaVersion) {}
+    private record EventSchema(String eventName, int schemaVersion) {}
 }

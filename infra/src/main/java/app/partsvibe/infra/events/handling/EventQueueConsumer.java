@@ -20,17 +20,17 @@ import org.springframework.util.ClassUtils;
 public class EventQueueConsumer {
     private static final Logger log = LoggerFactory.getLogger(EventQueueConsumer.class);
 
-    private final EventTypeRegistry eventTypeRegistry;
+    private final EventHandlerRegistry eventHandlerRegistry;
     private final EventJsonSerializer eventJsonSerializer;
     private final ListableBeanFactory beanFactory;
     private final RequestIdProvider requestIdProvider;
 
     public EventQueueConsumer(
-            EventTypeRegistry eventTypeRegistry,
+            EventHandlerRegistry eventHandlerRegistry,
             EventJsonSerializer eventJsonSerializer,
             ListableBeanFactory beanFactory,
             RequestIdProvider requestIdProvider) {
-        this.eventTypeRegistry = eventTypeRegistry;
+        this.eventHandlerRegistry = eventHandlerRegistry;
         this.eventJsonSerializer = eventJsonSerializer;
         this.beanFactory = beanFactory;
         this.requestIdProvider = requestIdProvider;
@@ -38,8 +38,9 @@ public class EventQueueConsumer {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ClaimedEventQueueEntry entry) {
-        List<ResolvedEventHandlerDescriptor> handlers =
-                eventTypeRegistry.handlersFor(entry.eventType(), entry.schemaVersion());
+        String eventName = entry.eventType();
+        int schemaVersion = entry.schemaVersion();
+        List<ResolvedEventHandlerDescriptor> handlers = eventHandlerRegistry.handlersFor(eventName, schemaVersion);
         log.debug(
                 "Dispatching event queue entry to handlers. entry={}, handlersCount={}",
                 entry.toStringWithoutPayload(),
@@ -75,8 +76,8 @@ public class EventQueueConsumer {
                         "Event handler failed. eventId=%s, eventName=%s, schemaVersion=%d, handlerBeanName=%s, handlerClass=%s, cause=%s: %s"
                                 .formatted(
                                         entry.eventId(),
-                                        entry.eventType(),
-                                        entry.schemaVersion(),
+                                        eventName,
+                                        schemaVersion,
                                         descriptor.beanName(),
                                         handlerClassName,
                                         ex.getClass().getSimpleName(),
@@ -87,7 +88,7 @@ public class EventQueueConsumer {
             if (Thread.currentThread().isInterrupted()) {
                 throw new EventDispatchException(
                         "Event handling thread interrupted. eventId=%s, eventName=%s, schemaVersion=%d"
-                                .formatted(entry.eventId(), entry.eventType(), entry.schemaVersion()));
+                                .formatted(entry.eventId(), eventName, schemaVersion));
             }
         }
     }

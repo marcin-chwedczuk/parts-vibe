@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PublishableEvent {
+public @interface IntegrationEvent {
     String name();
 
     int version() default 1;
