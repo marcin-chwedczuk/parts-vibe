@@ -25,7 +25,7 @@
       <div class="collapse navbar-collapse" id="topbarMenu">
         <div class="ms-auto d-flex align-items-center">
           <ul class="navbar-nav mb-2 mb-lg-0">
-          <li class="nav-item dropdown">
+          <li class="nav-item dropdown" th:if="${isAuthenticatedUser}">
             <a class="nav-link dropdown-toggle account-menu-toggle pe-0" href="#" id="accountMenu" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
               <img th:src="@{/resources/images/placeholder.png}" src="/resources/images/placeholder.png"
