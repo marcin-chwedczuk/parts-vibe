@@ -16,7 +16,7 @@
           <a th:href="@{/catalog/index}"
              th:class="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'page' : null">
-            <i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>
+            <i class="bi bi-book me-2" aria-hidden="true"></i>
             <span th:text="#{nav.catalog.index}">Catalog Index</span>
           </a>
         </li>
