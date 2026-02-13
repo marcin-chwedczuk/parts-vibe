@@ -82,6 +82,7 @@ public class SpringCqrsHandlerResolver {
         return List.copyOf(behaviors);
     }
 
+    // TODO: Add caching to improve performance. This code must be thread-safe (I mean the caching)
     private List<String> findMatchingBeanNames(
             Class<?> rawType, Class<?> requestType, boolean includeUnresolvedAsMatch) {
         var matchingBeanNames = new ArrayList<String>();

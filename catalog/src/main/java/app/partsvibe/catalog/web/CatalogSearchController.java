@@ -1,7 +1,8 @@
 package app.partsvibe.catalog.web;
 
-import app.partsvibe.catalog.service.CatalogService;
+import app.partsvibe.catalog.queries.CatalogSearchQuery;
 import app.partsvibe.search.api.CatalogSearchResult;
+import app.partsvibe.shared.cqrs.Mediator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class CatalogSearchController {
     private static final int PAGE_SIZE = 5;
     private static final Logger log = LoggerFactory.getLogger(CatalogSearchController.class);
-    private final CatalogService catalogService;
+    private final Mediator mediator;
 
-    public CatalogSearchController(CatalogService catalogService) {
-        this.catalogService = catalogService;
+    public CatalogSearchController(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @GetMapping("/search")
@@ -28,7 +29,7 @@ public class CatalogSearchController {
             Model model) {
         String safeQuery = query == null ? "" : query;
         log.info("Catalog search requested: queryLength={}, page={}", safeQuery.length(), page);
-        CatalogSearchResult result = catalogService.search(query, page, PAGE_SIZE);
+        CatalogSearchResult result = mediator.executeQuery(new CatalogSearchQuery(query, page, PAGE_SIZE));
         log.info(
                 "Catalog search completed: total={}, page={}, pageSize={}",
                 result.total(),
