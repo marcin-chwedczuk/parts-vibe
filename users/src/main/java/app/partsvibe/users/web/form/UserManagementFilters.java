@@ -15,4 +15,6 @@ public class UserManagementFilters {
     private List<String> roles = new ArrayList<>();
     private int page = 1;
     private int size = 10;
+    private String sortBy = "none";
+    private String sortDir = "asc";
 }

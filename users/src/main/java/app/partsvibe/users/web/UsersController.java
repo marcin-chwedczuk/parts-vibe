@@ -27,6 +27,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UsersController {
     private static final List<Integer> ALLOWED_PAGE_SIZES = List.of(10, 25, 50);
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
+    private static final Set<String> ALLOWED_SORT_BY = Set.of("none", "username", "enabled");
+    private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
 
     @GetMapping
@@ -41,6 +43,10 @@ public class UsersController {
         model.addAttribute("pageNumbers", buildPageNumbers(filteredUsers.size(), filters.getSize()));
         model.addAttribute("totalPages", computeTotalPages(filteredUsers.size(), filters.getSize()));
         model.addAttribute("totalRows", filteredUsers.size());
+        int startRow = filteredUsers.isEmpty() ? 0 : ((filters.getPage() - 1) * filters.getSize()) + 1;
+        int endRow = filteredUsers.isEmpty() ? 0 : startRow + pagedUsers.size() - 1;
+        model.addAttribute("startRow", startRow);
+        model.addAttribute("endRow", endRow);
 
         log.info("Admin user management page requested");
         return "admin/users";
@@ -93,7 +99,7 @@ public class UsersController {
                         || user.username().toLowerCase(Locale.ROOT).contains(username))
                 .filter(user -> matchEnabled(user, filters.getEnabled()))
                 .filter(user -> user.roles().containsAll(selectedRoles))
-                .sorted(Comparator.comparing(UserGridRow::username))
+                .sorted(buildSortComparator(filters))
                 .toList();
     }
 
@@ -149,13 +155,21 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
+        if (!ALLOWED_SORT_BY.contains(filters.getSortBy())) {
+            filters.setSortBy("none");
+        }
+        if (!ALLOWED_SORT_DIR.contains(filters.getSortDir())) {
+            filters.setSortDir("asc");
+        }
     }
 
     private String buildUserManagementRedirect(UserManagementFilters filters) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
                 .queryParam("page", filters.getPage())
                 .queryParam("size", filters.getSize())
-                .queryParam("enabled", filters.getEnabled());
+                .queryParam("enabled", filters.getEnabled())
+                .queryParam("sortBy", filters.getSortBy())
+                .queryParam("sortDir", filters.getSortDir());
 
         if (StringUtils.hasText(filters.getUsername())) {
             builder.queryParam("username", filters.getUsername().trim());
@@ -164,6 +178,25 @@ public class UsersController {
             builder.queryParam("roles", role);
         }
         return builder.build().toUriString();
+    }
+
+    private Comparator<UserGridRow> buildSortComparator(UserManagementFilters filters) {
+        if ("none".equals(filters.getSortBy())) {
+            return Comparator.comparing(UserGridRow::id);
+        }
+
+        Comparator<UserGridRow> comparator;
+        if ("enabled".equals(filters.getSortBy())) {
+            comparator = Comparator.comparing(UserGridRow::enabled);
+        } else {
+            comparator = Comparator.comparing(user -> user.username().toLowerCase(Locale.ROOT));
+        }
+
+        if ("desc".equals(filters.getSortDir())) {
+            comparator = comparator.reversed();
+        }
+
+        return comparator.thenComparing(UserGridRow::id);
     }
 
     private List<UserGridRow> buildDummyUsers() {
