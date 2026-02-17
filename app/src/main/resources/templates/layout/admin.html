@@ -5,39 +5,21 @@
          style="width: 280px;">
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
-          <a th:href="@{/catalog/search}"
-             th:with="active=${@nav.isUnder(currentPath, '/catalog/search')}"
+          <a th:href="@{/}"
+             th:with="active=${currentPath == '/'}"
              th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${active} ? 'page' : null">
-            <i class="bi bi-search me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.catalog.search}">Catalog Search</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a th:href="@{/catalog/index}"
-             th:with="active=${@nav.isUnder(currentPath, '/catalog/index')}"
-             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${active} ? 'page' : null">
-            <i class="bi bi-book me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.catalog.index}">Catalog Index</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a th:href="@{/contact}"
-             th:with="active=${@nav.isUnder(currentPath, '/contact')}"
-             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${active} ? 'page' : null">
-            <i class="bi bi-chat-dots me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.messages}">Messages</span>
+            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>
+            <span th:text="#{nav.back}">Back</span>
           </a>
         </li>
         <li class="nav-item">
           <a th:href="@{/admin}"
-             th:with="active=${@nav.isUnder(currentPath, '/admin')}"
+             th:with="active=${currentPath == '/admin'}"
              th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${active} ? 'page' : null">
             <i class="bi bi-shield-lock me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.admin}">Admin</span>
+            <span th:text="#{nav.admin.test}">Test</span>
           </a>
         </li>
         <li class="nav-item" th:if="${isAdminUser}">

@@ -31,6 +31,15 @@
             <span th:text="#{nav.messages}">Messages</span>
           </a>
         </li>
+        <li class="nav-item" th:if="${isAdminUser}">
+          <a th:href="@{/admin}"
+             th:with="active=${@nav.isUnder(currentPath, '/admin')}"
+             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
+             th:aria-current="${active} ? 'page' : null">
+            <i class="bi bi-gear me-2" aria-hidden="true"></i>
+            <span th:text="#{admin.console}">Admin Console</span>
+          </a>
+        </li>
       </ul>
   </aside>
 
