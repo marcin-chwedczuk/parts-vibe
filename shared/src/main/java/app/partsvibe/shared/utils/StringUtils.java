@@ -1,4 +1,4 @@
-package app.partsvibe.infra.utils;
+package app.partsvibe.shared.utils;
 
 public final class StringUtils {
     private StringUtils() {}
@@ -8,5 +8,13 @@ public final class StringUtils {
             return value;
         }
         return value.substring(0, maxLength);
+    }
+
+    public static String normalizeToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    public static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

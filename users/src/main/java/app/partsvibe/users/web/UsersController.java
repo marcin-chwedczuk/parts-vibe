@@ -1,8 +1,8 @@
 package app.partsvibe.users.web;
 
+import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
-import app.partsvibe.users.web.form.SortLink;
 import app.partsvibe.users.web.form.UserGridRow;
 import app.partsvibe.users.web.form.UserManagementFilters;
 import java.util.ArrayList;
@@ -16,28 +16,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequestMapping("/admin/users")
 public class UsersController {
-    private static final List<Integer> ALLOWED_PAGE_SIZES = List.of(10, 25, 50);
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
-    private static final Set<String> ALLOWED_SORT_BY = Set.of("none", "username", "enabled");
-    private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
 
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
 
     @GetMapping
     public String userManagement(@ModelAttribute("filters") UserManagementFilters filters, Model model) {
-        sanitizeFilters(filters);
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
         List<UserGridRow> allUsers = buildDummyUsers();
         List<UserGridRow> filteredUsers = applyFilters(allUsers, filters);
         List<UserGridRow> pagedUsers = applyPagination(filteredUsers, filters);
@@ -49,14 +45,14 @@ public class UsersController {
 
         model.addAttribute("users", pagedUsers);
         model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
-        model.addAttribute("pageSizes", ALLOWED_PAGE_SIZES);
+        model.addAttribute("pageSizes", UserManagementFilters.allowedPageSizes());
         model.addAttribute("pageNumbers", pageNumbers);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("totalRows", filteredUsers.size());
         model.addAttribute("startRow", startRow);
         model.addAttribute("endRow", endRow);
-        model.addAttribute("sortUsername", buildSortLink(filters, "username"));
-        model.addAttribute("sortEnabled", buildSortLink(filters, "enabled"));
+        model.addAttribute("sortUsername", filters.buildSortLink(UserManagementFilters.SORT_BY_USERNAME));
+        model.addAttribute("sortEnabled", filters.buildSortLink(UserManagementFilters.SORT_BY_ENABLED));
         model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
         model.addAttribute("paginationLastUrl", buildPageUrl(filters, totalPages));
         model.addAttribute("paginationPageLinks", buildPaginationPageLinks(filters, pageNumbers));
@@ -72,11 +68,12 @@ public class UsersController {
             @PathVariable("userId") Long userId,
             @ModelAttribute UserManagementFilters filters,
             RedirectAttributes redirectAttributes) {
-        sanitizeFilters(filters);
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
         // TODO: Delete user in application service/repository layer.
         log.info("Admin requested user delete. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.deleted");
-        return "redirect:" + buildUserManagementUrl(filters);
+        return "redirect:" + filters.toUserManagementUrl();
     }
 
     @PostMapping("/{userId}/do-lock")
@@ -84,11 +81,12 @@ public class UsersController {
             @PathVariable("userId") Long userId,
             @ModelAttribute UserManagementFilters filters,
             RedirectAttributes redirectAttributes) {
-        sanitizeFilters(filters);
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
         // TODO: Lock user in application service/repository layer.
         log.info("Admin requested user lock. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.locked");
-        return "redirect:" + buildUserManagementUrl(filters);
+        return "redirect:" + filters.toUserManagementUrl();
     }
 
     @PostMapping("/{userId}/do-unlock")
@@ -96,11 +94,12 @@ public class UsersController {
             @PathVariable("userId") Long userId,
             @ModelAttribute UserManagementFilters filters,
             RedirectAttributes redirectAttributes) {
-        sanitizeFilters(filters);
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
         // TODO: Unlock user in application service/repository layer.
         log.info("Admin requested user unlock. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.unlocked");
-        return "redirect:" + buildUserManagementUrl(filters);
+        return "redirect:" + filters.toUserManagementUrl();
     }
 
     private List<UserGridRow> applyFilters(List<UserGridRow> allUsers, UserManagementFilters filters) {
@@ -150,31 +149,6 @@ public class UsersController {
         return IntStream.rangeClosed(1, pageCount).boxed().toList();
     }
 
-    private SortLink buildSortLink(UserManagementFilters filters, String sortBy) {
-        boolean active = sortBy.equals(filters.getSortBy());
-
-        String nextSortBy;
-        String nextSortDir;
-        if (!active) {
-            nextSortBy = sortBy;
-            nextSortDir = "asc";
-        } else if ("asc".equals(filters.getSortDir())) {
-            nextSortBy = sortBy;
-            nextSortDir = "desc";
-        } else {
-            nextSortBy = "none";
-            nextSortDir = "asc";
-        }
-
-        UserManagementFilters nextState = copyFilters(filters);
-        nextState.setPage(1);
-        nextState.setSortBy(nextSortBy);
-        nextState.setSortDir(nextSortDir);
-
-        String direction = active ? filters.getSortDir() : "none";
-        return new SortLink(buildUserManagementUrl(nextState), active, direction);
-    }
-
     private List<PageLink> buildPaginationPageLinks(UserManagementFilters filters, List<Integer> pageNumbers) {
         List<PageLink> links = new ArrayList<>();
         for (Integer pageNumber : pageNumbers) {
@@ -184,9 +158,9 @@ public class UsersController {
     }
 
     private String buildPageUrl(UserManagementFilters filters, int page) {
-        UserManagementFilters pageState = copyFilters(filters);
+        UserManagementFilters pageState = UserManagementFilters.copyOf(filters);
         pageState.setPage(page);
-        return buildUserManagementUrl(pageState);
+        return pageState.toUserManagementUrl();
     }
 
     private List<HiddenField> buildHiddenFieldsForActions(UserManagementFilters filters) {
@@ -202,7 +176,7 @@ public class UsersController {
 
     private List<HiddenField> buildHiddenFieldsBase(UserManagementFilters filters) {
         List<HiddenField> fields = new ArrayList<>();
-        fields.add(new HiddenField("username", normalize(filters.getUsername())));
+        fields.add(new HiddenField("username", StringUtils.normalizeToEmpty(filters.getUsername())));
         fields.add(new HiddenField("enabled", filters.getEnabled()));
         fields.add(new HiddenField("sortBy", filters.getSortBy()));
         fields.add(new HiddenField("sortDir", filters.getSortDir()));
@@ -212,23 +186,7 @@ public class UsersController {
         return fields;
     }
 
-    private String normalize(String value) {
-        return value == null ? "" : value;
-    }
-
-    private void sanitizeFilters(UserManagementFilters filters) {
-        if (filters.getPage() < 1) {
-            filters.setPage(1);
-        }
-        if (!ALLOWED_PAGE_SIZES.contains(filters.getSize())) {
-            filters.setSize(10);
-        }
-        if (filters.getEnabled() == null
-                || (!filters.getEnabled().equals("all")
-                        && !filters.getEnabled().equals("enabled")
-                        && !filters.getEnabled().equals("disabled"))) {
-            filters.setEnabled("all");
-        }
+    private void sanitizeRoleFilters(UserManagementFilters filters) {
         if (filters.getRoles() == null) {
             filters.setRoles(new ArrayList<>());
         }
@@ -236,60 +194,25 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
-        if (!ALLOWED_SORT_BY.contains(filters.getSortBy())) {
-            filters.setSortBy("none");
-        }
-        if (!ALLOWED_SORT_DIR.contains(filters.getSortDir())) {
-            filters.setSortDir("asc");
-        }
-    }
-
-    private String buildUserManagementUrl(UserManagementFilters filters) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
-                .queryParam("page", filters.getPage())
-                .queryParam("size", filters.getSize())
-                .queryParam("enabled", filters.getEnabled())
-                .queryParam("sortBy", filters.getSortBy())
-                .queryParam("sortDir", filters.getSortDir());
-
-        if (StringUtils.hasText(filters.getUsername())) {
-            builder.queryParam("username", filters.getUsername().trim());
-        }
-        for (String role : filters.getRoles()) {
-            builder.queryParam("roles", role);
-        }
-        return builder.build().toUriString();
     }
 
     private Comparator<UserGridRow> buildSortComparator(UserManagementFilters filters) {
-        if ("none".equals(filters.getSortBy())) {
+        if (UserManagementFilters.SORT_NONE.equals(filters.getSortBy())) {
             return Comparator.comparing(UserGridRow::id);
         }
 
         Comparator<UserGridRow> comparator;
-        if ("enabled".equals(filters.getSortBy())) {
+        if (UserManagementFilters.SORT_BY_ENABLED.equals(filters.getSortBy())) {
             comparator = Comparator.comparing(UserGridRow::enabled);
         } else {
             comparator = Comparator.comparing(user -> user.username().toLowerCase(Locale.ROOT));
         }
 
-        if ("desc".equals(filters.getSortDir())) {
+        if (UserManagementFilters.SORT_DESC.equals(filters.getSortDir())) {
             comparator = comparator.reversed();
         }
 
         return comparator.thenComparing(UserGridRow::id);
-    }
-
-    private UserManagementFilters copyFilters(UserManagementFilters filters) {
-        UserManagementFilters copy = new UserManagementFilters();
-        copy.setUsername(filters.getUsername());
-        copy.setEnabled(filters.getEnabled());
-        copy.setRoles(new ArrayList<>(filters.getRoles()));
-        copy.setPage(filters.getPage());
-        copy.setSize(filters.getSize());
-        copy.setSortBy(filters.getSortBy());
-        copy.setSortDir(filters.getSortDir());
-        return copy;
     }
 
     private List<UserGridRow> buildDummyUsers() {
