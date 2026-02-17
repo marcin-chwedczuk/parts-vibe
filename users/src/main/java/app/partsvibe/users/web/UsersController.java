@@ -1,15 +1,15 @@
 package app.partsvibe.users.web;
 
+import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.utils.StringUtils;
+import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery;
+import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQueryResult;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.UserGridRow;
 import app.partsvibe.users.web.form.UserManagementFilters;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -27,30 +27,44 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin/users")
 public class UsersController {
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
-
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
+
+    private final Mediator mediator;
+
+    public UsersController(Mediator mediator) {
+        this.mediator = mediator;
+    }
 
     @GetMapping
     public String userManagement(@ModelAttribute("filters") UserManagementFilters filters, Model model) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
-        List<UserGridRow> allUsers = buildDummyUsers();
-        List<UserGridRow> filteredUsers = applyFilters(allUsers, filters);
-        List<UserGridRow> pagedUsers = applyPagination(filteredUsers, filters);
 
-        int totalPages = computeTotalPages(filteredUsers.size(), filters.getSize());
-        List<Integer> pageNumbers = buildPageNumbers(filteredUsers.size(), filters.getSize());
-        int startRow = filteredUsers.isEmpty() ? 0 : ((filters.getPage() - 1) * filters.getSize()) + 1;
-        int endRow = filteredUsers.isEmpty() ? 0 : startRow + pagedUsers.size() - 1;
+        GetUserManagementGridQueryResult result = mediator.executeQuery(new GetUserManagementGridQuery(
+                filters.getUsername(),
+                filters.getEnabled(),
+                List.copyOf(filters.getRoles()),
+                filters.getPage(),
+                filters.getSize(),
+                filters.getSortBy(),
+                filters.getSortDir()));
+
+        List<UserGridRow> pagedUsers = result.rows().stream()
+                .map(row -> new UserGridRow(row.id(), row.username(), row.enabled(), row.roles()))
+                .toList();
+
+        int totalPages = result.totalPages();
+        filters.setPage(result.currentPage());
+        List<Integer> pageNumbers = buildPageNumbers(totalPages);
 
         model.addAttribute("users", pagedUsers);
         model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
         model.addAttribute("pageSizes", UserManagementFilters.allowedPageSizes());
         model.addAttribute("pageNumbers", pageNumbers);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("totalRows", filteredUsers.size());
-        model.addAttribute("startRow", startRow);
-        model.addAttribute("endRow", endRow);
+        model.addAttribute("totalRows", result.totalRows());
+        model.addAttribute("startRow", result.startRow());
+        model.addAttribute("endRow", result.endRow());
         model.addAttribute("sortUsername", filters.buildSortLink(UserManagementFilters.SORT_BY_USERNAME));
         model.addAttribute("sortEnabled", filters.buildSortLink(UserManagementFilters.SORT_BY_ENABLED));
         model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
@@ -102,49 +116,7 @@ public class UsersController {
         return "redirect:" + filters.toUserManagementUrl();
     }
 
-    private List<UserGridRow> applyFilters(List<UserGridRow> allUsers, UserManagementFilters filters) {
-        String username = filters.getUsername() == null
-                ? ""
-                : filters.getUsername().trim().toLowerCase(Locale.ROOT);
-        Set<String> selectedRoles = new HashSet<>(filters.getRoles());
-
-        return allUsers.stream()
-                .filter(user -> username.isBlank()
-                        || user.username().toLowerCase(Locale.ROOT).contains(username))
-                .filter(user -> matchEnabled(user, filters.getEnabled()))
-                .filter(user -> user.roles().containsAll(selectedRoles))
-                .sorted(buildSortComparator(filters))
-                .toList();
-    }
-
-    private boolean matchEnabled(UserGridRow user, String enabledFilter) {
-        if ("enabled".equals(enabledFilter)) {
-            return user.enabled();
-        }
-        if ("disabled".equals(enabledFilter)) {
-            return !user.enabled();
-        }
-        return true;
-    }
-
-    private List<UserGridRow> applyPagination(List<UserGridRow> users, UserManagementFilters filters) {
-        int totalPages = computeTotalPages(users.size(), filters.getSize());
-        int page = Math.min(filters.getPage(), totalPages);
-        filters.setPage(page);
-        int start = (page - 1) * filters.getSize();
-        int end = Math.min(start + filters.getSize(), users.size());
-        if (start >= users.size()) {
-            return List.of();
-        }
-        return users.subList(start, end);
-    }
-
-    private int computeTotalPages(int totalRows, int size) {
-        return Math.max(1, (int) Math.ceil(totalRows / (double) size));
-    }
-
-    private List<Integer> buildPageNumbers(int totalRows, int size) {
-        int totalPages = computeTotalPages(totalRows, size);
+    private List<Integer> buildPageNumbers(int totalPages) {
         int pageCount = Math.min(totalPages, 10);
         return IntStream.rangeClosed(1, pageCount).boxed().toList();
     }
@@ -194,36 +166,5 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
-    }
-
-    private Comparator<UserGridRow> buildSortComparator(UserManagementFilters filters) {
-        if (UserManagementFilters.SORT_NONE.equals(filters.getSortBy())) {
-            return Comparator.comparing(UserGridRow::id);
-        }
-
-        Comparator<UserGridRow> comparator;
-        if (UserManagementFilters.SORT_BY_ENABLED.equals(filters.getSortBy())) {
-            comparator = Comparator.comparing(UserGridRow::enabled);
-        } else {
-            comparator = Comparator.comparing(user -> user.username().toLowerCase(Locale.ROOT));
-        }
-
-        if (UserManagementFilters.SORT_DESC.equals(filters.getSortDir())) {
-            comparator = comparator.reversed();
-        }
-
-        return comparator.thenComparing(UserGridRow::id);
-    }
-
-    private List<UserGridRow> buildDummyUsers() {
-        List<UserGridRow> users = new ArrayList<>();
-        for (long id = 1; id <= 97; id++) {
-            boolean enabled = id % 4 != 0;
-            List<String> roles = id % 3 == 0 ? List.of("ROLE_USER", "ROLE_ADMIN") : List.of("ROLE_USER");
-            users.add(new UserGridRow(id, "user" + id, enabled, roles));
-        }
-        users.add(new UserGridRow(201L, "admin", true, List.of("ROLE_USER", "ROLE_ADMIN")));
-        users.add(new UserGridRow(202L, "user", true, List.of("ROLE_USER")));
-        return users;
     }
 }

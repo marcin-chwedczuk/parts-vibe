@@ -13,6 +13,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Setter
 @NoArgsConstructor
 public class UserManagementFilters {
+    public static final String ENABLED_ALL = "all";
+    public static final String ENABLED_ENABLED = "enabled";
+    public static final String ENABLED_DISABLED = "disabled";
     public static final String SORT_NONE = "none";
     public static final String SORT_ASC = "asc";
     public static final String SORT_DESC = "desc";
@@ -24,7 +27,7 @@ public class UserManagementFilters {
     private static final Set<String> ALLOWED_SORT_DIR = Set.of(SORT_ASC, SORT_DESC);
 
     private String username = "";
-    private String enabled = "all";
+    private String enabled = ENABLED_ALL;
     private List<String> roles = new ArrayList<>();
     private int page = 1;
     private int size = 10;
@@ -96,8 +99,11 @@ public class UserManagementFilters {
         if (!ALLOWED_PAGE_SIZES.contains(size)) {
             size = 10;
         }
-        if (enabled == null || (!enabled.equals("all") && !enabled.equals("enabled") && !enabled.equals("disabled"))) {
-            enabled = "all";
+        if (enabled == null
+                || (!enabled.equals(ENABLED_ALL)
+                        && !enabled.equals(ENABLED_ENABLED)
+                        && !enabled.equals(ENABLED_DISABLED))) {
+            enabled = ENABLED_ALL;
         }
         if (!ALLOWED_SORT_BY.contains(sortBy)) {
             sortBy = SORT_NONE;

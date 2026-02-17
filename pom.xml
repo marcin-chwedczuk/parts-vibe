@@ -81,6 +81,7 @@
     <archunit.version>1.4.1</archunit.version>
     <lombok.version>1.18.42</lombok.version>
     <playwright.version>1.58.0</playwright.version>
+    <querydsl.version>5.1.0</querydsl.version>
   </properties>
 
   <dependencyManagement>
@@ -131,6 +132,18 @@
         <groupId>com.microsoft.playwright</groupId>
         <artifactId>playwright</artifactId>
         <version>${playwright.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.querydsl</groupId>
+        <artifactId>querydsl-jpa</artifactId>
+        <version>${querydsl.version}</version>
+        <classifier>jakarta</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.querydsl</groupId>
+        <artifactId>querydsl-apt</artifactId>
+        <version>${querydsl.version}</version>
+        <classifier>jakarta</classifier>
       </dependency>
     </dependencies>
   </dependencyManagement>
