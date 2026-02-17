@@ -1,5 +1,8 @@
 package app.partsvibe.users.web;
 
+import app.partsvibe.users.web.form.HiddenField;
+import app.partsvibe.users.web.form.PageLink;
+import app.partsvibe.users.web.form.SortLink;
 import app.partsvibe.users.web.form.UserGridRow;
 import app.partsvibe.users.web.form.UserManagementFilters;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ public class UsersController {
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
     private static final Set<String> ALLOWED_SORT_BY = Set.of("none", "username", "enabled");
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
+
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
 
     @GetMapping
@@ -38,15 +42,26 @@ public class UsersController {
         List<UserGridRow> filteredUsers = applyFilters(allUsers, filters);
         List<UserGridRow> pagedUsers = applyPagination(filteredUsers, filters);
 
-        model.addAttribute("users", pagedUsers);
-        model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
-        model.addAttribute("pageNumbers", buildPageNumbers(filteredUsers.size(), filters.getSize()));
-        model.addAttribute("totalPages", computeTotalPages(filteredUsers.size(), filters.getSize()));
-        model.addAttribute("totalRows", filteredUsers.size());
+        int totalPages = computeTotalPages(filteredUsers.size(), filters.getSize());
+        List<Integer> pageNumbers = buildPageNumbers(filteredUsers.size(), filters.getSize());
         int startRow = filteredUsers.isEmpty() ? 0 : ((filters.getPage() - 1) * filters.getSize()) + 1;
         int endRow = filteredUsers.isEmpty() ? 0 : startRow + pagedUsers.size() - 1;
+
+        model.addAttribute("users", pagedUsers);
+        model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("pageSizes", ALLOWED_PAGE_SIZES);
+        model.addAttribute("pageNumbers", pageNumbers);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalRows", filteredUsers.size());
         model.addAttribute("startRow", startRow);
         model.addAttribute("endRow", endRow);
+        model.addAttribute("sortUsername", buildSortLink(filters, "username"));
+        model.addAttribute("sortEnabled", buildSortLink(filters, "enabled"));
+        model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
+        model.addAttribute("paginationLastUrl", buildPageUrl(filters, totalPages));
+        model.addAttribute("paginationPageLinks", buildPaginationPageLinks(filters, pageNumbers));
+        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        model.addAttribute("hiddenFieldsForPageSize", buildHiddenFieldsForPageSize(filters));
 
         log.info("Admin user management page requested");
         return "admin/users";
@@ -61,7 +76,7 @@ public class UsersController {
         // TODO: Delete user in application service/repository layer.
         log.info("Admin requested user delete. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.deleted");
-        return "redirect:" + buildUserManagementRedirect(filters);
+        return "redirect:" + buildUserManagementUrl(filters);
     }
 
     @PostMapping("/{userId}/do-lock")
@@ -73,7 +88,7 @@ public class UsersController {
         // TODO: Lock user in application service/repository layer.
         log.info("Admin requested user lock. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.locked");
-        return "redirect:" + buildUserManagementRedirect(filters);
+        return "redirect:" + buildUserManagementUrl(filters);
     }
 
     @PostMapping("/{userId}/do-unlock")
@@ -85,7 +100,7 @@ public class UsersController {
         // TODO: Unlock user in application service/repository layer.
         log.info("Admin requested user unlock. userId={}", userId);
         redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.unlocked");
-        return "redirect:" + buildUserManagementRedirect(filters);
+        return "redirect:" + buildUserManagementUrl(filters);
     }
 
     private List<UserGridRow> applyFilters(List<UserGridRow> allUsers, UserManagementFilters filters) {
@@ -135,6 +150,72 @@ public class UsersController {
         return IntStream.rangeClosed(1, pageCount).boxed().toList();
     }
 
+    private SortLink buildSortLink(UserManagementFilters filters, String sortBy) {
+        boolean active = sortBy.equals(filters.getSortBy());
+
+        String nextSortBy;
+        String nextSortDir;
+        if (!active) {
+            nextSortBy = sortBy;
+            nextSortDir = "asc";
+        } else if ("asc".equals(filters.getSortDir())) {
+            nextSortBy = sortBy;
+            nextSortDir = "desc";
+        } else {
+            nextSortBy = "none";
+            nextSortDir = "asc";
+        }
+
+        UserManagementFilters nextState = copyFilters(filters);
+        nextState.setPage(1);
+        nextState.setSortBy(nextSortBy);
+        nextState.setSortDir(nextSortDir);
+
+        String direction = active ? filters.getSortDir() : "none";
+        return new SortLink(buildUserManagementUrl(nextState), active, direction);
+    }
+
+    private List<PageLink> buildPaginationPageLinks(UserManagementFilters filters, List<Integer> pageNumbers) {
+        List<PageLink> links = new ArrayList<>();
+        for (Integer pageNumber : pageNumbers) {
+            links.add(new PageLink(pageNumber, buildPageUrl(filters, pageNumber)));
+        }
+        return links;
+    }
+
+    private String buildPageUrl(UserManagementFilters filters, int page) {
+        UserManagementFilters pageState = copyFilters(filters);
+        pageState.setPage(page);
+        return buildUserManagementUrl(pageState);
+    }
+
+    private List<HiddenField> buildHiddenFieldsForActions(UserManagementFilters filters) {
+        List<HiddenField> fields = buildHiddenFieldsBase(filters);
+        fields.add(new HiddenField("page", String.valueOf(filters.getPage())));
+        fields.add(new HiddenField("size", String.valueOf(filters.getSize())));
+        return fields;
+    }
+
+    private List<HiddenField> buildHiddenFieldsForPageSize(UserManagementFilters filters) {
+        return buildHiddenFieldsBase(filters);
+    }
+
+    private List<HiddenField> buildHiddenFieldsBase(UserManagementFilters filters) {
+        List<HiddenField> fields = new ArrayList<>();
+        fields.add(new HiddenField("username", normalize(filters.getUsername())));
+        fields.add(new HiddenField("enabled", filters.getEnabled()));
+        fields.add(new HiddenField("sortBy", filters.getSortBy()));
+        fields.add(new HiddenField("sortDir", filters.getSortDir()));
+        for (String role : filters.getRoles()) {
+            fields.add(new HiddenField("roles", role));
+        }
+        return fields;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value;
+    }
+
     private void sanitizeFilters(UserManagementFilters filters) {
         if (filters.getPage() < 1) {
             filters.setPage(1);
@@ -163,7 +244,7 @@ public class UsersController {
         }
     }
 
-    private String buildUserManagementRedirect(UserManagementFilters filters) {
+    private String buildUserManagementUrl(UserManagementFilters filters) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
                 .queryParam("page", filters.getPage())
                 .queryParam("size", filters.getSize())
@@ -197,6 +278,18 @@ public class UsersController {
         }
 
         return comparator.thenComparing(UserGridRow::id);
+    }
+
+    private UserManagementFilters copyFilters(UserManagementFilters filters) {
+        UserManagementFilters copy = new UserManagementFilters();
+        copy.setUsername(filters.getUsername());
+        copy.setEnabled(filters.getEnabled());
+        copy.setRoles(new ArrayList<>(filters.getRoles()));
+        copy.setPage(filters.getPage());
+        copy.setSize(filters.getSize());
+        copy.setSortBy(filters.getSortBy());
+        copy.setSortDir(filters.getSortDir());
+        return copy;
     }
 
     private List<UserGridRow> buildDummyUsers() {

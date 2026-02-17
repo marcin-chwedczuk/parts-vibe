@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="stateHiddenFields(fields)">
+  <input type="hidden" th:each="field : ${fields}" th:name="${field.name}" th:value="${field.value}" />
+</th:block>
+<th:block th:fragment="sortIcon(link)">
+  <i th:if="${link.active and link.direction == 'asc'}" class="bi bi-sort-down ms-1" aria-hidden="true"></i>
+  <i th:if="${link.active and link.direction == 'desc'}" class="bi bi-sort-up ms-1" aria-hidden="true"></i>
+  <i th:if="${!link.active}" class="bi bi-arrow-down-up ms-1 text-body-secondary" aria-hidden="true"></i>
+</th:block>
+</body>
+</html>
