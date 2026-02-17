@@ -152,6 +152,18 @@ Treat it as the default unless explicitly overridden.
   - avoid public setter replacing entire persistent collections.
   - for collection fields (e.g. `UserAccount.roles`), disable replacement setter (`@Setter(AccessLevel.NONE)`).
 
+### QueryDSL / Read Grids
+- QueryDSL is used for read paths (CQRS query handlers), not for controllers/domain logic directly.
+- Controller read flow should call `Mediator.executeQuery(...)`; avoid in-controller filtering/paging over in-memory lists.
+- Query contracts/results for user-management grid live in `users` module (`users.queries.usermanagement`).
+- Parent `pom.xml` owns QueryDSL version/dependency management (`querydsl-jpa`, `querydsl-apt`, jakarta classifier).
+- Modules using QueryDSL must configure annotation processing in `maven-compiler-plugin`.
+- `shared` module must also generate QueryDSL metadata for mapped base entities (`QBase*`) used by feature modules.
+- Do not hardcode `jakarta.persistence-api` versions in module POMs; rely on managed dependency versions.
+- Sorting and paging inputs must be allowlisted/sanitized; never map raw request sort params directly to query expressions.
+- For user-management filters, generic page/sort sanitization lives in `UserManagementFilters`; role allowlist validation remains in `UsersController`.
+- Preserve PRG state using typed filter fields and hidden inputs/fragments; avoid free-form `returnUrl` redirects.
+
 ### Lombok
 - Root `lombok.config` is required.
 - Preserve Spring DI parameter annotations on Lombok-generated constructors:
