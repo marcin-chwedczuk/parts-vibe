@@ -19,7 +19,7 @@
         <form method="get" th:action="@{/admin/users}">
           <input type="hidden" name="page" value="1" />
           <input type="hidden" name="size" th:value="${filters.size}" />
-          <div class="row g-3 align-items-end">
+          <div class="row g-3 align-items-start">
             <div class="col-12 col-md-6 col-xl-3">
               <label class="form-label mb-1" for="usernameFilter" th:text="#{admin.users.filters.username}">
                 Username
@@ -77,21 +77,19 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-end mb-3 gap-3 flex-wrap">
-      <form method="get" th:action="@{/admin/users}" class="d-flex align-items-end gap-2">
+      <form method="get" th:action="@{/admin/users}" class="d-flex align-items-center gap-2">
         <input type="hidden" name="page" value="1" />
         <input type="hidden" name="username" th:value="${filters.username}" />
         <input type="hidden" name="enabled" th:value="${filters.enabled}" />
         <input type="hidden" name="roles" th:each="selectedRole : ${filters.roles}" th:value="${selectedRole}" />
-        <div>
-          <label class="form-label mb-1" for="sizeFilterTop" th:text="#{admin.users.filters.pageSize}">
-            Page size
-          </label>
-          <select id="sizeFilterTop" class="form-select" name="size" onchange="this.form.submit()">
-            <option value="10" th:selected="${filters.size == 10}">10</option>
-            <option value="25" th:selected="${filters.size == 25}">25</option>
-            <option value="50" th:selected="${filters.size == 50}">50</option>
-          </select>
-        </div>
+        <label class="form-label mb-0 text-nowrap" for="sizeFilterTop" th:text="#{admin.users.filters.pageSize}">
+          Page size
+        </label>
+        <select id="sizeFilterTop" class="form-select w-auto" name="size" onchange="this.form.submit()">
+          <option value="10" th:selected="${filters.size == 10}">10</option>
+          <option value="25" th:selected="${filters.size == 25}">25</option>
+          <option value="50" th:selected="${filters.size == 50}">50</option>
+        </select>
       </form>
 
       <button type="button" class="btn btn-success">
@@ -129,7 +127,7 @@
           <td th:text="${user.rolesDisplay()}">ROLE_USER</td>
           <td class="text-end">
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              <button class="btn btn-sm btn-link link-secondary text-decoration-none dropdown-toggle p-0"
                       type="button"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
