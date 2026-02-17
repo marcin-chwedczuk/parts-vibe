@@ -28,6 +28,12 @@ public class AdminController {
         return "admin";
     }
 
+    @GetMapping("/users")
+    public String userManagement() {
+        log.info("Admin user management page requested");
+        return "admin/users";
+    }
+
     @PostMapping("/event-queue/retention-cleanup")
     public String triggerRetentionCleanup(RedirectAttributes redirectAttributes) {
         UUID eventId =

@@ -15,7 +15,13 @@
       <a class="navbar-brand d-inline-flex align-items-center gap-2 fw-semibold" th:href="@{/}">
         <img th:src="@{/resources/images/logo-128.png}" src="/resources/images/logo-128.png" alt="PartsVibe logo"
              width="40" class="rounded" />
-        <span class="app-title-font">PartsVibe!</span>
+        <span class="app-title-font">
+          <span>PartsVibe!</span>
+          <span th:if="${currentPath != null and currentPath.startsWith('/admin')}">
+            <span>| </span>
+            <span class="text-danger" th:text="#{admin.console}">Admin Console</span>
+          </span>
+        </span>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
               data-bs-target="#topbarMenu" aria-controls="topbarMenu"

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
+<head>
+  <title th:text="#{admin.users.title}">User Management</title>
+</head>
+<section th:replace="~{layout/admin :: body(~{::div})}">
+  <div>
+    <h1 class="h4 mb-3" th:text="#{admin.users.heading}">User Management</h1>
+    <p class="mb-4" th:text="#{admin.users.body}">
+      Manage application users and roles from this admin section.
+    </p>
+  </div>
+</section>
+</html>
