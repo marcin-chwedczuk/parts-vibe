@@ -6,24 +6,27 @@
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
           <a th:href="@{/catalog/search}"
-             th:class="${currentPath != null and currentPath.startsWith('/catalog/search')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${currentPath != null and currentPath.startsWith('/catalog/search')} ? 'page' : null">
+             th:with="active=${@nav.isUnder(currentPath, '/catalog/search')}"
+             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
+             th:aria-current="${active} ? 'page' : null">
             <i class="bi bi-search me-2" aria-hidden="true"></i>
             <span th:text="#{nav.catalog.search}">Catalog Search</span>
           </a>
         </li>
         <li class="nav-item">
           <a th:href="@{/catalog/index}"
-             th:class="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${currentPath != null and currentPath.startsWith('/catalog/index')} ? 'page' : null">
+             th:with="active=${@nav.isUnder(currentPath, '/catalog/index')}"
+             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
+             th:aria-current="${active} ? 'page' : null">
             <i class="bi bi-book me-2" aria-hidden="true"></i>
             <span th:text="#{nav.catalog.index}">Catalog Index</span>
           </a>
         </li>
         <li class="nav-item">
           <a th:href="@{/contact}"
-             th:class="${currentPath != null and currentPath.startsWith('/contact')} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${currentPath != null and currentPath.startsWith('/contact')} ? 'page' : null">
+             th:with="active=${@nav.isUnder(currentPath, '/contact')}"
+             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
+             th:aria-current="${active} ? 'page' : null">
             <i class="bi bi-chat-dots me-2" aria-hidden="true"></i>
             <span th:text="#{nav.messages}">Messages</span>
           </a>

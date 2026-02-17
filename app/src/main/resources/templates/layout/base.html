@@ -17,7 +17,7 @@
              width="40" class="rounded" />
         <span class="app-title-font">
           <span>PartsVibe!</span>
-          <span th:if="${currentPath != null and currentPath.startsWith('/admin')}">
+          <span th:if="${@nav.isUnder(currentPath, '/admin')}">
             <span>| </span>
             <span class="text-danger" th:text="#{admin.console}">Admin Console</span>
           </span>
