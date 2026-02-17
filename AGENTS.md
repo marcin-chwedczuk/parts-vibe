@@ -176,6 +176,7 @@ Treat it as the default unless explicitly overridden.
 - Use PRG (`POST -> redirect -> GET`) for forms.
 - Static assets (e.g. logos) must be explicitly allowed by security config.
 - Default app entry (`/`) redirects to catalog search (`/catalog/search`).
+- Everything under `/admin/**` must be accessible only to `ROLE_ADMIN` (keep URL-based rules and method-level checks aligned).
 
 ### Frontend / Thymeleaf Layout
 - Static resources follow `static/resources/*` subdivision (`css`, `images`, `fonts`, `js`).
