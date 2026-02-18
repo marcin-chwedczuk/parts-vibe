@@ -161,7 +161,7 @@ Treat it as the default unless explicitly overridden.
 - `shared` module must also generate QueryDSL metadata for mapped base entities (`QBase*`) used by feature modules.
 - Do not hardcode `jakarta.persistence-api` versions in module POMs; rely on managed dependency versions.
 - Sorting and paging inputs must be allowlisted/sanitized; never map raw request sort params directly to query expressions.
-- For user-management filters, generic page/sort sanitization lives in `UserManagementFilters`; role allowlist validation remains in `UsersController`.
+- For user-management filters, generic page/sort sanitization lives in `UserFilters`; role allowlist validation remains in `UsersController`.
 - Preserve PRG state using typed filter fields and hidden inputs/fragments; avoid free-form `returnUrl` redirects.
 
 ### Lombok

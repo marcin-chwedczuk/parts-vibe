@@ -1,6 +1,6 @@
 package app.partsvibe.users.queries.usermanagement;
 
-import static app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery.*;
+import static app.partsvibe.users.queries.usermanagement.SearchUsersQuery.*;
 import static java.util.Comparator.naturalOrder;
 
 import app.partsvibe.shared.cqrs.BasePaginatedQueryHandler;
@@ -16,16 +16,15 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 @Component
-class GetUserManagementGridQueryHandler
-        extends BasePaginatedQueryHandler<GetUserManagementGridQuery, PageResult<GetUserManagementGridQuery.User>> {
+class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery, PageResult<SearchUsersQuery.User>> {
     private final JPAQueryFactory queryFactory;
 
-    GetUserManagementGridQueryHandler(JPAQueryFactory queryFactory) {
+    SearchUsersQueryHandler(JPAQueryFactory queryFactory) {
         this.queryFactory = queryFactory;
     }
 
     @Override
-    protected PageResult<GetUserManagementGridQuery.User> doHandle(GetUserManagementGridQuery query) {
+    protected PageResult<SearchUsersQuery.User> doHandle(SearchUsersQuery query) {
         QUser user = QUser.user;
         BooleanBuilder predicate = buildPredicate(query, user);
         int safeSize = resolvePageSize(query);
@@ -36,7 +35,7 @@ class GetUserManagementGridQueryHandler
         int totalPages = computeTotalPages(totalRows, safeSize);
         int safePage = resolvePageNumber(query, totalPages);
 
-        List<GetUserManagementGridQuery.User> rows = queryFactory
+        List<SearchUsersQuery.User> rows = queryFactory
                 .selectFrom(user)
                 .where(predicate)
                 .orderBy(orderBy(query, user))
@@ -45,7 +44,7 @@ class GetUserManagementGridQueryHandler
                 .fetch()
                 .stream()
                 // TODO: Avoid potential N+1 on roles by switching to a paged-id + batched roles projection query.
-                .map(userAccount -> new GetUserManagementGridQuery.User(
+                .map(userAccount -> new SearchUsersQuery.User(
                         userAccount.getId(),
                         userAccount.getUsername(),
                         userAccount.isEnabled(),
@@ -58,7 +57,7 @@ class GetUserManagementGridQueryHandler
         return new PageResult<>(rows, totalRows, totalPages, safePage, safeSize);
     }
 
-    private BooleanBuilder buildPredicate(GetUserManagementGridQuery query, QUser user) {
+    private BooleanBuilder buildPredicate(SearchUsersQuery query, QUser user) {
         BooleanBuilder predicate = new BooleanBuilder();
 
         if (query.username() != null && !query.username().isBlank()) {
@@ -78,7 +77,7 @@ class GetUserManagementGridQueryHandler
         return predicate;
     }
 
-    private OrderSpecifier<?>[] orderBy(GetUserManagementGridQuery query, QUser user) {
+    private OrderSpecifier<?>[] orderBy(SearchUsersQuery query, QUser user) {
         String sortBy = query.sortBy() == null ? SORT_NONE : query.sortBy();
         String sortDir = query.sortDir() == null ? SORT_ASC : query.sortDir().toLowerCase(Locale.ROOT);
         Order direction = SORT_DESC.equals(sortDir) ? Order.DESC : Order.ASC;

@@ -3,11 +3,11 @@ package app.partsvibe.users.web;
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
-import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery;
+import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
+import app.partsvibe.users.web.form.UserFilters;
 import app.partsvibe.users.web.form.UserGridRow;
-import app.partsvibe.users.web.form.UserManagementFilters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,19 +32,19 @@ public class UsersController {
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
 
     private final Mediator mediator;
-    private final UserManagementWebMapper userManagementWebMapper;
+    private final UserWebMapper userWebMapper;
 
-    public UsersController(Mediator mediator, UserManagementWebMapper userManagementWebMapper) {
+    public UsersController(Mediator mediator, UserWebMapper userWebMapper) {
         this.mediator = mediator;
-        this.userManagementWebMapper = userManagementWebMapper;
+        this.userWebMapper = userWebMapper;
     }
 
     @GetMapping
-    public String userManagement(@ModelAttribute("filters") UserManagementFilters filters, Model model) {
+    public String userManagement(@ModelAttribute("filters") UserFilters filters, Model model) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
-        GetUserManagementGridQuery query = GetUserManagementGridQuery.builder()
+        SearchUsersQuery query = SearchUsersQuery.builder()
                 .username(filters.getUsername())
                 .enabled(filters.getEnabled())
                 .roles(List.copyOf(filters.getRoles()))
@@ -54,9 +54,9 @@ public class UsersController {
                 .sortDir(filters.getSortDir())
                 .build();
 
-        PageResult<GetUserManagementGridQuery.User> result = mediator.executeQuery(query);
+        PageResult<SearchUsersQuery.User> result = mediator.executeQuery(query);
 
-        List<UserGridRow> pagedUsers = userManagementWebMapper.toGridRows(result.items());
+        List<UserGridRow> pagedUsers = userWebMapper.toGridRows(result.items());
 
         int totalPages = result.totalPages();
         filters.setPage(result.currentPage());
@@ -64,14 +64,14 @@ public class UsersController {
 
         model.addAttribute("users", pagedUsers);
         model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
-        model.addAttribute("pageSizes", UserManagementFilters.allowedPageSizes());
+        model.addAttribute("pageSizes", UserFilters.allowedPageSizes());
         model.addAttribute("pageNumbers", pageNumbers);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("totalRows", result.totalRows());
         model.addAttribute("startRow", result.startRow());
         model.addAttribute("endRow", result.endRow());
-        model.addAttribute("sortUsername", filters.buildSortLink(GetUserManagementGridQuery.SORT_BY_USERNAME));
-        model.addAttribute("sortEnabled", filters.buildSortLink(GetUserManagementGridQuery.SORT_BY_ENABLED));
+        model.addAttribute("sortUsername", filters.buildSortLink(SearchUsersQuery.SORT_BY_USERNAME));
+        model.addAttribute("sortEnabled", filters.buildSortLink(SearchUsersQuery.SORT_BY_ENABLED));
         model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
         model.addAttribute("paginationLastUrl", buildPageUrl(filters, totalPages));
         model.addAttribute("paginationPageLinks", buildPaginationPageLinks(filters, pageNumbers));
@@ -85,7 +85,7 @@ public class UsersController {
     @PostMapping("/{userId}/do-delete")
     public String deleteUser(
             @PathVariable("userId") Long userId,
-            @ModelAttribute UserManagementFilters filters,
+            @ModelAttribute UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -98,7 +98,7 @@ public class UsersController {
     @PostMapping("/{userId}/do-lock")
     public String lockUser(
             @PathVariable("userId") Long userId,
-            @ModelAttribute UserManagementFilters filters,
+            @ModelAttribute UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -111,7 +111,7 @@ public class UsersController {
     @PostMapping("/{userId}/do-unlock")
     public String unlockUser(
             @PathVariable("userId") Long userId,
-            @ModelAttribute UserManagementFilters filters,
+            @ModelAttribute UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -126,7 +126,7 @@ public class UsersController {
         return IntStream.rangeClosed(1, pageCount).boxed().toList();
     }
 
-    private List<PageLink> buildPaginationPageLinks(UserManagementFilters filters, List<Integer> pageNumbers) {
+    private List<PageLink> buildPaginationPageLinks(UserFilters filters, List<Integer> pageNumbers) {
         List<PageLink> links = new ArrayList<>();
         for (Integer pageNumber : pageNumbers) {
             links.add(new PageLink(pageNumber, buildPageUrl(filters, pageNumber)));
@@ -134,24 +134,24 @@ public class UsersController {
         return links;
     }
 
-    private String buildPageUrl(UserManagementFilters filters, int page) {
-        UserManagementFilters pageState = UserManagementFilters.copyOf(filters);
+    private String buildPageUrl(UserFilters filters, int page) {
+        UserFilters pageState = UserFilters.copyOf(filters);
         pageState.setPage(page);
         return pageState.toUserManagementUrl();
     }
 
-    private List<HiddenField> buildHiddenFieldsForActions(UserManagementFilters filters) {
+    private List<HiddenField> buildHiddenFieldsForActions(UserFilters filters) {
         List<HiddenField> fields = buildHiddenFieldsBase(filters);
         fields.add(new HiddenField("page", String.valueOf(filters.getPage())));
         fields.add(new HiddenField("size", String.valueOf(filters.getSize())));
         return fields;
     }
 
-    private List<HiddenField> buildHiddenFieldsForPageSize(UserManagementFilters filters) {
+    private List<HiddenField> buildHiddenFieldsForPageSize(UserFilters filters) {
         return buildHiddenFieldsBase(filters);
     }
 
-    private List<HiddenField> buildHiddenFieldsBase(UserManagementFilters filters) {
+    private List<HiddenField> buildHiddenFieldsBase(UserFilters filters) {
         List<HiddenField> fields = new ArrayList<>();
         fields.add(new HiddenField("username", StringUtils.normalizeToEmpty(filters.getUsername())));
         fields.add(new HiddenField("enabled", filters.getEnabled()));
@@ -163,7 +163,7 @@ public class UsersController {
         return fields;
     }
 
-    private void sanitizeRoleFilters(UserManagementFilters filters) {
+    private void sanitizeRoleFilters(UserFilters filters) {
         if (filters.getRoles() == null) {
             filters.setRoles(new ArrayList<>());
         }

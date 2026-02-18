@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.Builder;
 
 @Builder
-public record GetUserManagementGridQuery(
+public record SearchUsersQuery(
         String username,
         String enabled,
         List<String> roles,
@@ -14,7 +14,7 @@ public record GetUserManagementGridQuery(
         int pageSize,
         String sortBy,
         String sortDir)
-        implements PaginatedQuery<PageResult<GetUserManagementGridQuery.User>> {
+        implements PaginatedQuery<PageResult<SearchUsersQuery.User>> {
 
     public static final String ENABLED_ALL = "all";
     public static final String ENABLED_ENABLED = "enabled";
