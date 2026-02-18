@@ -67,8 +67,8 @@ public class UsersController {
         model.addAttribute("totalRows", result.totalRows());
         model.addAttribute("startRow", result.startRow());
         model.addAttribute("endRow", result.endRow());
-        model.addAttribute("sortUsername", filters.buildSortLink(UserManagementFilters.SORT_BY_USERNAME));
-        model.addAttribute("sortEnabled", filters.buildSortLink(UserManagementFilters.SORT_BY_ENABLED));
+        model.addAttribute("sortUsername", filters.buildSortLink(GetUserManagementGridQuery.SORT_BY_USERNAME));
+        model.addAttribute("sortEnabled", filters.buildSortLink(GetUserManagementGridQuery.SORT_BY_ENABLED));
         model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
         model.addAttribute("paginationLastUrl", buildPageUrl(filters, totalPages));
         model.addAttribute("paginationPageLinks", buildPaginationPageLinks(filters, pageNumbers));

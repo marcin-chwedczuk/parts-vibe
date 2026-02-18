@@ -1,6 +1,7 @@
 package app.partsvibe.users.web.form;
 
 import app.partsvibe.shared.utils.StringUtils;
+import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -13,26 +14,21 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Setter
 @NoArgsConstructor
 public class UserManagementFilters {
-    public static final String ENABLED_ALL = "all";
-    public static final String ENABLED_ENABLED = "enabled";
-    public static final String ENABLED_DISABLED = "disabled";
-    public static final String SORT_NONE = "none";
-    public static final String SORT_ASC = "asc";
-    public static final String SORT_DESC = "desc";
-    public static final String SORT_BY_USERNAME = "username";
-    public static final String SORT_BY_ENABLED = "enabled";
-
     private static final List<Integer> ALLOWED_PAGE_SIZES = List.of(10, 25, 50);
-    private static final Set<String> ALLOWED_SORT_BY = Set.of(SORT_NONE, SORT_BY_USERNAME, SORT_BY_ENABLED);
-    private static final Set<String> ALLOWED_SORT_DIR = Set.of(SORT_ASC, SORT_DESC);
+    private static final Set<String> ALLOWED_SORT_BY = Set.of(
+            GetUserManagementGridQuery.SORT_NONE,
+            GetUserManagementGridQuery.SORT_BY_USERNAME,
+            GetUserManagementGridQuery.SORT_BY_ENABLED);
+    private static final Set<String> ALLOWED_SORT_DIR =
+            Set.of(GetUserManagementGridQuery.SORT_ASC, GetUserManagementGridQuery.SORT_DESC);
 
     private String username = "";
-    private String enabled = ENABLED_ALL;
+    private String enabled = GetUserManagementGridQuery.ENABLED_ALL;
     private List<String> roles = new ArrayList<>();
     private int page = 1;
     private int size = 10;
-    private String sortBy = SORT_NONE;
-    private String sortDir = SORT_ASC;
+    private String sortBy = GetUserManagementGridQuery.SORT_NONE;
+    private String sortDir = GetUserManagementGridQuery.SORT_ASC;
 
     public static UserManagementFilters copyOf(UserManagementFilters source) {
         UserManagementFilters copy = new UserManagementFilters();
@@ -74,13 +70,13 @@ public class UserManagementFilters {
         String nextSortDir;
         if (!active) {
             nextSortBy = requestedSortBy;
-            nextSortDir = SORT_ASC;
-        } else if (SORT_ASC.equals(sortDir)) {
+            nextSortDir = GetUserManagementGridQuery.SORT_ASC;
+        } else if (GetUserManagementGridQuery.SORT_ASC.equals(sortDir)) {
             nextSortBy = requestedSortBy;
-            nextSortDir = SORT_DESC;
+            nextSortDir = GetUserManagementGridQuery.SORT_DESC;
         } else {
-            nextSortBy = SORT_NONE;
-            nextSortDir = SORT_ASC;
+            nextSortBy = GetUserManagementGridQuery.SORT_NONE;
+            nextSortDir = GetUserManagementGridQuery.SORT_ASC;
         }
 
         UserManagementFilters nextState = copyOf(this);
@@ -88,7 +84,7 @@ public class UserManagementFilters {
         nextState.setSortBy(nextSortBy);
         nextState.setSortDir(nextSortDir);
 
-        String direction = active ? sortDir : SORT_NONE;
+        String direction = active ? sortDir : GetUserManagementGridQuery.SORT_NONE;
         return new SortLink(nextState.toUserManagementUrl(), active, direction);
     }
 
@@ -100,16 +96,16 @@ public class UserManagementFilters {
             size = 10;
         }
         if (enabled == null
-                || (!enabled.equals(ENABLED_ALL)
-                        && !enabled.equals(ENABLED_ENABLED)
-                        && !enabled.equals(ENABLED_DISABLED))) {
-            enabled = ENABLED_ALL;
+                || (!enabled.equals(GetUserManagementGridQuery.ENABLED_ALL)
+                        && !enabled.equals(GetUserManagementGridQuery.ENABLED_ENABLED)
+                        && !enabled.equals(GetUserManagementGridQuery.ENABLED_DISABLED))) {
+            enabled = GetUserManagementGridQuery.ENABLED_ALL;
         }
         if (!ALLOWED_SORT_BY.contains(sortBy)) {
-            sortBy = SORT_NONE;
+            sortBy = GetUserManagementGridQuery.SORT_NONE;
         }
         if (!ALLOWED_SORT_DIR.contains(sortDir)) {
-            sortDir = SORT_ASC;
+            sortDir = GetUserManagementGridQuery.SORT_ASC;
         }
         if (roles == null) {
             roles = new ArrayList<>();

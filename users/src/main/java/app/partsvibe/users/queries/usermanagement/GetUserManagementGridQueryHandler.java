@@ -1,8 +1,9 @@
 package app.partsvibe.users.queries.usermanagement;
 
+import static app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery.*;
+
 import app.partsvibe.shared.cqrs.BaseQueryHandler;
 import app.partsvibe.users.domain.QUserAccount;
-import app.partsvibe.users.web.form.UserManagementFilters;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -64,9 +65,9 @@ class GetUserManagementGridQueryHandler
         if (query.username() != null && !query.username().isBlank()) {
             predicate.and(user.username.containsIgnoreCase(query.username().trim()));
         }
-        if (UserManagementFilters.ENABLED_ENABLED.equals(query.enabled())) {
+        if (ENABLED_ENABLED.equals(query.enabled())) {
             predicate.and(user.enabled.isTrue());
-        } else if (UserManagementFilters.ENABLED_DISABLED.equals(query.enabled())) {
+        } else if (ENABLED_DISABLED.equals(query.enabled())) {
             predicate.and(user.enabled.isFalse());
         }
 
@@ -82,20 +83,22 @@ class GetUserManagementGridQueryHandler
         return Math.max(1, (int) Math.ceil(totalRows / (double) size));
     }
 
-    private OrderSpecifier<?> orderBy(GetUserManagementGridQuery query, QUserAccount user) {
-        String sortBy = query.sortBy() == null ? UserManagementFilters.SORT_NONE : query.sortBy();
-        String sortDir = query.sortDir() == null
-                ? UserManagementFilters.SORT_ASC
-                : query.sortDir().toLowerCase(Locale.ROOT);
-        Order direction = UserManagementFilters.SORT_DESC.equals(sortDir) ? Order.DESC : Order.ASC;
+    private OrderSpecifier<?>[] orderBy(GetUserManagementGridQuery query, QUserAccount user) {
+        String sortBy = query.sortBy() == null ? SORT_NONE : query.sortBy();
+        String sortDir = query.sortDir() == null ? SORT_ASC : query.sortDir().toLowerCase(Locale.ROOT);
+        Order direction = SORT_DESC.equals(sortDir) ? Order.DESC : Order.ASC;
 
-        if (UserManagementFilters.SORT_BY_USERNAME.equals(sortBy)) {
-            return new OrderSpecifier<>(direction, user.username);
+        if (SORT_BY_USERNAME.equals(sortBy)) {
+            return new OrderSpecifier[] {
+                new OrderSpecifier<>(direction, user.username), new OrderSpecifier<>(Order.ASC, user.id)
+            };
         }
-        if (UserManagementFilters.SORT_BY_ENABLED.equals(sortBy)) {
-            return new OrderSpecifier<>(direction, user.enabled);
+        if (SORT_BY_ENABLED.equals(sortBy)) {
+            return new OrderSpecifier[] {
+                new OrderSpecifier<>(direction, user.enabled), new OrderSpecifier<>(Order.ASC, user.id)
+            };
         }
 
-        return new OrderSpecifier<>(Order.ASC, user.id);
+        return new OrderSpecifier[] {new OrderSpecifier<>(Order.ASC, user.id)};
     }
 }
