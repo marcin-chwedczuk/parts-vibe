@@ -3,7 +3,9 @@ package app.partsvibe.users.queries.usermanagement;
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.cqrs.PaginatedQuery;
 import java.util.List;
+import lombok.Builder;
 
+@Builder
 public record GetUserManagementGridQuery(
         String username,
         String enabled,

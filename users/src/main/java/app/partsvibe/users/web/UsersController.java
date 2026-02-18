@@ -32,9 +32,11 @@ public class UsersController {
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
 
     private final Mediator mediator;
+    private final UserManagementWebMapper userManagementWebMapper;
 
-    public UsersController(Mediator mediator) {
+    public UsersController(Mediator mediator, UserManagementWebMapper userManagementWebMapper) {
         this.mediator = mediator;
+        this.userManagementWebMapper = userManagementWebMapper;
     }
 
     @GetMapping
@@ -42,18 +44,19 @@ public class UsersController {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
-        PageResult<GetUserManagementGridQuery.User> result = mediator.executeQuery(new GetUserManagementGridQuery(
-                filters.getUsername(),
-                filters.getEnabled(),
-                List.copyOf(filters.getRoles()),
-                filters.getPage(),
-                filters.getSize(),
-                filters.getSortBy(),
-                filters.getSortDir()));
+        GetUserManagementGridQuery query = GetUserManagementGridQuery.builder()
+                .username(filters.getUsername())
+                .enabled(filters.getEnabled())
+                .roles(List.copyOf(filters.getRoles()))
+                .currentPage(filters.getPage())
+                .pageSize(filters.getSize())
+                .sortBy(filters.getSortBy())
+                .sortDir(filters.getSortDir())
+                .build();
 
-        List<UserGridRow> pagedUsers = result.items().stream()
-                .map(row -> new UserGridRow(row.id(), row.username(), row.enabled(), row.roles()))
-                .toList();
+        PageResult<GetUserManagementGridQuery.User> result = mediator.executeQuery(query);
+
+        List<UserGridRow> pagedUsers = userManagementWebMapper.toGridRows(result.items());
 
         int totalPages = result.totalPages();
         filters.setPage(result.currentPage());
