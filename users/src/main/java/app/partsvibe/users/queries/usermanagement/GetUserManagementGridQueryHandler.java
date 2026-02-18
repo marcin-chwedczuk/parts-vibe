@@ -1,41 +1,42 @@
 package app.partsvibe.users.queries.usermanagement;
 
 import static app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery.*;
+import static java.util.Comparator.naturalOrder;
 
-import app.partsvibe.shared.cqrs.BaseQueryHandler;
+import app.partsvibe.shared.cqrs.BasePaginatedQueryHandler;
+import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.users.domain.QUserAccount;
+import app.partsvibe.users.domain.Role;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import jakarta.persistence.EntityManager;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 @Component
 class GetUserManagementGridQueryHandler
-        extends BaseQueryHandler<GetUserManagementGridQuery, GetUserManagementGridQueryResult> {
+        extends BasePaginatedQueryHandler<GetUserManagementGridQuery, PageResult<GetUserManagementGridQuery.User>> {
     private final JPAQueryFactory queryFactory;
 
-    GetUserManagementGridQueryHandler(EntityManager entityManager) {
-        this.queryFactory = new JPAQueryFactory(entityManager);
+    GetUserManagementGridQueryHandler(JPAQueryFactory queryFactory) {
+        this.queryFactory = queryFactory;
     }
 
     @Override
-    protected GetUserManagementGridQueryResult doHandle(GetUserManagementGridQuery query) {
+    protected PageResult<GetUserManagementGridQuery.User> doHandle(GetUserManagementGridQuery query) {
         QUserAccount user = QUserAccount.userAccount;
         BooleanBuilder predicate = buildPredicate(query, user);
-        int safeSize = query.size() > 0 ? query.size() : 10;
+        int safeSize = resolvePageSize(query);
 
         Long totalRowsValue =
                 queryFactory.select(user.id.count()).from(user).where(predicate).fetchOne();
         long totalRows = totalRowsValue == null ? 0L : totalRowsValue;
         int totalPages = computeTotalPages(totalRows, safeSize);
-        int safePage = Math.min(Math.max(1, query.page()), totalPages);
+        int safePage = resolvePageNumber(query, totalPages);
 
-        List<GetUserManagementGridQueryResult.UserRow> rows = queryFactory
+        List<GetUserManagementGridQuery.User> rows = queryFactory
                 .selectFrom(user)
                 .where(predicate)
                 .orderBy(orderBy(query, user))
@@ -43,20 +44,18 @@ class GetUserManagementGridQueryHandler
                 .limit(safeSize)
                 .fetch()
                 .stream()
-                .map(userAccount -> new GetUserManagementGridQueryResult.UserRow(
+                // TODO: Avoid potential N+1 on roles by switching to a paged-id + batched roles projection query.
+                .map(userAccount -> new GetUserManagementGridQuery.User(
                         userAccount.getId(),
                         userAccount.getUsername(),
                         userAccount.isEnabled(),
                         userAccount.getRoles().stream()
-                                .map(role -> role.getName())
-                                .sorted(Comparator.naturalOrder())
+                                .map(Role::getName)
+                                .sorted(naturalOrder())
                                 .toList()))
                 .toList();
 
-        int startRow = totalRows == 0 ? 0 : ((safePage - 1) * safeSize) + 1;
-        int endRow = totalRows == 0 ? 0 : startRow + rows.size() - 1;
-
-        return new GetUserManagementGridQueryResult(rows, totalRows, totalPages, safePage, startRow, endRow);
+        return new PageResult<>(rows, totalRows, totalPages, safePage, safeSize);
     }
 
     private BooleanBuilder buildPredicate(GetUserManagementGridQuery query, QUserAccount user) {
@@ -77,10 +76,6 @@ class GetUserManagementGridQueryHandler
         }
 
         return predicate;
-    }
-
-    private int computeTotalPages(long totalRows, int size) {
-        return Math.max(1, (int) Math.ceil(totalRows / (double) size));
     }
 
     private OrderSpecifier<?>[] orderBy(GetUserManagementGridQuery query, QUserAccount user) {

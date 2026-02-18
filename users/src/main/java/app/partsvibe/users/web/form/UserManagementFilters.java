@@ -1,5 +1,6 @@
 package app.partsvibe.users.web.form;
 
+import app.partsvibe.shared.cqrs.PaginationPolicy;
 import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery;
 import java.util.ArrayList;
@@ -14,7 +15,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Setter
 @NoArgsConstructor
 public class UserManagementFilters {
-    private static final List<Integer> ALLOWED_PAGE_SIZES = List.of(10, 25, 50);
     private static final Set<String> ALLOWED_SORT_BY = Set.of(
             GetUserManagementGridQuery.SORT_NONE,
             GetUserManagementGridQuery.SORT_BY_USERNAME,
@@ -26,7 +26,7 @@ public class UserManagementFilters {
     private String enabled = GetUserManagementGridQuery.ENABLED_ALL;
     private List<String> roles = new ArrayList<>();
     private int page = 1;
-    private int size = 10;
+    private int size = PaginationPolicy.DEFAULT_PAGE_SIZE;
     private String sortBy = GetUserManagementGridQuery.SORT_NONE;
     private String sortDir = GetUserManagementGridQuery.SORT_ASC;
 
@@ -92,8 +92,8 @@ public class UserManagementFilters {
         if (page < 1) {
             page = 1;
         }
-        if (!ALLOWED_PAGE_SIZES.contains(size)) {
-            size = 10;
+        if (!PaginationPolicy.ALLOWED_PAGE_SIZES.contains(size)) {
+            size = PaginationPolicy.DEFAULT_PAGE_SIZE;
         }
         if (enabled == null
                 || (!enabled.equals(GetUserManagementGridQuery.ENABLED_ALL)
@@ -113,6 +113,6 @@ public class UserManagementFilters {
     }
 
     public static List<Integer> allowedPageSizes() {
-        return ALLOWED_PAGE_SIZES;
+        return PaginationPolicy.ALLOWED_PAGE_SIZES;
     }
 }

@@ -77,6 +77,11 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.querydsl</groupId>
+      <artifactId>querydsl-jpa</artifactId>
+      <classifier>jakarta</classifier>
+    </dependency>
+    <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>bootstrap</artifactId>
     </dependency>

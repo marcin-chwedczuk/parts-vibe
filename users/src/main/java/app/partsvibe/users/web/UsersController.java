@@ -1,9 +1,9 @@
 package app.partsvibe.users.web;
 
 import app.partsvibe.shared.cqrs.Mediator;
+import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQuery;
-import app.partsvibe.users.queries.usermanagement.GetUserManagementGridQueryResult;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.UserGridRow;
@@ -42,7 +42,7 @@ public class UsersController {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
-        GetUserManagementGridQueryResult result = mediator.executeQuery(new GetUserManagementGridQuery(
+        PageResult<GetUserManagementGridQuery.User> result = mediator.executeQuery(new GetUserManagementGridQuery(
                 filters.getUsername(),
                 filters.getEnabled(),
                 List.copyOf(filters.getRoles()),
@@ -51,7 +51,7 @@ public class UsersController {
                 filters.getSortBy(),
                 filters.getSortDir()));
 
-        List<UserGridRow> pagedUsers = result.rows().stream()
+        List<UserGridRow> pagedUsers = result.items().stream()
                 .map(row -> new UserGridRow(row.id(), row.username(), row.enabled(), row.roles()))
                 .toList();
 
