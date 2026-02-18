@@ -14,7 +14,7 @@ public record SearchUsersQuery(
         int pageSize,
         String sortBy,
         String sortDir)
-        implements PaginatedQuery<PageResult<SearchUsersQuery.User>> {
+        implements PaginatedQuery<PageResult<SearchUsersQuery.UserRow>> {
 
     public static final String ENABLED_ALL = "all";
     public static final String ENABLED_ENABLED = "enabled";
@@ -25,5 +25,5 @@ public record SearchUsersQuery(
     public static final String SORT_BY_USERNAME = "username";
     public static final String SORT_BY_ENABLED = "enabled";
 
-    public record User(Long id, String username, boolean enabled, List<String> roles) {}
+    public record UserRow(Long id, String username, boolean enabled, List<String> roles) {}
 }

@@ -16,7 +16,7 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 @Component
-class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery, PageResult<SearchUsersQuery.User>> {
+class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery, PageResult<UserRow>> {
     private final JPAQueryFactory queryFactory;
 
     SearchUsersQueryHandler(JPAQueryFactory queryFactory) {
@@ -24,7 +24,7 @@ class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery
     }
 
     @Override
-    protected PageResult<SearchUsersQuery.User> doHandle(SearchUsersQuery query) {
+    protected PageResult<UserRow> doHandle(SearchUsersQuery query) {
         QUser user = QUser.user;
         BooleanBuilder predicate = buildPredicate(query, user);
         int safeSize = resolvePageSize(query);
@@ -35,7 +35,7 @@ class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery
         int totalPages = computeTotalPages(totalRows, safeSize);
         int safePage = resolvePageNumber(query, totalPages);
 
-        List<SearchUsersQuery.User> rows = queryFactory
+        List<UserRow> rows = queryFactory
                 .selectFrom(user)
                 .where(predicate)
                 .orderBy(orderBy(query, user))
@@ -44,7 +44,7 @@ class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery
                 .fetch()
                 .stream()
                 // TODO: Avoid potential N+1 on roles by switching to a paged-id + batched roles projection query.
-                .map(userAccount -> new SearchUsersQuery.User(
+                .map(userAccount -> new UserRow(
                         userAccount.getId(),
                         userAccount.getUsername(),
                         userAccount.isEnabled(),

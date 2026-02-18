@@ -7,7 +7,7 @@ import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.UserFilters;
-import app.partsvibe.users.web.form.UserGridRow;
+import app.partsvibe.users.web.form.UserRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -54,9 +54,9 @@ public class UsersController {
                 .sortDir(filters.getSortDir())
                 .build();
 
-        PageResult<SearchUsersQuery.User> result = mediator.executeQuery(query);
+        PageResult<SearchUsersQuery.UserRow> result = mediator.executeQuery(query);
 
-        List<UserGridRow> pagedUsers = userWebMapper.toGridRows(result.items());
+        List<UserRow> pagedUsers = userWebMapper.toRows(result.items());
 
         int totalPages = result.totalPages();
         filters.setPage(result.currentPage());
