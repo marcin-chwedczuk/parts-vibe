@@ -3,20 +3,58 @@ package app.partsvibe.users.queries.usermanagement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.support.AbstractPostgresIntegrationTest;
+import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@SpringBootTest(classes = SearchUsersQueryHandlerIT.UsersTestApplication.class)
 @Transactional
 class SearchUsersQueryHandlerIT extends AbstractPostgresIntegrationTest {
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    @Import(TestPersistenceConfig.class)
+    @EnableJpaRepositories(basePackageClasses = {UserRepository.class, RoleRepository.class})
+    @EntityScan(basePackageClasses = {User.class, Role.class})
+    static class UsersTestApplication {}
+
+    @Configuration
+    @EnableJpaAuditing
+    static class TestPersistenceConfig {
+        @Bean
+        AuditorAware<String> auditorAware() {
+            return () -> Optional.of("test");
+        }
+
+        @Bean
+        JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
+            return new JPAQueryFactory(entityManager);
+        }
+
+        @Bean
+        SearchUsersQueryHandler searchUsersQueryHandler(JPAQueryFactory queryFactory) {
+            return new SearchUsersQueryHandler(queryFactory);
+        }
+    }
+
     @Autowired
     private SearchUsersQueryHandler queryHandler;
 

@@ -1,7 +1,6 @@
-package app.partsvibe.support;
+package app.partsvibe.testsupport;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -45,8 +44,7 @@ public final class IntegrationTestDatabase {
 
     private static void ensureSchemaExists(String schema) {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
-        try (Connection connection = DriverManager.getConnection(
-                        POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        try (Connection connection = POSTGRES.createConnection("");
                 Statement statement = connection.createStatement()) {
             statement.execute(sql);
         } catch (SQLException ex) {

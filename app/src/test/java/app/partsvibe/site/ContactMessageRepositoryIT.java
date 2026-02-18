@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.site.domain.ContactMessage;
 import app.partsvibe.site.repo.ContactMessageRepository;
-import app.partsvibe.support.AbstractPostgresIntegrationTest;
+import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

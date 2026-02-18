@@ -309,6 +309,7 @@
   </dependencies>
 
   <modules>
+    <module>test-support</module>
     <module>app</module>
     <module>shared</module>
     <module>catalog</module>
