@@ -7,18 +7,15 @@ import lombok.Builder;
 
 @Builder
 public record SearchUsersQuery(
-        String username,
-        String enabled,
-        List<String> roles,
+        String usernameContains,
+        Boolean enabledIs,
+        List<String> rolesContainAll,
         int currentPage,
         int pageSize,
         String sortBy,
         String sortDir)
         implements PaginatedQuery<PageResult<SearchUsersQuery.UserRow>> {
 
-    public static final String ENABLED_ALL = "all";
-    public static final String ENABLED_ENABLED = "enabled";
-    public static final String ENABLED_DISABLED = "disabled";
     public static final String SORT_NONE = "none";
     public static final String SORT_ASC = "asc";
     public static final String SORT_DESC = "desc";

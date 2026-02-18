@@ -19,9 +19,9 @@ public class UserFilters {
             Set.of(SearchUsersQuery.SORT_NONE, SearchUsersQuery.SORT_BY_USERNAME, SearchUsersQuery.SORT_BY_ENABLED);
     private static final Set<String> ALLOWED_SORT_DIR = Set.of(SearchUsersQuery.SORT_ASC, SearchUsersQuery.SORT_DESC);
 
-    private String username = "";
-    private String enabled = SearchUsersQuery.ENABLED_ALL;
-    private List<String> roles = new ArrayList<>();
+    private String usernameContains = "";
+    private Boolean enabledIs = null;
+    private List<String> rolesContainAll = new ArrayList<>();
     private int page = 1;
     private int size = PaginationPolicy.DEFAULT_PAGE_SIZE;
     private String sortBy = SearchUsersQuery.SORT_NONE;
@@ -33,9 +33,9 @@ public class UserFilters {
             return copy;
         }
 
-        copy.setUsername(source.getUsername());
-        copy.setEnabled(source.getEnabled());
-        copy.setRoles(new ArrayList<>(source.getRoles()));
+        copy.setUsernameContains(source.getUsernameContains());
+        copy.setEnabledIs(source.getEnabledIs());
+        copy.setRolesContainAll(new ArrayList<>(source.getRolesContainAll()));
         copy.setPage(source.getPage());
         copy.setSize(source.getSize());
         copy.setSortBy(source.getSortBy());
@@ -47,15 +47,17 @@ public class UserFilters {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
                 .queryParam("page", page)
                 .queryParam("size", size)
-                .queryParam("enabled", enabled)
                 .queryParam("sortBy", sortBy)
                 .queryParam("sortDir", sortDir);
 
-        if (StringUtils.hasText(username)) {
-            builder.queryParam("username", username.trim());
+        if (StringUtils.hasText(usernameContains)) {
+            builder.queryParam("usernameContains", usernameContains.trim());
         }
-        for (String role : roles) {
-            builder.queryParam("roles", role);
+        if (enabledIs != null) {
+            builder.queryParam("enabledIs", enabledIs);
+        }
+        for (String role : rolesContainAll) {
+            builder.queryParam("rolesContainAll", role);
         }
         return builder.build().toUriString();
     }
@@ -86,17 +88,14 @@ public class UserFilters {
     }
 
     public void sanitize() {
+        if (usernameContains == null) {
+            usernameContains = "";
+        }
         if (page < 1) {
             page = 1;
         }
         if (!PaginationPolicy.ALLOWED_PAGE_SIZES.contains(size)) {
             size = PaginationPolicy.DEFAULT_PAGE_SIZE;
-        }
-        if (enabled == null
-                || (!enabled.equals(SearchUsersQuery.ENABLED_ALL)
-                        && !enabled.equals(SearchUsersQuery.ENABLED_ENABLED)
-                        && !enabled.equals(SearchUsersQuery.ENABLED_DISABLED))) {
-            enabled = SearchUsersQuery.ENABLED_ALL;
         }
         if (!ALLOWED_SORT_BY.contains(sortBy)) {
             sortBy = SearchUsersQuery.SORT_NONE;
@@ -104,8 +103,8 @@ public class UserFilters {
         if (!ALLOWED_SORT_DIR.contains(sortDir)) {
             sortDir = SearchUsersQuery.SORT_ASC;
         }
-        if (roles == null) {
-            roles = new ArrayList<>();
+        if (rolesContainAll == null) {
+            rolesContainAll = new ArrayList<>();
         }
     }
 

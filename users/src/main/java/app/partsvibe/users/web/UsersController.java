@@ -45,9 +45,9 @@ public class UsersController {
         sanitizeRoleFilters(filters);
 
         SearchUsersQuery query = SearchUsersQuery.builder()
-                .username(filters.getUsername())
-                .enabled(filters.getEnabled())
-                .roles(List.copyOf(filters.getRoles()))
+                .usernameContains(filters.getUsernameContains())
+                .enabledIs(filters.getEnabledIs())
+                .rolesContainAll(List.copyOf(filters.getRolesContainAll()))
                 .currentPage(filters.getPage())
                 .pageSize(filters.getSize())
                 .sortBy(filters.getSortBy())
@@ -153,21 +153,22 @@ public class UsersController {
 
     private List<HiddenField> buildHiddenFieldsBase(UserFilters filters) {
         List<HiddenField> fields = new ArrayList<>();
-        fields.add(new HiddenField("username", StringUtils.normalizeToEmpty(filters.getUsername())));
-        fields.add(new HiddenField("enabled", filters.getEnabled()));
+        fields.add(new HiddenField("usernameContains", StringUtils.normalizeToEmpty(filters.getUsernameContains())));
+        fields.add(new HiddenField(
+                "enabledIs", filters.getEnabledIs() == null ? "" : String.valueOf(filters.getEnabledIs())));
         fields.add(new HiddenField("sortBy", filters.getSortBy()));
         fields.add(new HiddenField("sortDir", filters.getSortDir()));
-        for (String role : filters.getRoles()) {
-            fields.add(new HiddenField("roles", role));
+        for (String role : filters.getRolesContainAll()) {
+            fields.add(new HiddenField("rolesContainAll", role));
         }
         return fields;
     }
 
     private void sanitizeRoleFilters(UserFilters filters) {
-        if (filters.getRoles() == null) {
-            filters.setRoles(new ArrayList<>());
+        if (filters.getRolesContainAll() == null) {
+            filters.setRolesContainAll(new ArrayList<>());
         }
-        filters.setRoles(filters.getRoles().stream()
+        filters.setRolesContainAll(filters.getRolesContainAll().stream()
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());

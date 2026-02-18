@@ -5,6 +5,7 @@ import static java.util.Comparator.naturalOrder;
 
 import app.partsvibe.shared.cqrs.BasePaginatedQueryHandler;
 import app.partsvibe.shared.cqrs.PageResult;
+import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.domain.QUser;
 import app.partsvibe.users.domain.Role;
 import com.querydsl.core.BooleanBuilder;
@@ -60,17 +61,17 @@ class SearchUsersQueryHandler extends BasePaginatedQueryHandler<SearchUsersQuery
     private BooleanBuilder buildPredicate(SearchUsersQuery query, QUser user) {
         BooleanBuilder predicate = new BooleanBuilder();
 
-        if (query.username() != null && !query.username().isBlank()) {
-            predicate.and(user.username.containsIgnoreCase(query.username().trim()));
-        }
-        if (ENABLED_ENABLED.equals(query.enabled())) {
-            predicate.and(user.enabled.isTrue());
-        } else if (ENABLED_DISABLED.equals(query.enabled())) {
-            predicate.and(user.enabled.isFalse());
+        if (StringUtils.hasText(query.usernameContains())) {
+            predicate.and(
+                    user.username.containsIgnoreCase(query.usernameContains().trim()));
         }
 
-        List<String> roles = query.roles() == null ? List.of() : query.roles();
-        for (String role : roles) {
+        if (query.enabledIs() != null) {
+            predicate.and(user.enabled.eq(query.enabledIs()));
+        }
+
+        List<String> requiredRoles = query.rolesContainAll() == null ? List.of() : query.rolesContainAll();
+        for (String role : requiredRoles) {
             predicate.and(user.roles.any().name.eq(role));
         }
 
