@@ -5,7 +5,7 @@ import static java.util.Comparator.naturalOrder;
 
 import app.partsvibe.shared.cqrs.BasePaginatedQueryHandler;
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.users.domain.QUserAccount;
+import app.partsvibe.users.domain.QUser;
 import app.partsvibe.users.domain.Role;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
@@ -26,7 +26,7 @@ class GetUserManagementGridQueryHandler
 
     @Override
     protected PageResult<GetUserManagementGridQuery.User> doHandle(GetUserManagementGridQuery query) {
-        QUserAccount user = QUserAccount.userAccount;
+        QUser user = QUser.user;
         BooleanBuilder predicate = buildPredicate(query, user);
         int safeSize = resolvePageSize(query);
 
@@ -58,7 +58,7 @@ class GetUserManagementGridQueryHandler
         return new PageResult<>(rows, totalRows, totalPages, safePage, safeSize);
     }
 
-    private BooleanBuilder buildPredicate(GetUserManagementGridQuery query, QUserAccount user) {
+    private BooleanBuilder buildPredicate(GetUserManagementGridQuery query, QUser user) {
         BooleanBuilder predicate = new BooleanBuilder();
 
         if (query.username() != null && !query.username().isBlank()) {
@@ -78,7 +78,7 @@ class GetUserManagementGridQueryHandler
         return predicate;
     }
 
-    private OrderSpecifier<?>[] orderBy(GetUserManagementGridQuery query, QUserAccount user) {
+    private OrderSpecifier<?>[] orderBy(GetUserManagementGridQuery query, QUser user) {
         String sortBy = query.sortBy() == null ? SORT_NONE : query.sortBy();
         String sortDir = query.sortDir() == null ? SORT_ASC : query.sortDir().toLowerCase(Locale.ROOT);
         Order direction = SORT_DESC.equals(sortDir) ? Order.DESC : Order.ASC;

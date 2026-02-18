@@ -25,7 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserAccount extends BaseAuditableEntity {
+public class User extends BaseAuditableEntity {
     @Column(nullable = false, unique = true, length = 64)
     private String username;
 
@@ -43,7 +43,7 @@ public class UserAccount extends BaseAuditableEntity {
     @Setter(AccessLevel.NONE)
     private Set<Role> roles = new HashSet<>();
 
-    public UserAccount(String username, String passwordHash) {
+    public User(String username, String passwordHash) {
         this.username = username;
         this.passwordHash = passwordHash;
     }

@@ -1,7 +1,7 @@
 package app.partsvibe.users.security;
 
 import app.partsvibe.users.domain.Role;
-import app.partsvibe.users.domain.UserAccount;
+import app.partsvibe.users.domain.User;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
@@ -20,7 +20,7 @@ public class UserPrincipal implements UserDetails, Serializable {
     private final boolean enabled;
     private final Set<String> roleNames;
 
-    public UserPrincipal(UserAccount user) {
+    public UserPrincipal(User user) {
         this.username = user.getUsername();
         this.passwordHash = user.getPasswordHash();
         this.enabled = user.isEnabled();
