@@ -1,20 +1,18 @@
 package app.partsvibe.config;
 
+import app.partsvibe.shared.security.CurrentUserProvider;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice
 public class RequestContextAdvice {
     private final BuildVersionInfo buildVersionInfo;
+    private final CurrentUserProvider currentUserProvider;
 
-    public RequestContextAdvice(BuildVersionInfo buildVersionInfo) {
+    public RequestContextAdvice(BuildVersionInfo buildVersionInfo, CurrentUserProvider currentUserProvider) {
         this.buildVersionInfo = buildVersionInfo;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @ModelAttribute("currentPath")
@@ -33,24 +31,11 @@ public class RequestContextAdvice {
 
     @ModelAttribute("isAuthenticatedUser")
     public boolean isAuthenticatedUser() {
-        return currentAuthenticatedUser().isPresent();
+        return currentUserProvider.isAuthenticated();
     }
 
     @ModelAttribute("isAdminUser")
     public boolean isAdminUser() {
-        return currentAuthenticatedUser().stream()
-                .flatMap(authentication -> authentication.getAuthorities().stream())
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
-    }
-
-    private Optional<Authentication> currentAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return Optional.empty();
-        }
-        return Optional.of(authentication);
+        return currentUserProvider.hasRole("ROLE_ADMIN");
     }
 }

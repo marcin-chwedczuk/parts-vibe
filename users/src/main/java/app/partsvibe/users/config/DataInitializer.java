@@ -32,6 +32,8 @@ public class DataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         mediator.executeCommand(new SeedUsersCommand(List.of(
                 new SeedUsersCommand.UserDefinition(adminUsername, adminPassword, true),
-                new SeedUsersCommand.UserDefinition(userUsername, userPassword, false))));
+                new SeedUsersCommand.UserDefinition(userUsername, userPassword, false),
+                new SeedUsersCommand.UserDefinition("bob", "bob123", false),
+                new SeedUsersCommand.UserDefinition("alice", "alice123", false))));
     }
 }

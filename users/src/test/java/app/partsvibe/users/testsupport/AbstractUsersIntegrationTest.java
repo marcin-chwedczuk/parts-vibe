@@ -19,10 +19,14 @@ public abstract class AbstractUsersIntegrationTest extends AbstractPostgresInteg
     @Autowired
     protected ManuallySetTimeProvider timeProvider;
 
+    @Autowired
+    protected InMemoryCurrentUserProvider currentUserProvider;
+
     @BeforeEach
     void prepareTestContext(TestInfo testInfo) {
         requestIdProvider.set(testInfo.getDisplayName());
         eventPublisher.clear();
         timeProvider.reset();
+        currentUserProvider.setCurrentUser(testInfo.getDisplayName());
     }
 }

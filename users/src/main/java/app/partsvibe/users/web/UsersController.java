@@ -3,6 +3,10 @@ package app.partsvibe.users.web;
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
+import app.partsvibe.users.commands.usermanagement.CannotDeleteCurrentUserException;
+import app.partsvibe.users.commands.usermanagement.CannotDeleteLastActiveAdminException;
+import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
+import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
@@ -30,6 +34,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UsersController {
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
+    private static final Object[] NO_MESSAGE_ARGS = new Object[0];
 
     private final Mediator mediator;
     private final UserWebMapper userWebMapper;
@@ -89,9 +94,28 @@ public class UsersController {
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
-        // TODO: Delete user in application service/repository layer.
-        log.info("Admin requested user delete. userId={}", userId);
-        redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.deleted");
+
+        try {
+            DeleteUserCommandResult result = mediator.executeCommand(new DeleteUserCommand(userId));
+
+            if (StringUtils.hasText(result.deletedUsername())) {
+                setActionMessage(
+                        redirectAttributes,
+                        "admin.users.action.deleted.withUsername",
+                        "alert-success",
+                        result.deletedUsername());
+            } else {
+                setActionMessage(redirectAttributes, "admin.users.action.deleted", "alert-success");
+            }
+            log.info("Admin requested user delete. userId={}", userId);
+        } catch (CannotDeleteCurrentUserException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.deleteCurrentUserDenied", "alert-danger");
+            log.warn("Delete user denied. userId={}, reason=self-delete", userId);
+        } catch (CannotDeleteLastActiveAdminException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.deleteLastActiveAdminDenied", "alert-danger");
+            log.warn("Delete user denied. userId={}, reason=last-active-admin", userId);
+        }
+
         return "redirect:" + filters.toUserManagementUrl();
     }
 
@@ -104,7 +128,7 @@ public class UsersController {
         sanitizeRoleFilters(filters);
         // TODO: Lock user in application service/repository layer.
         log.info("Admin requested user lock. userId={}", userId);
-        redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.locked");
+        setActionMessage(redirectAttributes, "admin.users.action.locked", "alert-success");
         return "redirect:" + filters.toUserManagementUrl();
     }
 
@@ -117,8 +141,15 @@ public class UsersController {
         sanitizeRoleFilters(filters);
         // TODO: Unlock user in application service/repository layer.
         log.info("Admin requested user unlock. userId={}", userId);
-        redirectAttributes.addFlashAttribute("actionMessageCode", "admin.users.action.unlocked");
+        setActionMessage(redirectAttributes, "admin.users.action.unlocked", "alert-success");
         return "redirect:" + filters.toUserManagementUrl();
+    }
+
+    private void setActionMessage(
+            RedirectAttributes redirectAttributes, String messageCode, String alertClass, Object... messageArgs) {
+        redirectAttributes.addFlashAttribute("actionMessageCode", messageCode);
+        redirectAttributes.addFlashAttribute("actionMessageArgs", messageArgs == null ? NO_MESSAGE_ARGS : messageArgs);
+        redirectAttributes.addFlashAttribute("actionMessageLevel", alertClass);
     }
 
     private List<Integer> buildPageNumbers(int totalPages) {

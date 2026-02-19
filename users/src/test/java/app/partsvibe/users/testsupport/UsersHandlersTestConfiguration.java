@@ -2,6 +2,7 @@ package app.partsvibe.users.testsupport;
 
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.request.RequestIdProvider;
+import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.shared.time.TimeProvider;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,16 @@ public class UsersHandlersTestConfiguration {
 
     @Bean
     TimeProvider timeProvider(ManuallySetTimeProvider provider) {
+        return provider;
+    }
+
+    @Bean
+    InMemoryCurrentUserProvider inMemoryCurrentUserProvider() {
+        return new InMemoryCurrentUserProvider();
+    }
+
+    @Bean
+    CurrentUserProvider currentUserProvider(InMemoryCurrentUserProvider provider) {
         return provider;
     }
 
