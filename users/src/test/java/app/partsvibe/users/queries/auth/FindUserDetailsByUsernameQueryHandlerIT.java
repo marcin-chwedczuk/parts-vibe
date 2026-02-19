@@ -11,12 +11,10 @@ import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.testsupport.AbstractUsersIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-@Import(FindUserDetailsByUsernameQueryHandler.class)
 class FindUserDetailsByUsernameQueryHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private FindUserDetailsByUsernameQueryHandler queryHandler;

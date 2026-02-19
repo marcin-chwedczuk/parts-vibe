@@ -12,9 +12,7 @@ import app.partsvibe.users.testsupport.AbstractUsersIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 
-@Import(SearchUsersQueryHandler.class)
 class SearchUsersQueryHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private SearchUsersQueryHandler queryHandler;

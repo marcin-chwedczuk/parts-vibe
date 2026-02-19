@@ -1,9 +1,28 @@
 package app.partsvibe.users.testsupport;
 
 import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(classes = UsersModuleTestApplication.class)
 @Transactional
-public abstract class AbstractUsersIntegrationTest extends AbstractPostgresIntegrationTest {}
+public abstract class AbstractUsersIntegrationTest extends AbstractPostgresIntegrationTest {
+    @Autowired
+    protected InMemoryRequestIdProvider requestIdProvider;
+
+    @Autowired
+    protected InMemoryEventPublisher eventPublisher;
+
+    @Autowired
+    protected ManuallySetTimeProvider timeProvider;
+
+    @BeforeEach
+    void prepareTestContext(TestInfo testInfo) {
+        requestIdProvider.set(testInfo.getDisplayName());
+        eventPublisher.clear();
+        timeProvider.reset();
+    }
+}
