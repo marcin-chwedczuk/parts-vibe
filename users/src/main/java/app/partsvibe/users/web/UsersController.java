@@ -14,6 +14,8 @@ import app.partsvibe.users.web.form.UserFilters;
 import app.partsvibe.users.web.form.UserForm;
 import app.partsvibe.users.web.form.UserRow;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import java.beans.PropertyEditorSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -21,11 +23,11 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
@@ -38,6 +40,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class UsersController {
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
@@ -53,7 +56,7 @@ public class UsersController {
 
     @InitBinder("form")
     void initUserFormBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(String.class, "username", new StringTrimmerEditor(true));
+        binder.registerCustomEditor(String.class, "username", new CanonicalEmailEditor());
     }
 
     @GetMapping
@@ -101,7 +104,9 @@ public class UsersController {
 
     @GetMapping("/{userId}")
     public String viewUser(
-            @PathVariable("userId") Long userId, @ModelAttribute("filters") UserFilters filters, Model model) {
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
+            Model model) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         model.addAttribute("user", fakeUser(userId));
@@ -111,7 +116,9 @@ public class UsersController {
 
     @GetMapping("/{userId}/edit")
     public String editUser(
-            @PathVariable("userId") Long userId, @ModelAttribute("filters") UserFilters filters, Model model) {
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
+            Model model) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         if (!model.containsAttribute("form")) {
@@ -151,14 +158,13 @@ public class UsersController {
             return "admin/user-create";
         }
 
-        String canonicalUsername = form.getUsername().toLowerCase(Locale.ROOT);
-        setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", canonicalUsername);
+        setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", form.getUsername());
         return "redirect:" + filters.toUserManagementUrl();
     }
 
     @PostMapping("/{userId}/edit")
     public String saveUserEdit(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") @Positive Long userId,
             @ModelAttribute("filters") UserFilters filters,
             @Valid @ModelAttribute("form") UserForm form,
             BindingResult bindingResult,
@@ -172,18 +178,14 @@ public class UsersController {
             return "admin/user-edit";
         }
         // TODO: Update user via command handler.
-        setActionMessage(
-                redirectAttributes,
-                "admin.users.action.updated",
-                "alert-success",
-                form.getUsername().toLowerCase(Locale.ROOT));
+        setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", form.getUsername());
         return "redirect:" + filters.toUserViewUrl(userId);
     }
 
     @PostMapping("/{userId}/do-delete")
     public String deleteUser(
-            @PathVariable("userId") Long userId,
-            @ModelAttribute UserFilters filters,
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -214,8 +216,8 @@ public class UsersController {
 
     @PostMapping("/{userId}/do-lock")
     public String lockUser(
-            @PathVariable("userId") Long userId,
-            @ModelAttribute UserFilters filters,
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -227,8 +229,8 @@ public class UsersController {
 
     @PostMapping("/{userId}/do-unlock")
     public String unlockUser(
-            @PathVariable("userId") Long userId,
-            @ModelAttribute UserFilters filters,
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
@@ -304,5 +306,23 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
+    }
+
+    private static final class CanonicalEmailEditor extends PropertyEditorSupport {
+        @Override
+        public void setAsText(String text) {
+            if (text == null) {
+                setValue(null);
+                return;
+            }
+
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                setValue(null);
+                return;
+            }
+
+            setValue(trimmed.toLowerCase(Locale.ROOT));
+        }
     }
 }

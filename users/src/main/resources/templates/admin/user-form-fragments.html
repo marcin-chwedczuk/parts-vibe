@@ -6,6 +6,11 @@
     <div th:text="#{admin.user.validation.generic}">
       Validation failed.
     </div>
+    <ul class="mb-0 mt-2" th:if="${#fields.hasErrors('*')}">
+      <li th:each="fieldError : ${#fields.errors('*')}" th:text="${fieldError}">
+        Field validation error.
+      </li>
+    </ul>
     <ul class="mb-0 mt-2" th:if="${#fields.hasGlobalErrors()}">
       <li th:each="globalError : ${#fields.globalErrors()}" th:text="${globalError}">
         Global validation error.
