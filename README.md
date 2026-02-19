@@ -185,6 +185,14 @@ SpotBugs runs in `verify` by default. For faster local iteration, skip it with:
 ./mvnw -Pintegration-test verify
 ```
 
+To print SQL and bound parameters during integration tests, enable the optional flag:
+
+```
+./mvnw -Pintegration-test verify -Dit.sql.debug=true
+```
+
+This enables Hibernate SQL output globally for integration tests that use shared `test-support` fixtures.
+
 ## Run end-to-end tests (Playwright)
 E2E tests run in the dedicated `e2e` module and are disabled by default.
 Start the app separately, then run:

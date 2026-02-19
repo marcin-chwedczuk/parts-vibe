@@ -17,8 +17,21 @@ public final class IntegrationTestDatabase {
 
     private IntegrationTestDatabase() {}
 
+    static boolean isSqlDebugEnabled() {
+        return Boolean.parseBoolean(System.getProperty("it.sql.debug", "false"));
+    }
+
+    static void applySqlDebugLoggingSystemProperties() {
+        System.setProperty("logging.level.org.hibernate.SQL", "DEBUG");
+        System.setProperty("logging.level.org.hibernate.orm.sql", "DEBUG");
+        System.setProperty("logging.level.org.hibernate.orm.jdbc", "TRACE");
+        System.setProperty("logging.level.org.hibernate.orm.jdbc.bind", "TRACE");
+        System.setProperty("logging.level.org.hibernate.orm.jdbc.extract", "TRACE");
+    }
+
     public static void registerSharedProperties(DynamicPropertyRegistry registry) {
         String schemaJdbcUrl = jdbcUrlWithCurrentSchema(SHARED_SCHEMA);
+        boolean sqlDebug = isSqlDebugEnabled();
 
         registry.add("spring.datasource.url", () -> schemaJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
@@ -34,6 +47,13 @@ public final class IntegrationTestDatabase {
 
         registry.add("spring.jpa.properties.hibernate.default_schema", () -> SHARED_SCHEMA);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
+
+        if (sqlDebug) {
+            registry.add("spring.jpa.show-sql", () -> "true");
+            registry.add("spring.jpa.properties.hibernate.show_sql", () -> "true");
+            registry.add("spring.jpa.properties.hibernate.format_sql", () -> "true");
+            registry.add("spring.jpa.properties.hibernate.use_sql_comments", () -> "true");
+        }
     }
 
     private static String jdbcUrlWithCurrentSchema(String schema) {
