@@ -139,7 +139,7 @@ public class UsersController {
 
     @PostMapping("/create")
     public String saveUserCreate(
-            @ModelAttribute UserFilters filters,
+            @ModelAttribute("filters") UserFilters filters,
             @Valid @ModelAttribute("form") UserForm form,
             BindingResult bindingResult,
             Model model,
@@ -159,7 +159,7 @@ public class UsersController {
     @PostMapping("/{userId}/edit")
     public String saveUserEdit(
             @PathVariable("userId") Long userId,
-            @ModelAttribute UserFilters filters,
+            @ModelAttribute("filters") UserFilters filters,
             @Valid @ModelAttribute("form") UserForm form,
             BindingResult bindingResult,
             Model model,
