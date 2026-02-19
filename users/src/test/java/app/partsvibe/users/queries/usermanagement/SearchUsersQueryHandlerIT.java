@@ -3,24 +3,19 @@ package app.partsvibe.users.queries.usermanagement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.databuilders.RoleTestDataBuilder;
 import app.partsvibe.users.test.databuilders.UserTestDataBuilder;
-import app.partsvibe.users.testsupport.UsersModuleTestApplication;
+import app.partsvibe.users.testsupport.AbstractUsersIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(classes = UsersModuleTestApplication.class)
 @Import(SearchUsersQueryHandler.class)
-@Transactional
-class SearchUsersQueryHandlerIT extends AbstractPostgresIntegrationTest {
+class SearchUsersQueryHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private SearchUsersQueryHandler queryHandler;
 
