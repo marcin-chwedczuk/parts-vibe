@@ -5,9 +5,15 @@ import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteCurrentUserException;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteLastActiveAdminException;
+import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
+import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
+import app.partsvibe.users.errors.UserNotFoundException;
+import app.partsvibe.users.errors.UsernameAlreadyExistsException;
+import app.partsvibe.users.models.UserDetailsModel;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
+import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.UserFilters;
@@ -106,28 +112,44 @@ public class UsersController {
     public String viewUser(
             @PathVariable("userId") @Positive Long userId,
             @ModelAttribute("filters") UserFilters filters,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
-        model.addAttribute("user", fakeUser(userId));
-        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
-        return "admin/user-view";
+
+        try {
+            UserDetailsModel user = mediator.executeQuery(new UserByIdQuery(userId));
+            model.addAttribute("user", toUserRow(user));
+            model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+            return "admin/user-view";
+        } catch (UserNotFoundException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+            return "redirect:" + filters.toUserManagementUrl();
+        }
     }
 
     @GetMapping("/{userId}/edit")
     public String editUser(
             @PathVariable("userId") @Positive Long userId,
             @ModelAttribute("filters") UserFilters filters,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
+
         if (!model.containsAttribute("form")) {
-            UserRow fakeUser = fakeUser(userId);
-            UserForm form = new UserForm();
-            form.setUsername(fakeUser.username());
-            form.setEnabled(fakeUser.enabled());
-            model.addAttribute("form", form);
+            try {
+                UserDetailsModel user = mediator.executeQuery(new UserByIdQuery(userId));
+                UserForm form = new UserForm();
+                form.setUsername(user.username());
+                form.setEnabled(user.enabled());
+                model.addAttribute("form", form);
+            } catch (UserNotFoundException ex) {
+                setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+                return "redirect:" + filters.toUserManagementUrl();
+            }
         }
+
         model.addAttribute("userId", userId);
         addUserFormPageModel(filters, model);
         return "admin/user-edit";
@@ -158,8 +180,16 @@ public class UsersController {
             return "admin/user-create";
         }
 
-        setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", form.getUsername());
-        return "redirect:" + filters.toUserManagementUrl();
+        try {
+            UserDetailsModel created =
+                    mediator.executeCommand(new CreateUserCommand(form.getUsername(), form.isEnabled()));
+            setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", created.username());
+            return "redirect:" + filters.toUserViewUrl(created.id());
+        } catch (UsernameAlreadyExistsException ex) {
+            bindingResult.rejectValue("username", "admin.user.validation.username.duplicate");
+            addUserFormPageModel(filters, model);
+            return "admin/user-create";
+        }
     }
 
     @PostMapping("/{userId}/edit")
@@ -177,9 +207,21 @@ public class UsersController {
             addUserFormPageModel(filters, model);
             return "admin/user-edit";
         }
-        // TODO: Update user via command handler.
-        setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", form.getUsername());
-        return "redirect:" + filters.toUserViewUrl(userId);
+
+        try {
+            UserDetailsModel updated =
+                    mediator.executeCommand(new UpdateUserCommand(userId, form.getUsername(), form.isEnabled()));
+            setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", updated.username());
+            return "redirect:" + filters.toUserViewUrl(userId);
+        } catch (UsernameAlreadyExistsException ex) {
+            bindingResult.rejectValue("username", "admin.user.validation.username.duplicate");
+            model.addAttribute("userId", userId);
+            addUserFormPageModel(filters, model);
+            return "admin/user-edit";
+        } catch (UserNotFoundException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+            return "redirect:" + filters.toUserManagementUrl();
+        }
     }
 
     @PostMapping("/{userId}/do-delete")
@@ -247,8 +289,8 @@ public class UsersController {
         redirectAttributes.addFlashAttribute("actionMessageLevel", alertClass);
     }
 
-    private UserRow fakeUser(Long userId) {
-        return new UserRow(userId, "bob", true, List.of("ROLE_USER"));
+    private UserRow toUserRow(UserDetailsModel user) {
+        return new UserRow(user.id(), user.username(), user.enabled(), user.roles());
     }
 
     private void addUserFormPageModel(UserFilters filters, Model model) {
