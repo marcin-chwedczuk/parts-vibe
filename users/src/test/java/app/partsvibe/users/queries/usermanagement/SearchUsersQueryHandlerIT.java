@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
 import app.partsvibe.users.domain.Role;
-import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
+import app.partsvibe.users.test.databuilders.RoleTestDataBuilder;
+import app.partsvibe.users.test.databuilders.UserTestDataBuilder;
 import app.partsvibe.users.testsupport.UsersModuleTestApplication;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -31,10 +32,23 @@ class SearchUsersQueryHandlerIT extends AbstractPostgresIntegrationTest {
 
     @Test
     void usernameContainsAndEnabledIsFiltersTogether() {
-        Role role = roleRepository.save(new Role("ROLE_IT_FILTER"));
-        saveUser("it-filter-alpha", true, role);
-        saveUser("it-filter-beta", false, role);
-        saveUser("other-user", true, role);
+        Role role = roleRepository.save(
+                RoleTestDataBuilder.aRole().withName("ROLE_IT_FILTER").build());
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("it-filter-alpha")
+                .enabled()
+                .withRole(role)
+                .build());
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("it-filter-beta")
+                .disabled()
+                .withRole(role)
+                .build());
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("other-user")
+                .enabled()
+                .withRole(role)
+                .build());
 
         SearchUsersQuery query = SearchUsersQuery.builder()
                 .usernameContains(" FILTER-AL ")
@@ -56,12 +70,26 @@ class SearchUsersQueryHandlerIT extends AbstractPostgresIntegrationTest {
 
     @Test
     void rolesContainAllRequiresEverySelectedRole() {
-        Role alpha = roleRepository.save(new Role("ROLE_IT_ALPHA"));
-        Role beta = roleRepository.save(new Role("ROLE_IT_BETA"));
+        Role alpha = roleRepository.save(
+                RoleTestDataBuilder.aRole().withName("ROLE_IT_ALPHA").build());
+        Role beta = roleRepository.save(
+                RoleTestDataBuilder.aRole().withName("ROLE_IT_BETA").build());
 
-        saveUser("it-role-both", true, alpha, beta);
-        saveUser("it-role-alpha-only", true, alpha);
-        saveUser("it-role-beta-only", true, beta);
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("it-role-both")
+                .enabled()
+                .withRoles(alpha, beta)
+                .build());
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("it-role-alpha-only")
+                .enabled()
+                .withRole(alpha)
+                .build());
+        userRepository.save(UserTestDataBuilder.aUser()
+                .withUsername("it-role-beta-only")
+                .enabled()
+                .withRole(beta)
+                .build());
 
         SearchUsersQuery query = SearchUsersQuery.builder()
                 .usernameContains("it-role")
@@ -78,12 +106,5 @@ class SearchUsersQueryHandlerIT extends AbstractPostgresIntegrationTest {
         assertThat(result.items())
                 .extracting(SearchUsersQuery.UserRow::username)
                 .containsExactly("it-role-both");
-    }
-
-    private void saveUser(String username, boolean enabled, Role... roles) {
-        User user = new User(username, "noop");
-        user.setEnabled(enabled);
-        user.getRoles().addAll(List.of(roles));
-        userRepository.save(user);
     }
 }
