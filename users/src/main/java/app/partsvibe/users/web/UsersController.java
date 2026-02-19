@@ -87,6 +87,38 @@ public class UsersController {
         return "admin/users";
     }
 
+    @GetMapping("/{userId}")
+    public String viewUser(
+            @PathVariable("userId") Long userId, @ModelAttribute("filters") UserFilters filters, Model model) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+        model.addAttribute("user", fakeUser(userId));
+        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        return "admin/user-view";
+    }
+
+    @GetMapping("/{userId}/edit")
+    public String editUser(
+            @PathVariable("userId") Long userId, @ModelAttribute("filters") UserFilters filters, Model model) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+        model.addAttribute("user", fakeUser(userId));
+        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        return "admin/user-edit";
+    }
+
+    @PostMapping("/{userId}/edit")
+    public String saveUserEdit(
+            @PathVariable("userId") Long userId,
+            @ModelAttribute UserFilters filters,
+            RedirectAttributes redirectAttributes) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+        // TODO: Update user via command handler.
+        setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", "bob");
+        return "redirect:" + filters.toUserViewUrl(userId);
+    }
+
     @PostMapping("/{userId}/do-delete")
     public String deleteUser(
             @PathVariable("userId") Long userId,
@@ -150,6 +182,10 @@ public class UsersController {
         redirectAttributes.addFlashAttribute("actionMessageCode", messageCode);
         redirectAttributes.addFlashAttribute("actionMessageArgs", messageArgs == null ? NO_MESSAGE_ARGS : messageArgs);
         redirectAttributes.addFlashAttribute("actionMessageLevel", alertClass);
+    }
+
+    private UserRow fakeUser(Long userId) {
+        return new UserRow(userId, "bob", true, List.of("ROLE_USER"));
     }
 
     private List<Integer> buildPageNumbers(int totalPages) {

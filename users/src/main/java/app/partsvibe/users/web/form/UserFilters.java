@@ -44,6 +44,24 @@ public class UserFilters {
     }
 
     public String toUserManagementUrl() {
+        return managementUrlBuilder().build().toUriString();
+    }
+
+    public String toUserViewUrl(Long userId) {
+        return managementUrlBuilder()
+                .replacePath("/admin/users/{id}")
+                .buildAndExpand(userId)
+                .toUriString();
+    }
+
+    public String toUserEditUrl(Long userId) {
+        return managementUrlBuilder()
+                .replacePath("/admin/users/{id}/edit")
+                .buildAndExpand(userId)
+                .toUriString();
+    }
+
+    private UriComponentsBuilder managementUrlBuilder() {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
                 .queryParam("page", page)
                 .queryParam("size", size)
@@ -59,7 +77,7 @@ public class UserFilters {
         for (String role : rolesContainAll) {
             builder.queryParam("rolesContainAll", role);
         }
-        return builder.build().toUriString();
+        return builder;
     }
 
     public SortLink buildSortLink(String requestedSortBy) {
