@@ -1,20 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<th:block th:fragment="formFields(username, enabled)">
+<th:block th:fragment="validationSummary">
+  <div class="alert alert-danger mb-3" th:if="${#fields.hasAnyErrors()}">
+    <div th:text="#{admin.user.validation.generic}">
+      Validation failed.
+    </div>
+    <ul class="mb-0 mt-2" th:if="${#fields.hasGlobalErrors()}">
+      <li th:each="globalError : ${#fields.globalErrors()}" th:text="${globalError}">
+        Global validation error.
+      </li>
+    </ul>
+  </div>
+</th:block>
+<th:block th:fragment="formFields">
   <dl class="row mb-4">
     <dt class="col-sm-4 d-flex align-items-center" th:text="#{admin.user.fields.username}">Username</dt>
     <dd class="col-sm-8 mb-1">
-      <input id="username" name="username" type="text" class="form-control" th:value="${username}" />
+      <input id="username" type="text" class="form-control" th:field="*{username}" th:errorclass="is-invalid" />
     </dd>
-    <dd class="col-sm-8 offset-sm-4 mb-3" th:if="${usernameErrorCode != null}">
-      <small class="text-danger" th:text="#{__${usernameErrorCode}__}">Invalid username.</small>
+    <dd class="col-sm-8 offset-sm-4 mb-3" th:if="${#fields.hasErrors('username')}">
+      <small class="text-danger" th:errors="*{username}">Invalid username.</small>
     </dd>
 
     <dt class="col-sm-4 d-flex align-items-center" th:text="#{admin.user.fields.enabled}">Enabled</dt>
     <dd class="col-sm-8 mb-0">
       <div class="form-check mt-2">
-        <input id="enabled" type="checkbox" class="form-check-input" name="enabled" th:checked="${enabled}" />
+        <input id="enabled" type="checkbox" class="form-check-input" th:field="*{enabled}" />
         <label class="form-check-label" for="enabled" th:text="#{admin.user.fields.enabledHint}">Account is enabled</label>
       </div>
     </dd>

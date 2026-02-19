@@ -10,21 +10,25 @@ import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
-import app.partsvibe.users.web.form.UserCreateForm;
 import app.partsvibe.users.web.form.UserFilters;
+import app.partsvibe.users.web.form.UserForm;
 import app.partsvibe.users.web.form.UserRow;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,8 +42,6 @@ public class UsersController {
     private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
     private static final Object[] NO_MESSAGE_ARGS = new Object[0];
-    private static final Pattern EMAIL_PATTERN =
-            Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", Pattern.CASE_INSENSITIVE);
 
     private final Mediator mediator;
     private final UserWebMapper userWebMapper;
@@ -47,6 +49,11 @@ public class UsersController {
     public UsersController(Mediator mediator, UserWebMapper userWebMapper) {
         this.mediator = mediator;
         this.userWebMapper = userWebMapper;
+    }
+
+    @InitBinder("form")
+    void initUserFormBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, "username", new StringTrimmerEditor(true));
     }
 
     @GetMapping
@@ -107,8 +114,15 @@ public class UsersController {
             @PathVariable("userId") Long userId, @ModelAttribute("filters") UserFilters filters, Model model) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
-        model.addAttribute("user", fakeUser(userId));
-        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        if (!model.containsAttribute("form")) {
+            UserRow fakeUser = fakeUser(userId);
+            UserForm form = new UserForm();
+            form.setUsername(fakeUser.username());
+            form.setEnabled(fakeUser.enabled());
+            model.addAttribute("form", form);
+        }
+        model.addAttribute("userId", userId);
+        addUserFormPageModel(filters, model);
         return "admin/user-edit";
     }
 
@@ -117,34 +131,27 @@ public class UsersController {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         if (!model.containsAttribute("form")) {
-            model.addAttribute("form", new UserCreateForm());
+            model.addAttribute("form", new UserForm());
         }
-        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        addUserFormPageModel(filters, model);
         return "admin/user-create";
     }
 
     @PostMapping("/create")
     public String saveUserCreate(
             @ModelAttribute UserFilters filters,
-            @ModelAttribute("form") UserCreateForm form,
+            @Valid @ModelAttribute("form") UserForm form,
+            BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
-
-        String normalizedUsername = normalizeUsername(form.getUsername());
-        if (!StringUtils.hasText(normalizedUsername)) {
-            redirectAttributes.addFlashAttribute("usernameErrorCode", "admin.user.validation.username.required");
-            redirectAttributes.addFlashAttribute("form", form);
-            return "redirect:" + filters.toUserCreateUrl();
-        }
-        if (!EMAIL_PATTERN.matcher(normalizedUsername).matches()) {
-            form.setUsername(normalizedUsername);
-            redirectAttributes.addFlashAttribute("usernameErrorCode", "admin.user.validation.username.invalidEmail");
-            redirectAttributes.addFlashAttribute("form", form);
-            return "redirect:" + filters.toUserCreateUrl();
+        if (bindingResult.hasErrors()) {
+            addUserFormPageModel(filters, model);
+            return "admin/user-create";
         }
 
-        String canonicalUsername = normalizedUsername.toLowerCase(Locale.ROOT);
+        String canonicalUsername = form.getUsername().toLowerCase(Locale.ROOT);
         setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", canonicalUsername);
         return "redirect:" + filters.toUserManagementUrl();
     }
@@ -153,11 +160,23 @@ public class UsersController {
     public String saveUserEdit(
             @PathVariable("userId") Long userId,
             @ModelAttribute UserFilters filters,
+            @Valid @ModelAttribute("form") UserForm form,
+            BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("userId", userId);
+            addUserFormPageModel(filters, model);
+            return "admin/user-edit";
+        }
         // TODO: Update user via command handler.
-        setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", "bob");
+        setActionMessage(
+                redirectAttributes,
+                "admin.users.action.updated",
+                "alert-success",
+                form.getUsername().toLowerCase(Locale.ROOT));
         return "redirect:" + filters.toUserViewUrl(userId);
     }
 
@@ -230,8 +249,8 @@ public class UsersController {
         return new UserRow(userId, "bob", true, List.of("ROLE_USER"));
     }
 
-    private String normalizeUsername(String username) {
-        return StringUtils.hasText(username) ? username.trim() : "";
+    private void addUserFormPageModel(UserFilters filters, Model model) {
+        model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
     }
 
     private List<Integer> buildPageNumbers(int totalPages) {

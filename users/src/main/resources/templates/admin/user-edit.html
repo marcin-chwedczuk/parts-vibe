@@ -17,9 +17,10 @@
 
     <div class="card">
       <div class="card-body">
-        <form method="post" th:action="@{/admin/users/{id}/edit(id=${user.id})}" novalidate>
+        <form method="post" th:action="@{/admin/users/{id}/edit(id=${userId})}" th:object="${form}" novalidate>
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <th:block th:replace="~{admin/users-fragments :: stateHiddenFields(${hiddenFieldsForActions})}"></th:block>
+          <th:block th:replace="~{admin/user-form-fragments :: validationSummary}"></th:block>
 
           <div class="row g-4 align-items-start">
             <div class="col-12 col-md-3">
@@ -29,10 +30,10 @@
             </div>
 
             <div class="col-12 col-md-9">
-              <th:block th:replace="~{admin/user-form-fragments :: formFields(${user.username}, ${user.enabled})}"></th:block>
+              <th:block th:replace="~{admin/user-form-fragments :: formFields}"></th:block>
 
               <div class="d-flex justify-content-end gap-2">
-                <a class="btn btn-outline-secondary" th:href="${filters.toUserViewUrl(user.id)}" th:text="#{admin.user.actions.cancel}">
+                <a class="btn btn-outline-secondary" th:href="${filters.toUserViewUrl(userId)}" th:text="#{admin.user.actions.cancel}">
                   Cancel
                 </a>
                 <button type="submit" class="btn btn-primary">

@@ -17,9 +17,10 @@
 
     <div class="card">
       <div class="card-body">
-        <form method="post" th:action="@{/admin/users/create}" novalidate>
+        <form method="post" th:action="@{/admin/users/create}" th:object="${form}" novalidate>
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <th:block th:replace="~{admin/users-fragments :: stateHiddenFields(${hiddenFieldsForActions})}"></th:block>
+          <th:block th:replace="~{admin/user-form-fragments :: validationSummary}"></th:block>
 
           <div class="row g-4 align-items-start">
             <div class="col-12 col-md-3">
@@ -29,7 +30,7 @@
             </div>
 
             <div class="col-12 col-md-9">
-              <th:block th:replace="~{admin/user-form-fragments :: formFields(${form.username}, ${form.enabled})}"></th:block>
+              <th:block th:replace="~{admin/user-form-fragments :: formFields}"></th:block>
 
               <div class="d-flex justify-content-end gap-2">
                 <a class="btn btn-outline-secondary" th:href="${filters.toUserManagementUrl()}" th:text="#{admin.user.actions.cancel}">
