@@ -1,13 +1,13 @@
 package app.partsvibe.users.queries.usermanagement;
 
+import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
+import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.test.databuilders.RoleTestDataBuilder;
-import app.partsvibe.users.test.databuilders.UserTestDataBuilder;
 import app.partsvibe.users.testsupport.AbstractUsersIntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -27,23 +27,13 @@ class SearchUsersQueryHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void usernameContainsAndEnabledIsFiltersTogether() {
-        Role role = roleRepository.save(
-                RoleTestDataBuilder.aRole().withName("ROLE_IT_FILTER").build());
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("it-filter-alpha")
-                .enabled()
-                .withRole(role)
-                .build());
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("it-filter-beta")
-                .disabled()
-                .withRole(role)
-                .build());
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("other-user")
-                .enabled()
-                .withRole(role)
-                .build());
+        Role role = roleRepository.save(aRole().withName("ROLE_IT_FILTER").build());
+        userRepository.save(
+                aUser().withUsername("it-filter-alpha").enabled().withRole(role).build());
+        userRepository.save(
+                aUser().withUsername("it-filter-beta").disabled().withRole(role).build());
+        userRepository.save(
+                aUser().withUsername("other-user").enabled().withRole(role).build());
 
         SearchUsersQuery query = SearchUsersQuery.builder()
                 .usernameContains(" FILTER-AL ")
@@ -65,23 +55,18 @@ class SearchUsersQueryHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void rolesContainAllRequiresEverySelectedRole() {
-        Role alpha = roleRepository.save(
-                RoleTestDataBuilder.aRole().withName("ROLE_IT_ALPHA").build());
-        Role beta = roleRepository.save(
-                RoleTestDataBuilder.aRole().withName("ROLE_IT_BETA").build());
+        Role alpha = roleRepository.save(aRole().withName("ROLE_IT_ALPHA").build());
+        Role beta = roleRepository.save(aRole().withName("ROLE_IT_BETA").build());
 
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("it-role-both")
+        userRepository.save(aUser().withUsername("it-role-both")
                 .enabled()
                 .withRoles(alpha, beta)
                 .build());
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("it-role-alpha-only")
+        userRepository.save(aUser().withUsername("it-role-alpha-only")
                 .enabled()
                 .withRole(alpha)
                 .build());
-        userRepository.save(UserTestDataBuilder.aUser()
-                .withUsername("it-role-beta-only")
+        userRepository.save(aUser().withUsername("it-role-beta-only")
                 .enabled()
                 .withRole(beta)
                 .build());
