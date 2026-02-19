@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="formFields(username, enabled)">
+  <dl class="row mb-4">
+    <dt class="col-sm-4 d-flex align-items-center" th:text="#{admin.user.fields.username}">Username</dt>
+    <dd class="col-sm-8 mb-1">
+      <input id="username" name="username" type="text" class="form-control" th:value="${username}" />
+    </dd>
+    <dd class="col-sm-8 offset-sm-4 mb-3" th:if="${usernameErrorCode != null}">
+      <small class="text-danger" th:text="#{__${usernameErrorCode}__}">Invalid username.</small>
+    </dd>
+
+    <dt class="col-sm-4 d-flex align-items-center" th:text="#{admin.user.fields.enabled}">Enabled</dt>
+    <dd class="col-sm-8 mb-0">
+      <div class="form-check mt-2">
+        <input id="enabled" type="checkbox" class="form-check-input" name="enabled" th:checked="${enabled}" />
+        <label class="form-check-label" for="enabled" th:text="#{admin.user.fields.enabledHint}">Account is enabled</label>
+      </div>
+    </dd>
+  </dl>
+</th:block>
+</body>
+</html>

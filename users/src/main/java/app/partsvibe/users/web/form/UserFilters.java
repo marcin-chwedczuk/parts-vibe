@@ -61,6 +61,10 @@ public class UserFilters {
                 .toUriString();
     }
 
+    public String toUserCreateUrl() {
+        return managementUrlBuilder().replacePath("/admin/users/create").build().toUriString();
+    }
+
     private UriComponentsBuilder managementUrlBuilder() {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/admin/users")
                 .queryParam("page", page)
