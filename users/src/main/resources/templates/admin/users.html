@@ -11,7 +11,9 @@
     <div class="alert mb-3"
          th:if="${actionMessageCode != null}"
          th:classappend="${actionMessageLevel != null ? actionMessageLevel : 'alert-success'}"
-         th:text="${#messages.arrayMsg(actionMessageCode, actionMessageArgs)}">
+         th:text="${actionMessageArgs != null and #arrays.length(actionMessageArgs) > 0
+                  ? #messages.msg(actionMessageCode, actionMessageArgs[0])
+                  : #messages.msg(actionMessageCode)}">
       Action completed.
     </div>
 
