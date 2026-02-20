@@ -5,12 +5,12 @@
          style="width: 280px;">
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
-          <a th:href="@{/catalog/search}"
-             th:with="active=${@nav.isUnder(currentPath, '/catalog/search')}"
+          <a th:href="@{/catalog}"
+             th:with="active=${@nav.isUnder(currentPath, '/catalog') and !@nav.isUnder(currentPath, '/catalog/index')}"
              th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
              th:aria-current="${active} ? 'page' : null">
-            <i class="bi bi-search me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.catalog.search}">Catalog Search</span>
+            <i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>
+            <span th:text="#{nav.catalog.browse}">Catalog</span>
           </a>
         </li>
         <li class="nav-item">
