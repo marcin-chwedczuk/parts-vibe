@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport;
+package app.partsvibe.testsupport.it;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 

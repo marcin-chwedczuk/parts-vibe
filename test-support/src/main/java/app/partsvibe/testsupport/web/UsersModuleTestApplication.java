@@ -1,6 +1,6 @@
-package app.partsvibe.users.testsupport;
+package app.partsvibe.testsupport.web;
 
-import app.partsvibe.testsupport.CommonJpaTestConfiguration;
+import app.partsvibe.testsupport.it.CommonJpaTestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;

@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport;
+package app.partsvibe.testsupport.it;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

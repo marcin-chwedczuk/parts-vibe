@@ -1,4 +1,4 @@
-package app.partsvibe.users.testsupport;
+package app.partsvibe.testsupport.web;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.ComponentScan;

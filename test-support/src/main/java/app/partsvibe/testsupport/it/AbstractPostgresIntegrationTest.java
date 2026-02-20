@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport;
+package app.partsvibe.testsupport.it;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;

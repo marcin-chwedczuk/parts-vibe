@@ -1,6 +1,6 @@
-package app.partsvibe.users.testsupport;
+package app.partsvibe.testsupport.web;
 
-import app.partsvibe.testsupport.AbstractWebMvcIntegrationTest;
+import app.partsvibe.testsupport.it.AbstractWebMvcIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
-package app.partsvibe.users.testsupport;
+package app.partsvibe.testsupport.web;
 
-import app.partsvibe.testsupport.AbstractPostgresIntegrationTest;
+import app.partsvibe.testsupport.it.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;

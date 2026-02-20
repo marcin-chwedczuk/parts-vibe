@@ -1,4 +1,4 @@
-package app.partsvibe.users.testsupport;
+package app.partsvibe.testsupport.web;
 
 import app.partsvibe.shared.cqrs.Mediator;
 import org.springframework.boot.test.context.TestConfiguration;

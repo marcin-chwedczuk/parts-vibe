@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport;
+package app.partsvibe.testsupport.it;
 
 import java.sql.Connection;
 import java.sql.SQLException;
