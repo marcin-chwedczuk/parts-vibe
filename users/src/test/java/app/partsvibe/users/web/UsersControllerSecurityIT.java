@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.testsupport.web.AbstractUsersWebIntegrationTest;
 import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
@@ -14,6 +13,7 @@ import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
 import app.partsvibe.users.models.UserDetailsModel;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
+import app.partsvibe.users.test.web.AbstractUsersWebIntegrationTest;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

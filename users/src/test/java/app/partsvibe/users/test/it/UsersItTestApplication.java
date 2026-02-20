@@ -1,6 +1,7 @@
-package app.partsvibe.testsupport.it;
+package app.partsvibe.users.test.it;
 
 import app.partsvibe.testsupport.fakes.TestFakesConfiguration;
+import app.partsvibe.testsupport.it.CommonJpaTestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
@@ -18,4 +19,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         useDefaultFilters = false,
         includeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Handler"))
 @Import({CommonJpaTestConfiguration.class, TestFakesConfiguration.class})
-public class UsersModuleTestApplication {}
+public class UsersItTestApplication {}

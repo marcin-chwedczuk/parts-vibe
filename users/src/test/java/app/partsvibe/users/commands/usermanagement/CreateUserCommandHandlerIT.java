@@ -5,13 +5,13 @@ import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import app.partsvibe.testsupport.it.AbstractUsersIntegrationTest;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.errors.UsernameAlreadyExistsException;
 import app.partsvibe.users.models.UserDetailsModel;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
+import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

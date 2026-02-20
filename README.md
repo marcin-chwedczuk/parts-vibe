@@ -193,6 +193,20 @@ To print SQL and bound parameters during integration tests, enable the optional 
 
 This enables Hibernate SQL output globally for integration tests that use shared `test-support` fixtures.
 
+## Test package conventions
+Shared test infrastructure lives in the `test-support` module and is reused by feature modules:
+- `app.partsvibe.testsupport.it` for integration-test base classes/configuration.
+- `app.partsvibe.testsupport.web` for web MVC integration-test base classes/configuration.
+- `app.partsvibe.testsupport.fakes` for reusable in-memory test doubles.
+
+Module-specific test bootstraps and base classes stay inside each module test tree:
+- `app.partsvibe.<module>.test.it`
+- `app.partsvibe.<module>.test.web`
+
+Example (users module):
+- `app.partsvibe.users.test.it.AbstractUsersIntegrationTest`
+- `app.partsvibe.users.test.web.AbstractUsersWebIntegrationTest`
+
 ## Run end-to-end tests (Playwright)
 E2E tests run in the dedicated `e2e` module and are disabled by default.
 Start the app separately, then run:
