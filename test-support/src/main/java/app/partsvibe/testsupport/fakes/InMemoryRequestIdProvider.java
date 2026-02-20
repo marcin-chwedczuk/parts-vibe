@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport.web;
+package app.partsvibe.testsupport.fakes;
 
 import app.partsvibe.shared.request.RequestIdProvider;
 import java.util.Optional;

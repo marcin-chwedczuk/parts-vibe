@@ -5,7 +5,7 @@ import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.testsupport.web.AbstractUsersIntegrationTest;
+import app.partsvibe.testsupport.it.AbstractUsersIntegrationTest;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;

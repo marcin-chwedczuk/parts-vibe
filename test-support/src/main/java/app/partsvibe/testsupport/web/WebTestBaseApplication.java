@@ -16,5 +16,5 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
             HibernateJpaAutoConfiguration.class
         })
 @EnableWebMvc
-@Import(UsersWebTestConfiguration.class)
-public class UsersWebBaseTestApplication {}
+@Import(WebTestConfiguration.class)
+public class WebTestBaseApplication {}

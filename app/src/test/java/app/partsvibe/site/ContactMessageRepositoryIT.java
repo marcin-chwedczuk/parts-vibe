@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.site.domain.ContactMessage;
 import app.partsvibe.site.repo.ContactMessageRepository;
-import app.partsvibe.testsupport.it.AbstractPostgresIntegrationTest;
+import app.partsvibe.testsupport.it.AbstractModuleIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
-class ContactMessageRepositoryIT extends AbstractPostgresIntegrationTest {
+class ContactMessageRepositoryIT extends AbstractModuleIntegrationTest {
     @Autowired
     private ContactMessageRepository contactMessageRepository;
 

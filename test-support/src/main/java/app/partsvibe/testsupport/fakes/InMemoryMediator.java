@@ -1,4 +1,4 @@
-package app.partsvibe.testsupport.web;
+package app.partsvibe.testsupport.fakes;
 
 import app.partsvibe.shared.cqrs.Command;
 import app.partsvibe.shared.cqrs.Mediator;

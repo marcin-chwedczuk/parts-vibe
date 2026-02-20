@@ -1,5 +1,6 @@
-package app.partsvibe.testsupport.web;
+package app.partsvibe.testsupport.fakes;
 
+import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.request.RequestIdProvider;
 import app.partsvibe.shared.security.CurrentUserProvider;
@@ -10,7 +11,17 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @TestConfiguration(proxyBeanMethods = false)
-public class UsersHandlersTestConfiguration {
+public class TestFakesConfiguration {
+    @Bean
+    InMemoryMediator inMemoryMediator() {
+        return new InMemoryMediator();
+    }
+
+    @Bean
+    Mediator mediator(InMemoryMediator inMemoryMediator) {
+        return inMemoryMediator;
+    }
+
     @Bean
     InMemoryEventPublisher inMemoryEventPublisher() {
         return new InMemoryEventPublisher();

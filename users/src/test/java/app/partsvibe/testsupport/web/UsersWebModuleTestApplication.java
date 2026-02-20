@@ -6,5 +6,5 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootConfiguration
 @ComponentScan(basePackages = "app.partsvibe.users.web")
-@Import(UsersWebBaseTestApplication.class)
+@Import(WebTestBaseApplication.class)
 public class UsersWebModuleTestApplication {}
