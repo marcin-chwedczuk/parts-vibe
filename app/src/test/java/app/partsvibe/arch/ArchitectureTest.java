@@ -76,7 +76,7 @@ class ArchitectureTest {
     void modules_should_not_use_search_impl_directly() {
         noClasses()
                 .that()
-                .resideInAnyPackage("..site..", "..catalog..", "..users..")
+                .resideInAnyPackage("..catalog..", "..users..")
                 .should()
                 .accessClassesThat()
                 .resideInAnyPackage("..search.solr..")

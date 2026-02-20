@@ -20,8 +20,6 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
-                        .requestMatchers("/contact/**")
-                        .hasRole("USER")
                         .requestMatchers("/catalog/**")
                         .hasRole("USER")
                         .anyRequest()

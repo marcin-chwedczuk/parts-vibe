@@ -47,11 +47,6 @@
     </dependency>
     <dependency>
       <groupId>app.partsvibe</groupId>
-      <artifactId>site</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>app.partsvibe</groupId>
       <artifactId>search-api</artifactId>
       <version>${project.version}</version>
     </dependency>

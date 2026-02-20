@@ -8,7 +8,6 @@ Multi-module Maven project:
 - `app` (Spring Boot app + runtime assembly)
 - `catalog` (catalog web flow)
 - `users` (RBAC + users)
-- `site` (home + contact)
 - `search-api` (search contracts)
 - `search` (Solr-backed search implementation)
 - `shared` (shared utilities, currently empty)
@@ -222,9 +221,8 @@ E2E_BASE_URL=http://localhost:8080 ./mvnw -pl e2e -Pe2e test -De2e.headless=fals
 ```
 
 ## Routes
-- `/` public home
+- `/` redirects to `/catalog/search`
 - `/login` login page
-- `/contact` ROLE_USER
 - `/catalog/index` ROLE_USER (indexes text into Solr)
 - `/catalog/search` ROLE_USER (search Solr)
 - `/admin` ROLE_ADMIN

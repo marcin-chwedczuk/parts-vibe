@@ -344,7 +344,6 @@
     <module>shared</module>
     <module>catalog</module>
     <module>users</module>
-    <module>site</module>
     <module>infra</module>
     <module>e2e</module>
     <module>search-api</module>
