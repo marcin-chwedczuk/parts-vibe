@@ -38,7 +38,7 @@ working pattern here like a modulith or 3-layer architecture.
 - Framework: Spring Boot + Thymeleaf
 - Database: PostgreSQL
 - Full text search: Apache Solr
-- Modules: `app`, `shared`, `catalog`, `users`, `site`, `search-api`, `search` (multi-module Maven)
+- Modules: `app`, `shared`, `catalog`, `users`, `ui-components`, `search-api`, `search` (multi-module Maven)
 
 ## Command Rules
 - Always use the Maven Wrapper for Maven-related commands: `./mvnw` (not `mvn`).
@@ -198,6 +198,26 @@ Treat it as the default unless explicitly overridden.
 - Prefer:
   - keep structural wrapper in DOM
   - use inner `th:replace` / `th:insert` for fragment content.
+
+### Thymeleaf UI Components / Dialect
+- Reusable UI tags live in the `ui-components` module.
+- Custom tag prefix is `app` (for example: `<app:pagination .../>`, `<app:confirmation-dialog .../>`).
+- Prefer a single `app:data` attribute bound to a typed contract interface, not many scalar attributes.
+  - Example contracts:
+    - `PaginationModel`, `PaginationLinkModel`
+    - `ConfirmationDialogModel`
+- Keep component structure in template files under `ui-components/src/main/resources/templates/ui/components/*`.
+  - Java processor should stay thin: validate input, set local vars, parse template, merge slots.
+- For rich/customizable content use named slots (`app:slot`) with fallback content in component templates.
+  - Confirmation dialog slots: `title`, `body`, `fields`, `confirm`, `cancel`.
+- Security defaults for confirmation dialog:
+  - form method must be `POST` (reject others in processor validation).
+  - pass CSRF and extra hidden fields via `fields` slot.
+- Avoid placing `th:each` directly on custom dialect elements; wrap iteration in outer `th:block` and place custom tag inside.
+- If browser shows `ERR_INCOMPLETE_CHUNKED_ENCODING` on a Thymeleaf page, suspect template rendering failure (often custom processor/slot merge errors) and check server logs.
+- Component tests should render real templates via Thymeleaf engine and assert DOM with Jsoup/CSS selectors.
+  - For error-path tests, assert on `TemplateInputException` with root cause `TemplateProcessingException`.
+- Keep XSD for custom namespace under `ui-components/src/main/resources/META-INF/*.xsd` and include `xs:documentation` for element/attribute usage.
 
 ### Local Infrastructure
 - Docker compose setup includes observability stack and optional runtime components.

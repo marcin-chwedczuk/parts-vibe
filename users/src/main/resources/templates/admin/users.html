@@ -215,8 +215,7 @@
           <span th:text="#{admin.users.delete.title}">Confirm delete</span>
         </th:block>
         <th:block app:slot="body">
-          <p
-             th:text="#{admin.users.delete.confirm(${user.username})}">
+          <p th:text="#{admin.users.delete.confirm(${user.username})}">
             Delete this user?
           </p>
         </th:block>
