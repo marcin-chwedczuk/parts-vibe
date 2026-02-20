@@ -34,6 +34,17 @@ public class DataInitializer implements ApplicationRunner {
                 new SeedUsersCommand.UserDefinition(adminUsername, adminPassword, true),
                 new SeedUsersCommand.UserDefinition(userUsername, userPassword, false),
                 new SeedUsersCommand.UserDefinition("bob", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob2", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob3", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob4", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob5", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob6", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob7", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob8", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob9", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob10", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob11", "bob123", false),
+                new SeedUsersCommand.UserDefinition("bob12", "bob123", false),
                 new SeedUsersCommand.UserDefinition("alice", "alice123", false))));
     }
 }

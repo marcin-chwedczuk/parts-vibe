@@ -8,6 +8,7 @@ Multi-module Maven project:
 - `app` (Spring Boot app + runtime assembly)
 - `catalog` (catalog web flow)
 - `users` (RBAC + users)
+- `ui-components` (reusable Thymeleaf UI components and custom tags)
 - `search-api` (search contracts)
 - `search` (Solr-backed search implementation)
 - `shared` (shared utilities, currently empty)

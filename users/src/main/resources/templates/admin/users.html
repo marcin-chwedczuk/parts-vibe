@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:app="http://partsvibe.app/ui-components"
       th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
   <title th:text="#{admin.users.title}">User Management</title>
@@ -205,42 +205,7 @@
       </table>
     </div>
 
-    <nav class="d-flex justify-content-between align-items-center"
-         aria-label="User management pages"
-         th:if="${totalPages > 1}">
-      <ul class="pagination mb-0">
-        <li class="page-item" th:classappend="${filters.page == 1} ? ' disabled'">
-          <a class="page-link" th:href="${paginationFirstUrl}" th:text="#{admin.users.pagination.first}">
-            First
-          </a>
-        </li>
-
-        <li class="page-item"
-            th:each="pageLink : ${paginationPageLinks}"
-            th:classappend="${filters.page == pageLink.pageNumber} ? ' active'">
-          <a class="page-link" th:href="${pageLink.url}" th:text="${pageLink.pageNumber}">1</a>
-        </li>
-
-        <li class="page-item disabled" th:if="${totalPages > #lists.size(pageNumbers)}">
-          <span class="page-link">...</span>
-        </li>
-
-        <li class="page-item" th:if="${totalPages > #lists.size(pageNumbers)}"
-            th:classappend="${filters.page == totalPages} ? ' active'">
-          <a class="page-link" th:href="${paginationLastUrl}" th:text="${totalPages}">10</a>
-        </li>
-
-        <li class="page-item" th:classappend="${filters.page == totalPages} ? ' disabled'">
-          <a class="page-link" th:href="${paginationLastUrl}" th:text="#{admin.users.pagination.last}">
-            Last
-          </a>
-        </li>
-      </ul>
-
-      <small class="text-muted" th:text="#{admin.users.pagination.summary(${startRow},${endRow},${totalRows})}">
-        Showing 0-0 of 0
-      </small>
-    </nav>
+    <app:pagination app:data="${pageInfo}" />
 
     <div th:each="user : ${users}" class="modal fade" tabindex="-1" th:id="|delete-user-${user.id}|"
          th:attr="aria-labelledby=|delete-user-title-${user.id}|,aria-hidden='true'">

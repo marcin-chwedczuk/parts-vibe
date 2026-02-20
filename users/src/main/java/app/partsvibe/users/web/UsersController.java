@@ -16,6 +16,7 @@ import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
+import app.partsvibe.users.web.form.PaginationData;
 import app.partsvibe.users.web.form.UserFilters;
 import app.partsvibe.users.web.form.UserForm;
 import app.partsvibe.users.web.form.UserRow;
@@ -91,16 +92,9 @@ public class UsersController {
         model.addAttribute("users", pagedUsers);
         model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
         model.addAttribute("pageSizes", UserFilters.allowedPageSizes());
-        model.addAttribute("pageNumbers", pageNumbers);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("totalRows", result.totalRows());
-        model.addAttribute("startRow", result.startRow());
-        model.addAttribute("endRow", result.endRow());
         model.addAttribute("sortUsername", filters.buildSortLink(SearchUsersQuery.SORT_BY_USERNAME));
         model.addAttribute("sortEnabled", filters.buildSortLink(SearchUsersQuery.SORT_BY_ENABLED));
-        model.addAttribute("paginationFirstUrl", buildPageUrl(filters, 1));
-        model.addAttribute("paginationLastUrl", buildPageUrl(filters, totalPages));
-        model.addAttribute("paginationPageLinks", buildPaginationPageLinks(filters, pageNumbers));
+        model.addAttribute("pageInfo", buildPaginationData(filters, totalPages, pageNumbers, result));
         model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
         model.addAttribute("hiddenFieldsForPageSize", buildHiddenFieldsForPageSize(filters));
 
@@ -308,6 +302,23 @@ public class UsersController {
             links.add(new PageLink(pageNumber, buildPageUrl(filters, pageNumber)));
         }
         return links;
+    }
+
+    private PaginationData buildPaginationData(
+            UserFilters filters,
+            int totalPages,
+            List<Integer> pageNumbers,
+            PageResult<SearchUsersQuery.UserRow> result) {
+        return new PaginationData(
+                buildPageUrl(filters, 1),
+                buildPageUrl(filters, totalPages),
+                buildPaginationPageLinks(filters, pageNumbers),
+                totalPages,
+                filters.getPage(),
+                pageNumbers,
+                result.startRow(),
+                result.endRow(),
+                result.totalRows());
     }
 
     private String buildPageUrl(UserFilters filters, int page) {

@@ -340,6 +340,7 @@
 
   <modules>
     <module>test-support</module>
+    <module>ui-components</module>
     <module>app</module>
     <module>shared</module>
     <module>catalog</module>

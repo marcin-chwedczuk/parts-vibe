@@ -47,6 +47,11 @@
     </dependency>
     <dependency>
       <groupId>app.partsvibe</groupId>
+      <artifactId>ui-components</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>app.partsvibe</groupId>
       <artifactId>search-api</artifactId>
       <version>${project.version}</version>
     </dependency>
