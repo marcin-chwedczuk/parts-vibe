@@ -2,14 +2,103 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/base :: layout(~{::title}, ~{::section})}">
 <head>
-  <title th:text="#{catalog.category.title}">Category</title>
+  <title th:text="#{catalog.category.parts.title(${result.categoryName})}">Category parts</title>
 </head>
 <section th:replace="~{layout/user :: body(~{::div})}">
   <div>
-    <h1 class="h4 mb-3" th:text="#{catalog.category.heading}">Category</h1>
-    <p class="text-muted mb-0" th:text="#{catalog.category.placeholder(${categoryId})}">
-      Category details screen placeholder.
+    <h1 class="h4 mb-1" th:text="${result.categoryName}">Category</h1>
+    <p class="text-muted mb-4">
+      <span th:text="#{catalog.category.parts.resultsCount(${#lists.size(result.parts)})}">Results found: 0</span>
     </p>
+
+    <form method="get"
+          class="row g-2 align-items-end mb-4"
+          th:action="@{/catalog/categories/{id}(id=${result.categoryId})}">
+      <div class="col-12 col-lg-7">
+        <label class="form-label mb-1" for="part-search" th:text="#{catalog.category.parts.search.label}">Search parts</label>
+        <input id="part-search"
+               class="form-control"
+               type="text"
+               name="q"
+               th:value="${query}"
+               th:placeholder="#{catalog.category.parts.search.placeholder}"
+               placeholder="Search by part name or description" />
+      </div>
+      <div class="col-12 col-sm-auto">
+        <button class="btn btn-primary w-100" type="submit" th:text="#{catalog.category.parts.search.submit}">Search</button>
+      </div>
+      <div class="col-12 col-sm-auto">
+        <a class="btn btn-outline-secondary w-100"
+           th:href="@{/catalog/categories/{id}(id=${result.categoryId})}"
+           th:text="#{catalog.category.parts.search.clear}">Clear</a>
+      </div>
+      <div class="col-12 col-sm-auto ms-sm-auto">
+        <a class="btn btn-success w-100"
+           th:href="@{/catalog/categories/{id}/parts/create(id=${result.categoryId})}">
+          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+          <span th:text="#{catalog.category.parts.actions.addPart}">Add part</span>
+        </a>
+      </div>
+    </form>
+
+    <div th:if="${#lists.isEmpty(result.parts)}" class="alert alert-light border" role="status">
+      <span th:text="#{catalog.category.parts.empty}">No parts found.</span>
+    </div>
+
+    <div class="d-flex flex-column gap-3" th:if="${!#lists.isEmpty(result.parts)}">
+      <article class="border rounded p-3"
+               th:each="part : ${result.parts}">
+        <div class="row g-3">
+          <div class="col-12 col-sm-4 col-md-3 col-lg-2">
+            <img class="img-fluid rounded border w-100"
+                 style="aspect-ratio: 4 / 3; object-fit: cover;"
+                 th:src="@{/resources/images/placeholder.png}"
+                 src="/resources/images/placeholder.png"
+                 th:alt="#{catalog.part.picture.alt(${part.name})}"
+                 alt="Part picture placeholder" />
+          </div>
+          <div class="col">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+              <h2 class="h5 mb-0" th:text="${part.name}">Part Name</h2>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-link text-secondary text-decoration-none p-0"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        th:aria-label="#{catalog.category.parts.actions.menuLabel(${part.name})}">
+                  <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="#">
+                      <i class="bi bi-pencil-square me-2" aria-hidden="true"></i>
+                      <span th:text="#{catalog.category.parts.actions.edit}">Edit</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#">
+                      <i class="bi bi-trash me-2" aria-hidden="true"></i>
+                      <span th:text="#{catalog.category.parts.actions.delete}">Delete</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <span class="badge"
+                    th:each="tag : ${part.tags}"
+                    th:text="${tag.name}"
+                    th:classappend="${tagBadgeClasses[tag.color]} ?: 'text-bg-light'">Tag</span>
+            </div>
+
+            <p class="text-secondary mb-0" th:text="${part.descriptionSnippet}">
+              Description snippet.
+            </p>
+          </div>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 </html>

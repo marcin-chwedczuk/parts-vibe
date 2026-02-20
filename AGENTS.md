@@ -53,6 +53,10 @@ working pattern here like a modulith or 3-layer architecture.
 - Use Spring Data repositories for data access.
 - Use JPA entities with Hibernate.
 - UI templates use Bootstrap 5 via WebJars (no locator).
+- Custom application/domain exceptions should extend `ApplicationException` (`app.partsvibe.shared.error.ApplicationException`).
+
+## Local IDE Files
+- Ignore changes under `.idea/` caused by IDE filesystem watchers; do not treat them as unexpected workspace modifications.
 
 ## Security
 - The applicaiton uses Spring Security RBAC-model.
