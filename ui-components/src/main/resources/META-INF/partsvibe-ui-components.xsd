@@ -5,8 +5,22 @@
            attributeFormDefault="qualified">
 
   <xs:element name="pagination">
+    <xs:annotation>
+      <xs:documentation>
+        Renders pagination controls. Bind app:data to a model implementing
+        app.partsvibe.uicomponents.pagination.PaginationModel.
+        Required data contract: firstUrl, lastUrl, pageLinks, totalPages,
+        currentPage, startRow, endRow, totalRows.
+      </xs:documentation>
+    </xs:annotation>
     <xs:complexType>
-      <xs:attribute name="data" type="xs:string" use="required"/>
+      <xs:attribute name="data" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            Thymeleaf expression resolving to PaginationModel, e.g. ${pageInfo}.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 </xs:schema>

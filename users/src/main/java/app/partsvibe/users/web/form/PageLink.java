@@ -1,3 +1,5 @@
 package app.partsvibe.users.web.form;
 
-public record PageLink(int pageNumber, String url) {}
+import app.partsvibe.uicomponents.pagination.PaginationLinkModel;
+
+public record PageLink(int pageNumber, String url) implements PaginationLinkModel {}

@@ -315,7 +315,6 @@ public class UsersController {
                 buildPaginationPageLinks(filters, pageNumbers),
                 totalPages,
                 filters.getPage(),
-                pageNumbers,
                 result.startRow(),
                 result.endRow(),
                 result.totalRows());

@@ -20,16 +20,7 @@ Render pagination:
 <app:pagination app:data="${pageInfo}" />
 ```
 
-Where `pageInfo` is an object exposing:
-- `firstUrl`
-- `lastUrl`
-- `pageLinks`
-- `totalPages`
-- `currentPage`
-- `pageNumbers`
-- `startRow`
-- `endRow`
-- `totalRows`
+Where `pageInfo` implements `app.partsvibe.uicomponents.pagination.PaginationModel`.
 
 Optional IDE support:
 - XSD is provided at `META-INF/partsvibe-ui-components.xsd`.

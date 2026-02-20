@@ -15,11 +15,11 @@
         <a class="page-link" th:href="${pageLink.url}" th:text="${pageLink.pageNumber}">1</a>
       </li>
 
-      <li class="page-item disabled" th:if="${data.totalPages > #lists.size(data.pageNumbers)}">
+      <li class="page-item disabled" th:if="${data.totalPages > #lists.size(data.pageLinks)}">
         <span class="page-link">...</span>
       </li>
 
-      <li class="page-item" th:if="${data.totalPages > #lists.size(data.pageNumbers)}"
+      <li class="page-item" th:if="${data.totalPages > #lists.size(data.pageLinks)}"
           th:classappend="${data.currentPage == data.totalPages} ? ' active'">
         <a class="page-link" th:href="${data.lastUrl}" th:text="${data.totalPages}">10</a>
       </li>

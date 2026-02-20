@@ -1,7 +1,9 @@
 package app.partsvibe.uicomponents.thymeleaf;
 
 import static java.util.Collections.emptySet;
+import static org.thymeleaf.standard.processor.StandardReplaceTagProcessor.PRECEDENCE;
 
+import app.partsvibe.uicomponents.pagination.PaginationModel;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.engine.TemplateManager;
 import org.thymeleaf.engine.TemplateModel;
@@ -15,7 +17,7 @@ import org.thymeleaf.standard.expression.StandardExpressions;
 import org.thymeleaf.templatemode.TemplateMode;
 
 class PaginationElementTagProcessor extends AbstractElementModelProcessor {
-    private static final int PRECEDENCE = 1000;
+    // Keep precedence aligned with standard replacement processors.
     private static final String TAG_NAME = "pagination";
     private static final String TEMPLATE_NAME = "ui/components/pagination";
     private static final String DATA_VARIABLE = "data";
@@ -35,6 +37,15 @@ class PaginationElementTagProcessor extends AbstractElementModelProcessor {
 
         String dataExpression = requireAttr(tag, "data");
         Object data = resolveExpression(context, dataExpression);
+        if (data == null) {
+            throw new TemplateProcessingException(
+                    "Attribute '" + dialectPrefix + ":data' on <app:pagination> resolved to null");
+        }
+        if (!(data instanceof PaginationModel)) {
+            throw new TemplateProcessingException("Attribute '" + dialectPrefix
+                    + ":data' on <app:pagination> must resolve to " + PaginationModel.class.getSimpleName()
+                    + ", got: " + data.getClass().getName());
+        }
         structureHandler.setLocalVariable(DATA_VARIABLE, data);
 
         IModel componentModel = parseTemplateModel(context, TEMPLATE_NAME);
