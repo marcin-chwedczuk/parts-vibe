@@ -2,6 +2,7 @@ package app.partsvibe.testsupport.web;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -18,7 +19,8 @@ public abstract class AbstractWebMvcIntegrationTest {
 
     protected MockMvc mockMvc;
 
-    protected void setupMockMvc() {
+    @BeforeEach
+    void initMockMvc() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(springSecurity())
                 .build();

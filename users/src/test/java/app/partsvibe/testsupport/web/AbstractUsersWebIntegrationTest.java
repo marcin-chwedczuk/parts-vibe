@@ -12,7 +12,6 @@ public abstract class AbstractUsersWebIntegrationTest extends AbstractWebMvcInte
 
     @BeforeEach
     void setupWebTestContext() {
-        setupMockMvc();
         mediator.clear();
     }
 }
