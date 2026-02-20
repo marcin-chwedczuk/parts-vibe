@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:app="http://partsvibe.app/ui-components">
+<body>
+<app:confirmation-dialog app:data="${dialog}">
+  <th:block app:slot="title">
+    <span>Delete User</span>
+  </th:block>
+  <th:block app:slot="body">
+    <p class="mb-0">Delete <strong th:text="${username}">user</strong>?</p>
+  </th:block>
+  <th:block app:slot="fields">
+    <input type="hidden" name="_csrf" value="token" />
+    <input type="hidden" name="id" value="7" />
+  </th:block>
+  <th:block app:slot="cancel">
+    <span>Cancel</span>
+  </th:block>
+  <th:block app:slot="confirm">
+    <span>Delete</span>
+  </th:block>
+</app:confirmation-dialog>
+</body>
+</html>

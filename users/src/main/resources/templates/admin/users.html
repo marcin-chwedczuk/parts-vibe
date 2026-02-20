@@ -209,38 +209,29 @@
 
     <app:pagination app:data="${pageInfo}" />
 
-    <div th:each="user : ${users}" class="modal fade" tabindex="-1" th:id="|delete-user-${user.id}|"
-         th:attr="aria-labelledby=|delete-user-title-${user.id}|,aria-hidden='true'">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" th:id="|delete-user-title-${user.id}|" th:text="#{admin.users.delete.title}">
-              Confirm delete
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" th:aria-label="#{admin.users.delete.cancel}"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0"
-               th:text="#{admin.users.delete.confirm(${user.username})}">
-              Delete this user?
-            </p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
-                    th:text="#{admin.users.delete.cancel}">
-              Cancel
-            </button>
-            <form method="post" class="m-0" th:action="@{/admin/users/{id}/do-delete(id=${user.id})}">
-              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-              <th:block th:replace="~{admin/users-fragments :: stateHiddenFields(${hiddenFieldsForActions})}"></th:block>
-              <button type="submit" class="btn btn-danger" th:text="#{admin.users.delete.confirmButton}">
-                Delete
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <th:block th:each="user : ${users}">
+      <app:confirmation-dialog app:data="${deleteDialogsByUserId[user.id]}">
+        <th:block app:slot="title">
+          <span th:text="#{admin.users.delete.title}">Confirm delete</span>
+        </th:block>
+        <th:block app:slot="body">
+          <p
+             th:text="#{admin.users.delete.confirm(${user.username})}">
+            Delete this user?
+          </p>
+        </th:block>
+        <th:block app:slot="fields">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <th:block th:replace="~{admin/users-fragments :: stateHiddenFields(${hiddenFieldsForActions})}"></th:block>
+        </th:block>
+        <th:block app:slot="cancel">
+          <span th:text="#{admin.users.delete.cancel}">Cancel</span>
+        </th:block>
+        <th:block app:slot="confirm">
+          <span th:text="#{admin.users.delete.confirmButton}">Delete</span>
+        </th:block>
+      </app:confirmation-dialog>
+    </th:block>
   </div>
 </section>
 </html>

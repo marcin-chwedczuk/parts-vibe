@@ -1,0 +1,42 @@
+<th:block xmlns:th="http://www.thymeleaf.org" xmlns:app="http://partsvibe.app/ui-components">
+  <div class="modal fade" tabindex="-1"
+       th:id="${data.dialogId}"
+       th:attr="aria-labelledby=${data.dialogId + '-title'},aria-hidden='true'">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" th:id="${data.dialogId + '-title'}">
+            <app:slot app:name="title">
+              <span th:text="${#strings.isEmpty(data.titleText) ? 'Confirm' : data.titleText}">Confirm</span>
+            </app:slot>
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  th:attr="aria-label=${#strings.isEmpty(data.cancelText) ? 'Cancel' : data.cancelText}">
+          </button>
+        </div>
+        <div class="modal-body">
+          <app:slot app:name="body">
+            <p class="mb-0" th:text="${data.bodyText != null ? data.bodyText : ''}">Are you sure?</p>
+          </app:slot>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <app:slot app:name="cancel">
+              <span th:text="${#strings.isEmpty(data.cancelText) ? 'Cancel' : data.cancelText}">Cancel</span>
+            </app:slot>
+          </button>
+          <form method="post" class="m-0" th:action="${data.actionUrl}">
+            <app:slot app:name="fields"></app:slot>
+            <button type="submit" class="btn btn-danger">
+              <app:slot app:name="confirm">
+                <span th:text="${#strings.isEmpty(data.confirmText) ? 'Confirm' : data.confirmText}">Confirm</span>
+              </app:slot>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</th:block>

@@ -14,6 +14,7 @@ import app.partsvibe.users.errors.UsernameAlreadyExistsException;
 import app.partsvibe.users.models.UserDetailsModel;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
+import app.partsvibe.users.web.form.ConfirmationDialogData;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.PaginationData;
@@ -26,7 +27,9 @@ import java.beans.PropertyEditorSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +98,7 @@ public class UsersController {
         model.addAttribute("sortUsername", filters.buildSortLink(SearchUsersQuery.SORT_BY_USERNAME));
         model.addAttribute("sortEnabled", filters.buildSortLink(SearchUsersQuery.SORT_BY_ENABLED));
         model.addAttribute("pageInfo", buildPaginationData(filters, totalPages, pageNumbers, result));
+        model.addAttribute("deleteDialogsByUserId", buildDeleteDialogsByUserId(pagedUsers));
         model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
         model.addAttribute("hiddenFieldsForPageSize", buildHiddenFieldsForPageSize(filters));
 
@@ -318,6 +322,20 @@ public class UsersController {
                 result.startRow(),
                 result.endRow(),
                 result.totalRows());
+    }
+
+    private Map<Long, ConfirmationDialogData> buildDeleteDialogsByUserId(List<UserRow> users) {
+        return users.stream()
+                .collect(Collectors.toMap(
+                        UserRow::id,
+                        user -> new ConfirmationDialogData(
+                                "delete-user-" + user.id(),
+                                "/admin/users/" + user.id() + "/do-delete",
+                                "POST",
+                                null,
+                                null,
+                                null,
+                                null)));
     }
 
     private String buildPageUrl(UserFilters filters, int page) {

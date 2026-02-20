@@ -23,4 +23,33 @@
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+
+  <xs:element name="confirmation-dialog">
+    <xs:annotation>
+      <xs:documentation>
+        Renders a Bootstrap confirmation modal with an embedded form.
+        Bind app:data to a model implementing
+        app.partsvibe.uicomponents.confirmation.ConfirmationDialogModel.
+        Slots are supported via app:slot on direct children:
+        title, body, fields, confirm, cancel.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="data" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            Thymeleaf expression resolving to ConfirmationDialogModel, e.g. ${deleteDialog}.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:attribute name="slot" type="xs:string">
+    <xs:annotation>
+      <xs:documentation>
+        Named slot for app:confirmation-dialog children: title, body, fields, confirm, cancel.
+      </xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
 </xs:schema>

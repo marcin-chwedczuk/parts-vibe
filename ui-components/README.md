@@ -5,6 +5,7 @@ Reusable Thymeleaf UI components for `parts-vibe`.
 ## Current components
 
 - `app:pagination` renders the pagination component from `templates/ui/components/pagination.html`.
+- `app:confirmation-dialog` renders a confirmation modal with form and slot-based content.
 
 ## Usage
 
@@ -21,6 +22,25 @@ Render pagination:
 ```
 
 Where `pageInfo` implements `app.partsvibe.uicomponents.pagination.PaginationModel`.
+
+```html
+<app:confirmation-dialog app:data="${deleteDialog}">
+  <th:block app:slot="title">Confirm delete</th:block>
+  <th:block app:slot="body">
+    <p class="mb-0">Are you sure?</p>
+  </th:block>
+  <th:block app:slot="fields">
+    <input type="hidden" name="_csrf" value="..." />
+  </th:block>
+  <th:block app:slot="cancel">Cancel</th:block>
+  <th:block app:slot="confirm">Delete</th:block>
+</app:confirmation-dialog>
+```
+
+Where `deleteDialog` implements `app.partsvibe.uicomponents.confirmation.ConfirmationDialogModel`.
+Current security rule: `actionMethod` must be `POST`.
+Supported slots: `title`, `body`, `fields`, `confirm`, `cancel`.
+The component structure is defined in `templates/ui/components/confirmation-dialog.html`.
 
 Optional IDE support:
 - XSD is provided at `META-INF/partsvibe-ui-components.xsd`.

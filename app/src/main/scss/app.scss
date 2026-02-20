@@ -25,3 +25,8 @@ footer {
 .account-menu-toggle::after {
   display: none;
 }
+
+// Modal content frequently ends with a paragraph; remove trailing margin by default.
+.modal-body > :last-child {
+  margin-bottom: 0;
+}
