@@ -6,14 +6,7 @@
 </head>
 <section th:replace="~{layout/admin :: body(~{::div})}">
   <div>
-    <div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-      <a class="btn btn-outline-secondary"
-         th:href="${filters.toUserManagementUrl()}">
-        <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>
-        <span th:text="#{admin.user.actions.back}">Back</span>
-      </a>
-      <h1 class="h4 mb-0" th:text="#{admin.user.view.heading}">User Details</h1>
-    </div>
+    <h1 class="h4 mb-3" th:text="#{admin.user.view.heading}">User Details</h1>
 
     <div class="alert mb-3"
          th:if="${actionMessageCode != null}"

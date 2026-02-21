@@ -3,6 +3,8 @@ package app.partsvibe.users.web;
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
+import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
+import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteCurrentUserException;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteLastActiveAdminException;
 import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -58,10 +61,12 @@ public class UsersController {
 
     private final Mediator mediator;
     private final UserWebMapper userWebMapper;
+    private final MessageSource messageSource;
 
-    public UsersController(Mediator mediator, UserWebMapper userWebMapper) {
+    public UsersController(Mediator mediator, UserWebMapper userWebMapper, MessageSource messageSource) {
         this.mediator = mediator;
         this.userWebMapper = userWebMapper;
+        this.messageSource = messageSource;
     }
 
     @InitBinder("form")
@@ -70,7 +75,7 @@ public class UsersController {
     }
 
     @GetMapping
-    public String userManagement(@ModelAttribute("filters") UserFilters filters, Model model) {
+    public String userManagement(@ModelAttribute("filters") UserFilters filters, Model model, Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
@@ -101,6 +106,7 @@ public class UsersController {
         model.addAttribute("deleteDialogsByUserId", buildDeleteDialogsByUserId(pagedUsers));
         model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
         model.addAttribute("hiddenFieldsForPageSize", buildHiddenFieldsForPageSize(filters));
+        model.addAttribute("breadcrumbs", adminUsersListBreadcrumbs(locale));
 
         log.info("Admin user management page requested");
         return "admin/users";
@@ -111,7 +117,8 @@ public class UsersController {
             @PathVariable("userId") @Positive Long userId,
             @ModelAttribute("filters") UserFilters filters,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
@@ -119,6 +126,10 @@ public class UsersController {
             UserDetailsModel user = mediator.executeQuery(new UserByIdQuery(userId));
             model.addAttribute("user", toUserRow(user));
             model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+            model.addAttribute(
+                    "breadcrumbs",
+                    adminUsersDetailBreadcrumbs(
+                            locale, filters, messageSource.getMessage("admin.user.view.heading", null, locale)));
             return "admin/user-view";
         } catch (UserNotFoundException ex) {
             setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
@@ -131,7 +142,8 @@ public class UsersController {
             @PathVariable("userId") @Positive Long userId,
             @ModelAttribute("filters") UserFilters filters,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
 
@@ -149,18 +161,18 @@ public class UsersController {
         }
 
         model.addAttribute("userId", userId);
-        addUserFormPageModel(filters, model);
+        addUserFormPageModel(filters, model, locale, "admin.user.edit.heading");
         return "admin/user-edit";
     }
 
     @GetMapping("/create")
-    public String createUser(@ModelAttribute("filters") UserFilters filters, Model model) {
+    public String createUser(@ModelAttribute("filters") UserFilters filters, Model model, Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new UserForm());
         }
-        addUserFormPageModel(filters, model);
+        addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
         return "admin/user-create";
     }
 
@@ -170,11 +182,12 @@ public class UsersController {
             @Valid @ModelAttribute("form") UserForm form,
             BindingResult bindingResult,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         if (bindingResult.hasErrors()) {
-            addUserFormPageModel(filters, model);
+            addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
             return "admin/user-create";
         }
 
@@ -185,7 +198,7 @@ public class UsersController {
             return "redirect:" + filters.toUserViewUrl(created.id());
         } catch (UsernameAlreadyExistsException ex) {
             bindingResult.rejectValue("username", "admin.user.validation.username.duplicate");
-            addUserFormPageModel(filters, model);
+            addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
             return "admin/user-create";
         }
     }
@@ -197,12 +210,13 @@ public class UsersController {
             @Valid @ModelAttribute("form") UserForm form,
             BindingResult bindingResult,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
         filters.sanitize();
         sanitizeRoleFilters(filters);
         if (bindingResult.hasErrors()) {
             model.addAttribute("userId", userId);
-            addUserFormPageModel(filters, model);
+            addUserFormPageModel(filters, model, locale, "admin.user.edit.heading");
             return "admin/user-edit";
         }
 
@@ -214,7 +228,7 @@ public class UsersController {
         } catch (UsernameAlreadyExistsException ex) {
             bindingResult.rejectValue("username", "admin.user.validation.username.duplicate");
             model.addAttribute("userId", userId);
-            addUserFormPageModel(filters, model);
+            addUserFormPageModel(filters, model, locale, "admin.user.edit.heading");
             return "admin/user-edit";
         } catch (UserNotFoundException ex) {
             setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
@@ -291,8 +305,28 @@ public class UsersController {
         return new UserRow(user.id(), user.username(), user.enabled(), user.roles());
     }
 
-    private void addUserFormPageModel(UserFilters filters, Model model) {
+    private void addUserFormPageModel(UserFilters filters, Model model, Locale locale, String currentLabelMessageCode) {
         model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+        model.addAttribute(
+                "breadcrumbs",
+                adminUsersDetailBreadcrumbs(
+                        locale, filters, messageSource.getMessage(currentLabelMessageCode, null, locale)));
+    }
+
+    private BreadcrumbsData adminUsersListBreadcrumbs(Locale locale) {
+        return new BreadcrumbsData(List.of(
+                new BreadcrumbItemData(messageSource.getMessage("nav.admin", null, locale), "/admin", false),
+                new BreadcrumbItemData(messageSource.getMessage("nav.admin.users", null, locale), null, true)));
+    }
+
+    private BreadcrumbsData adminUsersDetailBreadcrumbs(Locale locale, UserFilters filters, String currentLabel) {
+        return new BreadcrumbsData(List.of(
+                new BreadcrumbItemData(messageSource.getMessage("nav.admin", null, locale), "/admin", false),
+                new BreadcrumbItemData(
+                        messageSource.getMessage("nav.admin.users", null, locale),
+                        filters.toUserManagementUrl(),
+                        false),
+                new BreadcrumbItemData(currentLabel, null, true)));
     }
 
     private List<Integer> buildPageNumbers(int totalPages) {
