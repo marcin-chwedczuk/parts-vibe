@@ -71,6 +71,13 @@ app:
     port: ${CLAMAV_PORT:3310}
     connect-timeout-ms: ${CLAMAV_CONNECT_TIMEOUT_MS:2000}
     read-timeout-ms: ${CLAMAV_READ_TIMEOUT_MS:10000}
+  storage:
+    root-dir: ${APP_STORAGE_ROOT_DIR:./.parts-vibe-storage}
+    limits:
+      avatar-bytes: ${APP_STORAGE_LIMIT_AVATAR_BYTES:102400}
+      category-part-image-bytes: ${APP_STORAGE_LIMIT_CATEGORY_PART_IMAGE_BYTES:307200}
+      gallery-image-bytes: ${APP_STORAGE_LIMIT_GALLERY_IMAGE_BYTES:4194304}
+      attachment-bytes: ${APP_STORAGE_LIMIT_ATTACHMENT_BYTES:10485760}
   events:
     dispatcher:
       enabled: ${APP_EVENTS_DISPATCHER_ENABLED:true}

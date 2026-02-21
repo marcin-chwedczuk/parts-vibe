@@ -18,6 +18,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus")
                         .permitAll()
+                        .requestMatchers("/storage/files/**")
+                        .authenticated()
                         .requestMatchers("/admin/**")
                         .hasRole("ADMIN")
                         .requestMatchers("/catalog/**")

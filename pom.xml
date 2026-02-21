@@ -83,6 +83,8 @@
     <playwright.version>1.58.0</playwright.version>
     <querydsl.version>5.1.0</querydsl.version>
     <jsoup.version>1.18.3</jsoup.version>
+    <tika.version>3.2.3</tika.version>
+    <jimfs.version>1.3.1</jimfs.version>
   </properties>
 
   <dependencyManagement>
@@ -150,6 +152,16 @@
         <groupId>org.jsoup</groupId>
         <artifactId>jsoup</artifactId>
         <version>${jsoup.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tika</groupId>
+        <artifactId>tika-core</artifactId>
+        <version>${tika.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.jimfs</groupId>
+        <artifactId>jimfs</artifactId>
+        <version>${jimfs.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -349,6 +361,8 @@
     <module>ui-components</module>
     <module>app</module>
     <module>shared</module>
+    <module>storage-api</module>
+    <module>storage</module>
     <module>catalog</module>
     <module>users</module>
     <module>infra</module>
