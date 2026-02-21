@@ -1,4 +1,5 @@
 <div xmlns:th="http://www.thymeleaf.org"
+     xmlns:app="http://partsvibe.app/ui-components"
      th:fragment="body(content)"
      class="d-flex flex-column flex-md-row gap-0 flex-grow-1 align-items-stretch">
   <aside class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark"
@@ -27,6 +28,8 @@
 
   <section class="flex-grow-1 d-flex flex-column">
     <div class="border border-secondary-subtle bg-white p-4 flex-grow-1">
+      <app:breadcrumbs app:data="${breadcrumbs}" />
+
       <div th:replace="${content}"></div>
     </div>
   </section>

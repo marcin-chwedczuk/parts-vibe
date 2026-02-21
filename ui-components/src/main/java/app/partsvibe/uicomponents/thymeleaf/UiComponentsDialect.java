@@ -14,6 +14,7 @@ public class UiComponentsDialect extends AbstractProcessorDialect {
     @Override
     public Set<IProcessor> getProcessors(String dialectPrefix) {
         return Set.of(
+                new BreadcrumbsElementTagProcessor(dialectPrefix),
                 new PaginationElementTagProcessor(dialectPrefix),
                 new ConfirmationDialogElementTagProcessor(dialectPrefix));
     }

@@ -1,0 +1,16 @@
+<nav xmlns:th="http://www.thymeleaf.org"
+     aria-label="breadcrumb"
+     th:if="${data != null and data.items() != null and !#lists.isEmpty(data.items())}">
+  <ol class="breadcrumb mb-3">
+    <li class="breadcrumb-item"
+        th:each="breadcrumb : ${data.items()}"
+        th:classappend="${breadcrumb.active()} ? 'active'">
+      <a th:if="${!breadcrumb.active() and breadcrumb.href() != null}"
+         th:href="${breadcrumb.href()}"
+         th:text="${breadcrumb.label()}">Breadcrumb</a>
+      <span th:unless="${!breadcrumb.active() and breadcrumb.href() != null}"
+            th:text="${breadcrumb.label()}"
+            th:attr="aria-current=${breadcrumb.active()} ? 'page' : null">Breadcrumb</span>
+    </li>
+  </ol>
+</nav>

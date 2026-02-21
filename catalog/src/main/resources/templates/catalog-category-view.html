@@ -34,7 +34,7 @@
       </div>
       <div class="col-12 col-sm-auto ms-sm-auto">
         <a class="btn btn-success w-100"
-           th:href="@{/catalog/categories/{id}/parts/create(id=${result.categoryId})}">
+           th:href="@{/catalog/categories/{id}/parts/create(id=${result.categoryId}, q=${#strings.isEmpty(query) ? null : query})}">
           <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
           <span th:text="#{catalog.category.parts.actions.addPart}">Add part</span>
         </a>
@@ -50,7 +50,7 @@
                th:each="part : ${result.parts}">
         <div class="row g-3">
           <div class="col-12 col-sm-4 col-md-3 col-lg-2">
-            <a th:href="@{/catalog/parts/{id}(id=${part.id})}">
+            <a th:href="@{/catalog/parts/{id}(id=${part.id}, categoryQ=${#strings.isEmpty(query) ? null : query})}">
               <img class="img-fluid rounded border w-100"
                  style="aspect-ratio: 4 / 3; object-fit: cover;"
                  th:src="@{/resources/images/placeholder.png}"
@@ -63,7 +63,7 @@
             <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
               <h2 class="h5 mb-0">
                 <a class="link-dark text-decoration-none"
-                   th:href="@{/catalog/parts/{id}(id=${part.id})}"
+                   th:href="@{/catalog/parts/{id}(id=${part.id}, categoryQ=${#strings.isEmpty(query) ? null : query})}"
                    th:text="${part.name}">Part Name</a>
               </h2>
               <div class="dropdown">

@@ -8,7 +8,7 @@
   <div>
     <div class="mb-3">
       <a class="btn btn-sm btn-outline-secondary"
-         th:href="@{/catalog/categories/{id}(id=${result.categoryId})}">
+         th:href="${categoryUrl}">
         <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
         <span th:text="#{catalog.part.view.backToCategory(${result.categoryName})}">Back to category</span>
       </a>
@@ -29,7 +29,7 @@
 
           <div class="mb-2">
             <span class="text-muted me-2" th:text="#{catalog.part.view.category.label}">Category:</span>
-            <a th:href="@{/catalog/categories/{id}(id=${result.categoryId})}"
+            <a th:href="${categoryUrl}"
                th:text="${result.categoryName}">Category</a>
           </div>
 

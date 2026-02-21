@@ -24,6 +24,26 @@
     </xs:complexType>
   </xs:element>
 
+  <xs:element name="breadcrumbs">
+    <xs:annotation>
+      <xs:documentation>
+        Renders breadcrumb navigation trail.
+        Bind app:data to a model implementing
+        app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsModel.
+        Required data contract: items() where each item provides label(), href(), active().
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="data" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>
+            Thymeleaf expression resolving to BreadcrumbsModel, e.g. ${breadcrumbs}.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="confirmation-dialog">
     <xs:annotation>
       <xs:documentation>
