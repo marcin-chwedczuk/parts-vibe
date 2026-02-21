@@ -224,6 +224,5 @@ E2E_BASE_URL=http://localhost:8080 ./mvnw -pl e2e -Pe2e test -De2e.headless=fals
 ## Routes
 - `/` redirects to `/catalog/search`
 - `/login` login page
-- `/catalog/index` ROLE_USER (indexes text into Solr)
 - `/catalog/search` ROLE_USER (search Solr)
 - `/admin` ROLE_ADMIN
