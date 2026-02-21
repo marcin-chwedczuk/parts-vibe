@@ -1,8 +1,10 @@
 package app.partsvibe.catalog.web;
 
 import app.partsvibe.catalog.errors.CategoryNotFoundException;
+import app.partsvibe.catalog.errors.PartNotFoundException;
 import app.partsvibe.catalog.queries.ListCategoriesQuery;
 import app.partsvibe.catalog.queries.ListCategoryPartsQuery;
+import app.partsvibe.catalog.queries.PartByIdQuery;
 import app.partsvibe.shared.cqrs.Mediator;
 import java.util.List;
 import java.util.Map;
@@ -74,5 +76,18 @@ public class CatalogBrowseController {
     public String createPartForm(@PathVariable("categoryId") Long categoryId, Model model) {
         model.addAttribute("categoryId", categoryId);
         return "catalog-part-create";
+    }
+
+    @GetMapping("/parts/{partId}")
+    public String partView(@PathVariable("partId") Long partId, Model model) {
+        try {
+            PartByIdQuery.PartDetails result = mediator.executeQuery(new PartByIdQuery(partId));
+            model.addAttribute("result", result);
+            model.addAttribute("tagBadgeClasses", TAG_BADGE_CLASSES);
+        } catch (PartNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+
+        return "catalog-part-view";
     }
 }
