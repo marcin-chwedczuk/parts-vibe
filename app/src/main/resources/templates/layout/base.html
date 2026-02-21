@@ -35,7 +35,9 @@
           <li class="nav-item dropdown" th:if="${isAuthenticatedUser}">
             <a class="nav-link dropdown-toggle account-menu-toggle pe-0" href="#" id="accountMenu" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
-              <img th:src="@{/resources/images/placeholder.png}" src="/resources/images/placeholder.png"
+              <img th:src="${currentUserAvatarUrl}" src="/resources/images/placeholder.png"
+                   onerror="this.onerror=null;this.src='/resources/images/placeholder.png';"
+                   th:alt="${#strings.isEmpty(currentUsername) ? 'User menu' : currentUsername}"
                    alt="User menu" width="32" height="32" class="rounded-2 border border-light-subtle" />
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">

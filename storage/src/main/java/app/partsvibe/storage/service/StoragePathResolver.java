@@ -4,6 +4,7 @@ import app.partsvibe.storage.config.StorageProperties;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,6 +15,7 @@ public class StoragePathResolver {
 
     private final Path rootDirectory;
 
+    @Autowired
     public StoragePathResolver(StorageProperties properties) {
         this(Path.of(properties.getRootDir()).toAbsolutePath().normalize());
     }

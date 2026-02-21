@@ -188,3 +188,6 @@ docker-compose/clamav/
 
 # Frontend assets (app module)
 app/node_modules/
+
+# Files storage during dev
+app/.parts-vibe-storage

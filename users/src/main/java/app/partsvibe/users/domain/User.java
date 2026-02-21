@@ -9,8 +9,10 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +36,17 @@ public class User extends BaseAuditableEntity {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    @Size(max = 1000)
+    @Column(length = 1000)
+    private String bio;
+
+    @Size(max = 255)
+    @Column(length = 255)
+    private String website;
+
+    @Column(name = "avatar_id")
+    private UUID avatarId;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
