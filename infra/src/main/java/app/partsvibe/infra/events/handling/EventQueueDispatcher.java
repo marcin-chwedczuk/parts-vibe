@@ -8,20 +8,22 @@ import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.shared.utils.StringUtils;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,9 +34,10 @@ public class EventQueueDispatcher {
     private final EventQueueRepository eventQueueRepository;
     private final EventQueueConsumer eventQueueConsumer;
     private final TimeProvider timeProvider;
-    private final Executor eventQueueExecutor;
+    private final ThreadPoolTaskExecutor eventQueueExecutor;
     private final ScheduledExecutorService eventQueueTimeoutScheduler;
     private final Semaphore inFlightSlots;
+    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
     private final String dispatcherId;
     private final Counter claimedCounter;
     private final Counter doneCounter;
@@ -49,7 +52,7 @@ public class EventQueueDispatcher {
             EventQueueRepository eventQueueRepository,
             EventQueueConsumer eventQueueConsumer,
             TimeProvider timeProvider,
-            @Qualifier("eventQueueExecutor") Executor eventQueueExecutor,
+            @Qualifier("eventQueueExecutor") ThreadPoolTaskExecutor eventQueueExecutor,
             @Qualifier("eventQueueTimeoutScheduler") ScheduledExecutorService eventQueueTimeoutScheduler,
             MeterRegistry meterRegistry) {
         this.properties = properties;
@@ -80,6 +83,12 @@ public class EventQueueDispatcher {
             log.debug("Event queue dispatcher poll skipped because dispatcher is disabled");
             return;
         }
+        if (isDispatcherShuttingDown()) {
+            log.debug(
+                    "Event queue dispatcher poll skipped because shutdown is in progress. dispatcherId={}",
+                    dispatcherId);
+            return;
+        }
 
         var capacity = inFlightSlots.availablePermits();
         if (capacity <= 0) {
@@ -105,6 +114,11 @@ public class EventQueueDispatcher {
     }
 
     private void submitEvent(ClaimedEventQueueEntry event) {
+        if (isDispatcherShuttingDown()) {
+            releaseClaimedEntryOnShutdown(event);
+            return;
+        }
+
         var processingStartedAt = timeProvider.now();
         CompletableFuture<Void> future;
 
@@ -242,6 +256,69 @@ public class EventQueueDispatcher {
             log.debug(
                     "Executor rejected task but event queue entry was not released (status changed concurrently). entry={}",
                     entry.toStringWithoutPayload(),
+                    ex);
+        }
+    }
+
+    private void releaseClaimedEntryOnShutdown(ClaimedEventQueueEntry entry) {
+        var now = timeProvider.now();
+        var updated = eventQueueRepository.releaseClaimedEntry(entry.id(), now, now);
+        if (updated > 0) {
+            log.info(
+                    "Released claimed event queue entry because dispatcher is shutting down. entry={}",
+                    entry.toStringWithoutPayload());
+            return;
+        }
+        log.debug(
+                "Failed to release claimed event queue entry during shutdown because status changed concurrently. entry={}",
+                entry.toStringWithoutPayload());
+    }
+
+    private boolean isDispatcherShuttingDown() {
+        if (shuttingDown.get()) {
+            return true;
+        }
+        var threadPoolExecutor = eventQueueExecutor.getThreadPoolExecutor();
+        return threadPoolExecutor != null && threadPoolExecutor.isShutdown();
+    }
+
+    @PreDestroy
+    void onShutdown() {
+        shutdownDispatcher();
+    }
+
+    private void shutdownDispatcher() {
+        if (!shuttingDown.compareAndSet(false, true)) {
+            return;
+        }
+
+        long awaitMs = Math.min(60_000L, Math.max(1_000L, properties.getHandlerTimeoutMs() + 1_000L));
+        log.info("Event queue dispatcher shutdown started. dispatcherId={}, awaitMs={}", dispatcherId, awaitMs);
+
+        eventQueueExecutor.shutdown();
+        var threadPoolExecutor = eventQueueExecutor.getThreadPoolExecutor();
+        if (threadPoolExecutor == null) {
+            log.info(
+                    "Event queue dispatcher shutdown completed (executor not initialized). dispatcherId={}",
+                    dispatcherId);
+            return;
+        }
+
+        try {
+            if (threadPoolExecutor.awaitTermination(awaitMs, TimeUnit.MILLISECONDS)) {
+                log.info("Event queue dispatcher shutdown completed. dispatcherId={}", dispatcherId);
+            } else {
+                log.warn(
+                        "Event queue dispatcher shutdown timed out. dispatcherId={}, awaitMs={}",
+                        dispatcherId,
+                        awaitMs);
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.warn(
+                    "Event queue dispatcher shutdown interrupted. dispatcherId={}, awaitMs={}",
+                    dispatcherId,
+                    awaitMs,
                     ex);
         }
     }

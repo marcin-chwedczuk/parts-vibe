@@ -17,9 +17,14 @@ public class EventQueueExecutorConfig {
         executor.setMaxPoolSize(properties.getThreadPoolSize());
         executor.setQueueCapacity(properties.getThreadPoolQueueCapacity());
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(30);
+        executor.setAwaitTerminationSeconds(awaitTerminationSeconds(properties.getHandlerTimeoutMs()));
         executor.initialize();
         return executor;
+    }
+
+    private static int awaitTerminationSeconds(long handlerTimeoutMs) {
+        long waitMs = Math.min(60_000L, Math.max(1_000L, handlerTimeoutMs + 1_000L));
+        return (int) ((waitMs + 999L) / 1_000L);
     }
 
     @Bean(name = "eventQueueTimeoutScheduler", destroyMethod = "shutdown")
