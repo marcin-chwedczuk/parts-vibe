@@ -1,7 +1,7 @@
 package app.partsvibe.storage.service;
 
 import app.partsvibe.shared.error.ApplicationException;
-import app.partsvibe.storage.errors.StorageValidationException;
+import app.partsvibe.storage.api.StorageValidationException;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;

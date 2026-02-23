@@ -1,6 +1,6 @@
 package app.partsvibe.storage.service;
 
-import app.partsvibe.storage.errors.StorageValidationException;
+import app.partsvibe.storage.api.StorageValidationException;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Component;
 

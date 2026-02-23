@@ -1,9 +1,10 @@
 package app.partsvibe.users.web;
 
 import app.partsvibe.shared.cqrs.Mediator;
-import app.partsvibe.shared.error.ApplicationException;
 import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.storage.api.StorageClient;
+import app.partsvibe.storage.api.StorageException;
+import app.partsvibe.storage.api.StorageFileSizeLimitExceededException;
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.StorageUploadRequest;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
@@ -20,7 +21,6 @@ import java.util.Locale;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -44,19 +44,16 @@ public class ProfileController {
     private final CurrentUserProvider currentUserProvider;
     private final StorageClient storageClient;
     private final MessageSource messageSource;
-    private final long avatarMaxBytes;
 
     public ProfileController(
             Mediator mediator,
             CurrentUserProvider currentUserProvider,
             StorageClient storageClient,
-            MessageSource messageSource,
-            @Value("${app.storage.limits.avatar-bytes:102400}") long avatarMaxBytes) {
+            MessageSource messageSource) {
         this.mediator = mediator;
         this.currentUserProvider = currentUserProvider;
         this.storageClient = storageClient;
         this.messageSource = messageSource;
-        this.avatarMaxBytes = avatarMaxBytes;
     }
 
     @GetMapping
@@ -109,17 +106,6 @@ public class ProfileController {
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
             return "redirect:/profile";
         }
-        if (avatarFile.getSize() > avatarMaxBytes) {
-            log.warn(
-                    "Profile avatar upload rejected because size limit exceeded. username={}, sizeBytes={}, limitBytes={}",
-                    username,
-                    avatarFile.getSize(),
-                    avatarMaxBytes);
-            redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.tooLarge");
-            redirectAttributes.addFlashAttribute("profileMessageArgs", new Object[] {avatarMaxBytes / 1024});
-            redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
-            return "redirect:/profile";
-        }
 
         String originalFilename =
                 avatarFile.getOriginalFilename() == null ? "avatar" : avatarFile.getOriginalFilename();
@@ -133,7 +119,7 @@ public class ProfileController {
                     avatarFile.getSize());
 
             var uploadResult = storageClient.upload(new StorageUploadRequest(
-                    StorageObjectType.USER_AVATAR_IMAGE, originalFilename, avatarFile.getBytes()));
+                    StorageObjectType.USER_AVATAR_IMAGE, originalFilename, readFileBytes(avatarFile)));
 
             var updateResult =
                     mediator.executeCommand(new UpdateCurrentUserAvatarCommand(username, uploadResult.fileId()));
@@ -145,7 +131,7 @@ public class ProfileController {
                             "Profile previous avatar deleted. username={}, previousAvatarId={}",
                             username,
                             updateResult.previousAvatarId());
-                } catch (ApplicationException ignored) {
+                } catch (StorageException ignored) {
                     // The new avatar is already persisted; old avatar cleanup is best-effort.
                     log.warn(
                             "Failed to delete previous avatar (best-effort). username={}, previousAvatarId={}",
@@ -158,7 +144,19 @@ public class ProfileController {
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
             return "redirect:/profile";
-        } catch (IOException | ApplicationException ex) {
+        } catch (StorageFileSizeLimitExceededException ex) {
+            log.warn(
+                    "Profile avatar upload failed due to size limit. username={}, originalFilename={}, contentType={}, sizeBytes={}, limitBytes={}",
+                    username,
+                    originalFilename,
+                    avatarFile.getContentType(),
+                    avatarFile.getSize(),
+                    ex.maxAllowedBytes());
+            redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.tooLarge");
+            redirectAttributes.addFlashAttribute("profileMessageArgs", new Object[] {ex.maxAllowedBytes() / 1024});
+            redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
+            return "redirect:/profile";
+        } catch (StorageException ex) {
             log.error(
                     "Profile avatar upload failed. username={}, originalFilename={}, contentType={}, sizeBytes={}",
                     username,
@@ -184,6 +182,14 @@ public class ProfileController {
 
     private static String avatarUrl(UUID avatarId) {
         return avatarId == null ? PLACEHOLDER_IMAGE_URL : "/storage/files/" + avatarId + "/thumbnail/128";
+    }
+
+    private byte[] readFileBytes(MultipartFile avatarFile) {
+        try {
+            return avatarFile.getBytes();
+        } catch (IOException ex) {
+            throw new StorageException("Failed to read uploaded avatar bytes.", ex);
+        }
     }
 
     private BreadcrumbsData breadcrumbs(Locale locale) {

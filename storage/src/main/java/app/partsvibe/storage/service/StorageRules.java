@@ -1,8 +1,9 @@
 package app.partsvibe.storage.service;
 
+import app.partsvibe.storage.api.StorageFileSizeLimitExceededException;
 import app.partsvibe.storage.api.StorageObjectType;
+import app.partsvibe.storage.api.StorageValidationException;
 import app.partsvibe.storage.config.StorageProperties;
-import app.partsvibe.storage.errors.StorageValidationException;
 import java.util.Locale;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -34,8 +35,7 @@ public class StorageRules {
     private void validateSize(StorageObjectType objectType, long sizeBytes) {
         long maxSize = maxAllowedSize(objectType);
         if (sizeBytes > maxSize) {
-            throw new StorageValidationException("File size exceeds limit. objectType=" + objectType + ", maxBytes="
-                    + maxSize + ", actualBytes=" + sizeBytes);
+            throw new StorageFileSizeLimitExceededException(objectType, maxSize, sizeBytes);
         }
     }
 

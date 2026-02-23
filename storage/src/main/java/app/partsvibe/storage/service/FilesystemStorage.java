@@ -1,6 +1,6 @@
 package app.partsvibe.storage.service;
 
-import app.partsvibe.shared.error.ApplicationException;
+import app.partsvibe.storage.api.StorageException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -34,7 +34,7 @@ public class FilesystemStorage {
         try {
             return Files.newInputStream(path);
         } catch (IOException ex) {
-            throw new ApplicationException("Failed to open stored file stream. path=" + path, ex);
+            throw new StorageException("Failed to open stored file stream. path=" + path, ex);
         }
     }
 
@@ -51,7 +51,7 @@ public class FilesystemStorage {
         try (var walk = Files.walk(directory)) {
             walk.sorted(Comparator.reverseOrder()).forEach(this::deleteSinglePath);
         } catch (IOException ex) {
-            throw new ApplicationException("Failed to delete stored file directory. fileId=" + fileId, ex);
+            throw new StorageException("Failed to delete stored file directory. fileId=" + fileId, ex);
         }
     }
 
@@ -68,7 +68,7 @@ public class FilesystemStorage {
             }
             return targetPath;
         } catch (IOException ex) {
-            throw new ApplicationException("Failed to write stored file. path=" + targetPath, ex);
+            throw new StorageException("Failed to write stored file. path=" + targetPath, ex);
         }
     }
 
@@ -76,7 +76,7 @@ public class FilesystemStorage {
         try {
             Files.deleteIfExists(path);
         } catch (IOException ex) {
-            throw new ApplicationException("Failed to delete stored file path. path=" + path, ex);
+            throw new StorageException("Failed to delete stored file path. path=" + path, ex);
         }
     }
 

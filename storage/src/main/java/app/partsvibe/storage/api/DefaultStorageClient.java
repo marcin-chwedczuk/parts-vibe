@@ -1,6 +1,7 @@
 package app.partsvibe.storage.api;
 
 import app.partsvibe.shared.cqrs.Mediator;
+import app.partsvibe.shared.error.ApplicationException;
 import app.partsvibe.storage.commands.DeleteStoredFileCommand;
 import app.partsvibe.storage.commands.UploadStoredFileCommand;
 import java.util.UUID;
@@ -16,12 +17,24 @@ class DefaultStorageClient implements StorageClient {
 
     @Override
     public StorageUploadResult upload(StorageUploadRequest request) {
-        return mediator.executeCommand(
-                new UploadStoredFileCommand(request.objectType(), request.originalFilename(), request.content()));
+        try {
+            return mediator.executeCommand(
+                    new UploadStoredFileCommand(request.objectType(), request.originalFilename(), request.content()));
+        } catch (StorageException ex) {
+            throw ex;
+        } catch (ApplicationException ex) {
+            throw new StorageException("Storage upload failed.", ex);
+        }
     }
 
     @Override
     public void delete(UUID fileId) {
-        mediator.executeCommand(new DeleteStoredFileCommand(fileId));
+        try {
+            mediator.executeCommand(new DeleteStoredFileCommand(fileId));
+        } catch (StorageException ex) {
+            throw ex;
+        } catch (ApplicationException ex) {
+            throw new StorageException("Storage delete failed. fileId=" + fileId, ex);
+        }
     }
 }
