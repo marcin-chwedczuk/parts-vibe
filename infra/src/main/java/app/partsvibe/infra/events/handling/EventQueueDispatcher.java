@@ -297,12 +297,6 @@ public class EventQueueDispatcher {
 
         eventQueueExecutor.shutdown();
         var threadPoolExecutor = eventQueueExecutor.getThreadPoolExecutor();
-        if (threadPoolExecutor == null) {
-            log.info(
-                    "Event queue dispatcher shutdown completed (executor not initialized). dispatcherId={}",
-                    dispatcherId);
-            return;
-        }
 
         try {
             if (threadPoolExecutor.awaitTermination(awaitMs, TimeUnit.MILLISECONDS)) {
