@@ -2,7 +2,6 @@ package app.partsvibe.storage.commands;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.events.publishing.EventPublisher;
-import app.partsvibe.shared.request.RequestIdProvider;
 import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.storage.api.StorageUploadResult;
@@ -24,7 +23,6 @@ class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFile
     private final StorageRules storageRules;
     private final EventPublisher eventPublisher;
     private final CurrentUserProvider currentUserProvider;
-    private final RequestIdProvider requestIdProvider;
     private final TimeProvider timeProvider;
 
     UploadStoredFileCommandHandler(
@@ -33,14 +31,12 @@ class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFile
             StorageRules storageRules,
             EventPublisher eventPublisher,
             CurrentUserProvider currentUserProvider,
-            RequestIdProvider requestIdProvider,
             TimeProvider timeProvider) {
         this.storedFileRepository = storedFileRepository;
         this.filesystemStorage = filesystemStorage;
         this.storageRules = storageRules;
         this.eventPublisher = eventPublisher;
         this.currentUserProvider = currentUserProvider;
-        this.requestIdProvider = requestIdProvider;
         this.timeProvider = timeProvider;
     }
 
@@ -65,8 +61,7 @@ class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFile
         storedFileRepository.save(storedFile);
         filesystemStorage.writeBlob(fileId, content);
 
-        FileUploadedEvent event = FileUploadedEvent.create(
-                fileId, command.objectType(), requestIdProvider.current().orElse(null), timeProvider.now());
+        FileUploadedEvent event = FileUploadedEvent.create(fileId, command.objectType());
         eventPublisher.publish(event);
 
         return new StorageUploadResult(fileId);

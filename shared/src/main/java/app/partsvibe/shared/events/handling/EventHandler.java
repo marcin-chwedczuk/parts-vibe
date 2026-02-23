@@ -1,6 +1,7 @@
 package app.partsvibe.shared.events.handling;
 
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventMetadata;
 
 /**
  * Handles domain/integration events.
@@ -9,4 +10,8 @@ import app.partsvibe.shared.events.model.Event;
  */
 public interface EventHandler<E extends Event> {
     void handle(E event);
+
+    default void handle(E event, EventMetadata metadata) {
+        handle(event);
+    }
 }

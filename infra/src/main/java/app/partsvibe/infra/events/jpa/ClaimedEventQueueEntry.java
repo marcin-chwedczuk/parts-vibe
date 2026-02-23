@@ -6,26 +6,28 @@ import java.util.UUID;
 public record ClaimedEventQueueEntry(
         long id,
         UUID eventId,
-        String eventType,
+        String eventName,
         int schemaVersion,
-        Instant occurredAt,
+        Instant publishedAt,
         String payload,
         String requestId,
+        String publishedBy,
         int attemptCount) {
     public static ClaimedEventQueueEntry fromEntity(EventQueueEntry entity) {
         return new ClaimedEventQueueEntry(
                 entity.getId(),
                 entity.getEventId(),
-                entity.getEventType(),
+                entity.getEventName(),
                 entity.getSchemaVersion(),
-                entity.getOccurredAt(),
+                entity.getPublishedAt(),
                 entity.getPayload(),
                 entity.getRequestId(),
+                entity.getPublishedBy(),
                 entity.getAttemptCount());
     }
 
     public String toStringWithoutPayload() {
-        return "ClaimedEventQueueEntry{id=%d, eventId=%s, eventType='%s', schemaVersion=%d, occurredAt=%s, requestId='%s', attemptCount=%d}"
-                .formatted(id, eventId, eventType, schemaVersion, occurredAt, requestId, attemptCount);
+        return "ClaimedEventQueueEntry{id=%d, eventId=%s, eventName='%s', schemaVersion=%d, publishedAt=%s, requestId='%s', publishedBy='%s', attemptCount=%d}"
+                .formatted(id, eventId, eventName, schemaVersion, publishedAt, requestId, publishedBy, attemptCount);
     }
 }

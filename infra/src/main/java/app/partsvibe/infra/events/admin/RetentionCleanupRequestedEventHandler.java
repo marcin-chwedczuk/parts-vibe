@@ -4,6 +4,7 @@ import app.partsvibe.infra.events.handling.EventQueueRetentionCleanupService;
 import app.partsvibe.shared.events.admin.RetentionCleanupRequestedEvent;
 import app.partsvibe.shared.events.handling.BaseEventHandler;
 import app.partsvibe.shared.events.handling.HandlesEvent;
+import app.partsvibe.shared.events.model.EventMetadata;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,11 +17,8 @@ public class RetentionCleanupRequestedEventHandler extends BaseEventHandler<Rete
     }
 
     @Override
-    protected void doHandle(RetentionCleanupRequestedEvent event) {
-        log.info(
-                "Handling retention cleanup requested event. eventId={}, requestId={}",
-                event.eventId(),
-                event.requestId().orElse("<none>"));
+    protected void doHandle(RetentionCleanupRequestedEvent event, EventMetadata metadata) {
+        log.info("Handling retention cleanup requested event. eventId={}, metadata={}", event.eventId(), metadata);
         retentionCleanupService.cleanup("admin-event");
     }
 }

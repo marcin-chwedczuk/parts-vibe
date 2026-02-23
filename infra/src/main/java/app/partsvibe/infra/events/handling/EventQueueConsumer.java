@@ -5,6 +5,7 @@ import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.infra.utils.ThrowableUtils;
 import app.partsvibe.shared.events.handling.EventHandler;
 import app.partsvibe.shared.events.model.Event;
+import app.partsvibe.shared.events.model.EventMetadata;
 import app.partsvibe.shared.request.RequestIdProvider;
 import java.util.List;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class EventQueueConsumer {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(ClaimedEventQueueEntry entry) {
-        String eventName = entry.eventType();
+        String eventName = entry.eventName();
         int schemaVersion = entry.schemaVersion();
         List<ResolvedEventHandlerDescriptor> handlers = eventHandlerRegistry.handlersFor(eventName, schemaVersion);
         log.debug(
@@ -49,9 +50,10 @@ public class EventQueueConsumer {
         for (ResolvedEventHandlerDescriptor descriptor : handlers) {
             // Deserialize per handler to isolate against mutable payload side effects.
             Event payload = deserialize(entry, descriptor.payloadClass());
-            String requestId = payload.requestId()
-                    .filter(value -> !value.isBlank())
-                    .orElseGet(() -> UUID.randomUUID().toString());
+            String requestId = resolveRequestId(entry.requestId());
+            EventMetadata metadata = EventMetadata.schema(eventName, schemaVersion)
+                    .withEventId(entry.eventId())
+                    .withInfrastructureContext(requestId, entry.publishedAt(), entry.publishedBy());
             EventHandler<? extends Event> handler = handlerByBeanName(descriptor.beanName());
             String handlerClassName = handlerClassName(handler);
             log.debug(
@@ -61,7 +63,7 @@ public class EventQueueConsumer {
                     handlerClassName,
                     descriptor.payloadClass().getName());
             try (var ignored = requestIdProvider.withRequestId(requestId)) {
-                invokeHandler(handler, payload);
+                invokeHandler(handler, payload, metadata);
             } catch (RuntimeException ex) {
                 String causeMessage = ThrowableUtils.safeMessage(ex);
                 log.error(
@@ -106,9 +108,17 @@ public class EventQueueConsumer {
         return ClassUtils.getUserClass(handler.getClass()).getName();
     }
 
+    private static String resolveRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        return requestId;
+    }
+
     @SuppressWarnings("unchecked")
-    private static <E extends Event> void invokeHandler(EventHandler<? extends Event> rawHandler, Event event) {
+    private static <E extends Event> void invokeHandler(
+            EventHandler<? extends Event> rawHandler, Event event, EventMetadata metadata) {
         EventHandler<E> typedHandler = (EventHandler<E>) rawHandler;
-        typedHandler.handle((E) event);
+        typedHandler.handle((E) event, metadata);
     }
 }

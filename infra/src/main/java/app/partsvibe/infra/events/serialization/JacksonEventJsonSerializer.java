@@ -46,11 +46,10 @@ public class JacksonEventJsonSerializer implements EventJsonSerializer {
                 // Keep fallback metadata values when annotation lookup fails.
             }
             log.error(
-                    "Event JSON serialization failed. eventId={}, eventName={}, schemaVersion={}, requestId={}",
+                    "Event JSON serialization failed. eventId={}, eventName={}, schemaVersion={}",
                     event.eventId(),
                     eventName,
                     schemaVersion,
-                    event.requestId().orElse("<none>"),
                     e);
             throw new EventPublisherException(
                     "Failed to serialize event payload. eventId=%s, eventName=%s, schemaVersion=%d"

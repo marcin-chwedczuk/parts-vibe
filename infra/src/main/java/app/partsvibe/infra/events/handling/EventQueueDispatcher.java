@@ -105,10 +105,10 @@ public class EventQueueDispatcher {
     }
 
     private void submitEvent(ClaimedEventQueueEntry event) {
-        inFlightSlots.acquireUninterruptibly();
         var processingStartedAt = timeProvider.now();
-
         CompletableFuture<Void> future;
+
+        inFlightSlots.acquireUninterruptibly();
         try {
             future = CompletableFuture.runAsync(() -> eventQueueConsumer.handle(event), eventQueueExecutor);
         } catch (RejectedExecutionException ex) {
@@ -225,7 +225,9 @@ public class EventQueueDispatcher {
     }
 
     private void recordQueueLag(ClaimedEventQueueEntry entry, Instant claimedAt) {
-        queueLagMetrics.recordDurationBetween(entry.occurredAt(), claimedAt);
+        if (entry.publishedAt() != null) {
+            queueLagMetrics.recordDurationBetween(entry.publishedAt(), claimedAt);
+        }
     }
 
     private void releaseClaimedEntry(ClaimedEventQueueEntry entry, RejectedExecutionException ex) {

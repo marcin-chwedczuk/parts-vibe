@@ -88,11 +88,7 @@ class FileUploadedEventHandler extends BaseEventHandler<FileUploadedEvent> {
         storedFile.setScannedAt(timeProvider.now());
         storedFileRepository.save(storedFile);
 
-        FileReadyEvent readyEvent = FileReadyEvent.create(
-                storedFile.getFileId(),
-                storedFile.getObjectType(),
-                event.requestId().orElse(null),
-                timeProvider.now());
+        FileReadyEvent readyEvent = FileReadyEvent.create(storedFile.getFileId(), storedFile.getObjectType());
         eventPublisher.publish(readyEvent);
     }
 

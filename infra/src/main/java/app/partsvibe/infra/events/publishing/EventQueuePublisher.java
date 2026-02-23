@@ -7,8 +7,12 @@ import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.EventMetadata;
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.events.publishing.EventPublisherException;
+import app.partsvibe.shared.request.RequestIdProvider;
+import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.shared.time.TimeProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -19,20 +23,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class EventQueuePublisher implements EventPublisher {
-    private static final Pattern EVENT_TYPE_PATTERN = Pattern.compile("^[a-z0-9]+(_[a-z0-9]+)*$");
+    private static final Pattern EVENT_NAME_PATTERN = Pattern.compile("^[a-z0-9]+(_[a-z0-9]+)*$");
+    private static final String SYSTEM_PUBLISHER = "system";
 
     private static final Logger log = LoggerFactory.getLogger(EventQueuePublisher.class);
 
     private final EventQueueRepository repository;
     private final EventJsonSerializer eventJsonSerializer;
+    private final TimeProvider timeProvider;
+    private final RequestIdProvider requestIdProvider;
+    private final CurrentUserProvider currentUserProvider;
     private final Counter publishAttemptsCounter;
     private final Counter publishSuccessCounter;
     private final Counter publishErrorsCounter;
 
     public EventQueuePublisher(
-            EventQueueRepository repository, EventJsonSerializer eventJsonSerializer, MeterRegistry meterRegistry) {
+            EventQueueRepository repository,
+            EventJsonSerializer eventJsonSerializer,
+            TimeProvider timeProvider,
+            RequestIdProvider requestIdProvider,
+            CurrentUserProvider currentUserProvider,
+            MeterRegistry meterRegistry) {
         this.repository = repository;
         this.eventJsonSerializer = eventJsonSerializer;
+        this.timeProvider = timeProvider;
+        this.requestIdProvider = requestIdProvider;
+        this.currentUserProvider = currentUserProvider;
         this.publishAttemptsCounter = meterRegistry.counter("app.event-queue.publish.attempts");
         this.publishSuccessCounter = meterRegistry.counter("app.event-queue.publish.success");
         this.publishErrorsCounter = meterRegistry.counter("app.event-queue.publish.errors");
@@ -49,17 +65,19 @@ public class EventQueuePublisher implements EventPublisher {
                     event.eventId(),
                     metadata.eventName(),
                     metadata.schemaVersion(),
-                    event.occurredAt(),
-                    event.requestId().orElse(null),
+                    metadata.requestId(),
+                    metadata.publishedAt(),
+                    metadata.publishedBy(),
                     payloadJson);
             repository.save(entry);
             publishSuccessCounter.increment();
             log.info(
-                    "Published event to event queue. eventId={}, eventName={}, schemaVersion={}, requestId={}",
+                    "Published event to event queue. eventId={}, eventName={}, schemaVersion={}, requestId={}, publishedBy={}",
                     event.eventId(),
                     metadata.eventName(),
                     metadata.schemaVersion(),
-                    event.requestId().orElse("<none>"));
+                    metadata.requestId() == null ? "<none>" : metadata.requestId(),
+                    metadata.publishedBy());
         } catch (EventPublisherException e) {
             publishErrorsCounter.increment();
             throw e;
@@ -84,24 +102,23 @@ public class EventQueuePublisher implements EventPublisher {
         }
     }
 
-    private static EventMetadata validate(Event event) {
+    private EventMetadata validate(Event event) {
+        var metadata = validateSchema(event);
+        return metadata.withInfrastructureContext(resolveRequestId(), resolvePublishedAt(), resolvePublishedBy());
+    }
+
+    private static EventMetadata validateSchema(Event event) {
         if (event == null) {
             throw new EventPublisherException("Event must not be null.");
         }
         if (event.eventId() == null) {
             throw new EventPublisherException("Event eventId must not be null.");
         }
-        if (event.occurredAt() == null) {
-            throw new EventPublisherException("Event occurredAt must not be null.");
-        }
-
         var metadata = EventMetadata.fromEvent(event);
-
-        // TODO: EventMetadata - already does some validation, we repeat it here
         if (isBlank(metadata.eventName())) {
             throw new EventPublisherException("Event eventName must not be blank.");
         }
-        if (!EVENT_TYPE_PATTERN.matcher(metadata.eventName()).matches()) {
+        if (!EVENT_NAME_PATTERN.matcher(metadata.eventName()).matches()) {
             throw new EventPublisherException(
                     "Event eventName must be snake_case. eventName=%s".formatted(metadata.eventName()));
         }
@@ -109,6 +126,21 @@ public class EventQueuePublisher implements EventPublisher {
             throw new EventPublisherException("Event schemaVersion must be greater than 0.");
         }
         return metadata;
+    }
+
+    private String resolveRequestId() {
+        return requestIdProvider.current().filter(value -> !value.isBlank()).orElse(null);
+    }
+
+    private Instant resolvePublishedAt() {
+        return timeProvider.now();
+    }
+
+    private String resolvePublishedBy() {
+        return currentUserProvider
+                .currentUsername()
+                .filter(value -> !value.isBlank())
+                .orElse(SYSTEM_PUBLISHER);
     }
 
     private static boolean isBlank(String value) {
