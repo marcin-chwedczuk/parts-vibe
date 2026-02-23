@@ -3,8 +3,10 @@ package app.partsvibe.infra.events.it;
 import app.partsvibe.infra.events.handling.EventHandlerRegistry;
 import app.partsvibe.infra.events.handling.EventQueueConsumer;
 import app.partsvibe.infra.events.handling.SpringEventHandlerRegistry;
+import app.partsvibe.infra.events.it.support.QueueAlwaysFailEventHandler;
 import app.partsvibe.infra.events.it.support.QueueTestEventHandler;
 import app.partsvibe.infra.events.it.support.QueueTestEventProbe;
+import app.partsvibe.infra.events.it.support.QueueTestEventSecondaryHandler;
 import app.partsvibe.infra.events.serialization.EventJsonSerializer;
 import app.partsvibe.infra.events.serialization.JacksonEventJsonSerializer;
 import app.partsvibe.shared.request.RequestIdProvider;
@@ -19,6 +21,8 @@ import org.springframework.context.annotation.Import;
     SpringEventHandlerRegistry.class,
     JacksonEventJsonSerializer.class,
     QueueTestEventHandler.class,
+    QueueTestEventSecondaryHandler.class,
+    QueueAlwaysFailEventHandler.class,
     QueueTestEventProbe.class
 })
 public class EventQueueConsumerItTestConfiguration {

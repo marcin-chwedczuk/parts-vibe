@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 @HandlesEvent(name = QueueTestEvent.EVENT_NAME, version = 1)
 public class QueueTestEventHandler extends BaseEventHandler<QueueTestEvent> {
+    public static final String HANDLER_MARKER = "primary";
+
     private final QueueTestEventProbe probe;
     private final RequestIdProvider requestIdProvider;
 
@@ -30,7 +32,10 @@ public class QueueTestEventHandler extends BaseEventHandler<QueueTestEvent> {
                 throw new ApplicationException("Synthetic handler failure for tests.");
             }
             probe.markCompleted(
-                    event.key(), metadata, requestIdProvider.current().orElse(null));
+                    HANDLER_MARKER,
+                    event.key(),
+                    metadata,
+                    requestIdProvider.current().orElse(null));
         } finally {
             probe.decrementActiveHandlers();
         }

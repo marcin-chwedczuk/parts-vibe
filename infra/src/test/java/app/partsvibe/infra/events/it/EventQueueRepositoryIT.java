@@ -2,6 +2,7 @@ package app.partsvibe.infra.events.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.partsvibe.infra.events.it.support.QueueTestEvent;
 import app.partsvibe.infra.events.jpa.EventQueueEntry;
 import app.partsvibe.infra.events.jpa.EventQueueEntryStatus;
 import java.time.Instant;
@@ -73,7 +74,7 @@ class EventQueueRepositoryIT extends AbstractEventQueueDatabaseIntegrationTest {
     private static EventQueueEntry newEntry(UUID eventId, String key) {
         return EventQueueEntry.newEvent(
                 eventId,
-                "queue_test_event",
+                QueueTestEvent.EVENT_NAME,
                 1,
                 "req-repo",
                 Instant.now(),

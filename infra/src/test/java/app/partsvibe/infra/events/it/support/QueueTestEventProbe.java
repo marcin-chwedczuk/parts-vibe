@@ -8,10 +8,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class QueueTestEventProbe {
+    private static final String DEFAULT_HANDLER_MARKER = "primary";
+
     private final Map<String, AtomicInteger> attemptsByKey = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> completionsByKey = new ConcurrentHashMap<>();
     private final Map<String, EventMetadata> lastMetadataByKey = new ConcurrentHashMap<>();
     private final Map<String, String> lastRequestIdInScopeByKey = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> completionsByHandlerAndKey = new ConcurrentHashMap<>();
+    private final Map<String, EventMetadata> lastMetadataByHandlerAndKey = new ConcurrentHashMap<>();
+    private final Map<String, String> lastRequestIdByHandlerAndKey = new ConcurrentHashMap<>();
     private final AtomicInteger activeHandlers = new AtomicInteger(0);
     private final AtomicInteger maxParallelism = new AtomicInteger(0);
 
@@ -20,6 +25,9 @@ public class QueueTestEventProbe {
         completionsByKey.clear();
         lastMetadataByKey.clear();
         lastRequestIdInScopeByKey.clear();
+        completionsByHandlerAndKey.clear();
+        lastMetadataByHandlerAndKey.clear();
+        lastRequestIdByHandlerAndKey.clear();
         activeHandlers.set(0);
         maxParallelism.set(0);
     }
@@ -31,9 +39,19 @@ public class QueueTestEventProbe {
     }
 
     public void markCompleted(String key, EventMetadata metadata, String requestIdInScope) {
+        markCompleted(DEFAULT_HANDLER_MARKER, key, metadata, requestIdInScope);
+    }
+
+    public void markCompleted(String handlerMarker, String key, EventMetadata metadata, String requestIdInScope) {
         completionsByKey.computeIfAbsent(key, ignored -> new AtomicInteger(0)).incrementAndGet();
         lastMetadataByKey.put(key, metadata);
         lastRequestIdInScopeByKey.put(key, requestIdInScope);
+        String mapKey = handlerKey(handlerMarker, key);
+        completionsByHandlerAndKey
+                .computeIfAbsent(mapKey, ignored -> new AtomicInteger(0))
+                .incrementAndGet();
+        lastMetadataByHandlerAndKey.put(mapKey, metadata);
+        lastRequestIdByHandlerAndKey.put(mapKey, requestIdInScope);
     }
 
     public int incrementActiveHandlers() {
@@ -68,5 +86,23 @@ public class QueueTestEventProbe {
 
     public String lastRequestIdInScope(String key) {
         return lastRequestIdInScopeByKey.get(key);
+    }
+
+    public int completions(String handlerMarker, String key) {
+        return completionsByHandlerAndKey
+                .getOrDefault(handlerKey(handlerMarker, key), new AtomicInteger(0))
+                .get();
+    }
+
+    public EventMetadata lastMetadata(String handlerMarker, String key) {
+        return lastMetadataByHandlerAndKey.get(handlerKey(handlerMarker, key));
+    }
+
+    public String lastRequestIdInScope(String handlerMarker, String key) {
+        return lastRequestIdByHandlerAndKey.get(handlerKey(handlerMarker, key));
+    }
+
+    private static String handlerKey(String handlerMarker, String key) {
+        return handlerMarker + "|" + key;
     }
 }
