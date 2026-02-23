@@ -1,4 +1,4 @@
-package app.partsvibe.storage.events;
+package app.partsvibe.storage.api.events;
 
 import app.partsvibe.shared.events.model.Event;
 import app.partsvibe.shared.events.model.IntegrationEvent;
@@ -7,14 +7,14 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-@IntegrationEvent(name = FileReadyEvent.EVENT_NAME)
-public record FileReadyEvent(
+@IntegrationEvent(name = FileUploadedEvent.EVENT_NAME)
+public record FileUploadedEvent(
         UUID eventId, Instant occurredAt, Optional<String> requestId, UUID fileId, StorageObjectType objectType)
         implements Event {
-    public static final String EVENT_NAME = "file_ready";
+    public static final String EVENT_NAME = "file_uploaded";
 
-    public static FileReadyEvent create(
+    public static FileUploadedEvent create(
             UUID fileId, StorageObjectType objectType, String requestId, Instant occurredAt) {
-        return new FileReadyEvent(UUID.randomUUID(), occurredAt, Optional.ofNullable(requestId), fileId, objectType);
+        return new FileUploadedEvent(UUID.randomUUID(), occurredAt, Optional.ofNullable(requestId), fileId, objectType);
     }
 }

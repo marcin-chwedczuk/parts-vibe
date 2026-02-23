@@ -2,9 +2,9 @@ package app.partsvibe.storage.events.handling;
 
 import app.partsvibe.shared.events.handling.BaseEventHandler;
 import app.partsvibe.shared.events.handling.HandlesEvent;
+import app.partsvibe.storage.api.events.FileReadyEvent;
 import app.partsvibe.storage.domain.StoredFileKind;
 import app.partsvibe.storage.domain.StoredFileStatus;
-import app.partsvibe.storage.events.FileReadyEvent;
 import app.partsvibe.storage.repo.StoredFileRepository;
 import app.partsvibe.storage.service.FilesystemStorage;
 import app.partsvibe.storage.service.StoragePathResolver;

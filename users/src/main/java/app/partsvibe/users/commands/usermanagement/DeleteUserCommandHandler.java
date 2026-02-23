@@ -5,6 +5,7 @@ import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.UserRepository;
+import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,10 +13,15 @@ class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, Del
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     private final UserRepository userRepository;
+    private final UserAvatarChangeRequestRepository userAvatarChangeRequestRepository;
     private final CurrentUserProvider currentUserProvider;
 
-    DeleteUserCommandHandler(UserRepository userRepository, CurrentUserProvider currentUserProvider) {
+    DeleteUserCommandHandler(
+            UserRepository userRepository,
+            UserAvatarChangeRequestRepository userAvatarChangeRequestRepository,
+            CurrentUserProvider currentUserProvider) {
         this.userRepository = userRepository;
+        this.userAvatarChangeRequestRepository = userAvatarChangeRequestRepository;
         this.currentUserProvider = currentUserProvider;
     }
 
@@ -39,6 +45,7 @@ class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, Del
             }
         }
 
+        userAvatarChangeRequestRepository.deleteByUserId(user.getId());
         userRepository.delete(user);
         log.info("User deleted. userId={}, username={}", user.getId(), user.getUsername());
         return new DeleteUserCommandResult(user.getUsername());
