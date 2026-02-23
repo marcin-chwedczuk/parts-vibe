@@ -4,22 +4,17 @@ import app.partsvibe.shared.events.handling.BaseEventHandler;
 import app.partsvibe.shared.events.handling.HandlesEvent;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.storage.api.StorageClient;
-import app.partsvibe.storage.api.StorageException;
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.events.FileReadyEvent;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequestStatus;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 @HandlesEvent(name = FileReadyEvent.EVENT_NAME, version = 1)
 class UserAvatarReadyEventHandler extends BaseEventHandler<FileReadyEvent> {
-    private static final Logger log = LoggerFactory.getLogger(UserAvatarReadyEventHandler.class);
-
     private final UserAvatarChangeRequestRepository avatarChangeRequestRepository;
     private final UserRepository userRepository;
     private final StorageClient storageClient;
@@ -62,20 +57,7 @@ class UserAvatarReadyEventHandler extends BaseEventHandler<FileReadyEvent> {
 
         UUID previousAvatarFileId = request.getPreviousAvatarFileId();
         if (previousAvatarFileId != null && !previousAvatarFileId.equals(request.getNewAvatarFileId())) {
-            try {
-                storageClient.delete(previousAvatarFileId);
-                log.info(
-                        "Previous avatar deleted after pending request applied. userId={}, previousAvatarFileId={}, newAvatarFileId={}",
-                        user.getId(),
-                        previousAvatarFileId,
-                        request.getNewAvatarFileId());
-            } catch (StorageException ex) {
-                log.warn(
-                        "Failed to delete previous avatar after pending request applied (best-effort). userId={}, previousAvatarFileId={}, newAvatarFileId={}",
-                        user.getId(),
-                        previousAvatarFileId,
-                        request.getNewAvatarFileId());
-            }
+            storageClient.delete(previousAvatarFileId);
         }
     }
 }

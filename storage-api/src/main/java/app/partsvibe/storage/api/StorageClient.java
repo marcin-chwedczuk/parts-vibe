@@ -5,5 +5,5 @@ import java.util.UUID;
 public interface StorageClient {
     StorageUploadResult upload(StorageUploadRequest request);
 
-    void delete(UUID fileId);
+    DeleteFileResult delete(UUID fileId);
 }

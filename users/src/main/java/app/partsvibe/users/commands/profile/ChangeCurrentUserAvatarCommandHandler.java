@@ -4,7 +4,6 @@ import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.storage.api.StorageClient;
-import app.partsvibe.storage.api.StorageException;
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.StorageUploadRequest;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequest;
@@ -13,14 +12,10 @@ import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 class ChangeCurrentUserAvatarCommandHandler extends BaseCommandHandler<ChangeCurrentUserAvatarCommand, NoResult> {
-    private static final Logger log = LoggerFactory.getLogger(ChangeCurrentUserAvatarCommandHandler.class);
-
     private final UserRepository userRepository;
     private final UserAvatarChangeRequestRepository avatarChangeRequestRepository;
     private final StorageClient storageClient;
@@ -52,20 +47,7 @@ class ChangeCurrentUserAvatarCommandHandler extends BaseCommandHandler<ChangeCur
             pendingRequest.setStatus(UserAvatarChangeRequestStatus.SUPERSEDED);
             pendingRequest.setResolvedAt(timeProvider.now());
             avatarChangeRequestRepository.save(pendingRequest);
-
-            try {
-                storageClient.delete(pendingRequest.getNewAvatarFileId());
-                log.info(
-                        "Superseded pending avatar file deleted. userId={}, fileId={}",
-                        command.userId(),
-                        pendingRequest.getNewAvatarFileId());
-            } catch (StorageException ex) {
-                // Best-effort cleanup; request is marked superseded anyway.
-                log.warn(
-                        "Failed to delete superseded pending avatar file (best-effort). userId={}, fileId={}",
-                        command.userId(),
-                        pendingRequest.getNewAvatarFileId());
-            }
+            storageClient.delete(pendingRequest.getNewAvatarFileId());
         }
 
         UUID previousAvatarId = user.getAvatarId();

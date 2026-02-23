@@ -1,16 +1,15 @@
 package app.partsvibe.storage.commands;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
-import app.partsvibe.shared.cqrs.NoResult;
 import app.partsvibe.shared.time.TimeProvider;
+import app.partsvibe.storage.api.DeleteFileResult;
 import app.partsvibe.storage.domain.StoredFileStatus;
-import app.partsvibe.storage.errors.StoredFileNotFoundException;
 import app.partsvibe.storage.repo.StoredFileRepository;
 import app.partsvibe.storage.service.FilesystemStorage;
 import org.springframework.stereotype.Component;
 
 @Component
-class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFileCommand, NoResult> {
+class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFileCommand, DeleteFileResult> {
     private final StoredFileRepository storedFileRepository;
     private final FilesystemStorage filesystemStorage;
     private final TimeProvider timeProvider;
@@ -23,13 +22,16 @@ class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFile
     }
 
     @Override
-    protected NoResult doHandle(DeleteStoredFileCommand command) {
-        var storedFile = storedFileRepository
-                .findByFileId(command.fileId())
-                .orElseThrow(() -> new StoredFileNotFoundException(command.fileId()));
+    protected DeleteFileResult doHandle(DeleteStoredFileCommand command) {
+        var storedFile = storedFileRepository.findByFileId(command.fileId()).orElse(null);
+        if (storedFile == null) {
+            log.info("Storage delete skipped; file not found. fileId={}", command.fileId());
+            return DeleteFileResult.notFound();
+        }
 
         if (storedFile.getStatus() == StoredFileStatus.DELETED) {
-            return NoResult.INSTANCE;
+            log.info("Storage delete skipped; file already marked deleted. fileId={}", command.fileId());
+            return DeleteFileResult.notFound();
         }
 
         filesystemStorage.deleteFileDirectory(storedFile.getFileId());
@@ -38,7 +40,8 @@ class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFile
         storedFile.setThumbnail128Ready(false);
         storedFile.setThumbnail512Ready(false);
         storedFileRepository.save(storedFile);
+        log.info("Storage file deleted. fileId={}", command.fileId());
 
-        return NoResult.INSTANCE;
+        return DeleteFileResult.deleted();
     }
 }
