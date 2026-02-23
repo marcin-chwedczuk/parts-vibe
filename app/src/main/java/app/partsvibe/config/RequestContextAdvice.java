@@ -53,15 +53,12 @@ public class RequestContextAdvice {
 
     @ModelAttribute("currentUserAvatarUrl")
     public String currentUserAvatarUrl() {
-        return currentUserProvider
-                .currentUsername()
-                .map(username -> resolveAvatarUrl(username))
-                .orElse(PLACEHOLDER_IMAGE_URL);
+        return currentUserProvider.currentUserId().map(this::resolveAvatarUrl).orElse(PLACEHOLDER_IMAGE_URL);
     }
 
-    private String resolveAvatarUrl(String username) {
+    private String resolveAvatarUrl(Long userId) {
         try {
-            var menuData = mediator.executeQuery(new GetUserMenuQuery(username));
+            var menuData = mediator.executeQuery(new GetUserMenuQuery(userId));
             return menuData.avatarId() == null
                     ? PLACEHOLDER_IMAGE_URL
                     : "/storage/files/" + menuData.avatarId() + "/thumbnail/128";

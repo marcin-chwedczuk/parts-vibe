@@ -1,9 +1,10 @@
 package app.partsvibe.users.queries.auth;
 
 import app.partsvibe.shared.cqrs.Query;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 
-public record GetUserMenuQuery(@NotBlank String username) implements Query<GetUserMenuQuery.UserMenuData> {
-    public record UserMenuData(String username, UUID avatarId) {}
+public record GetUserMenuQuery(@NotNull @Positive Long userId) implements Query<GetUserMenuQuery.UserMenuData> {
+    public record UserMenuData(UUID avatarId) {}
 }

@@ -21,11 +21,11 @@ class GetCurrentUserProfileQueryHandler extends BaseQueryHandler<GetCurrentUserP
         var tuple = queryFactory
                 .select(user.id, user.username, user.bio, user.website, user.avatarId)
                 .from(user)
-                .where(user.username.eq(query.username()))
+                .where(user.id.eq(query.userId()))
                 .fetchOne();
 
         if (tuple == null) {
-            throw new UserNotFoundException(query.username());
+            throw new UserNotFoundException(query.userId());
         }
 
         return new UserProfileModel(

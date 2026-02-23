@@ -14,22 +14,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-class UploadCurrentUserAvatarCommandHandler extends BaseCommandHandler<UploadCurrentUserAvatarCommand, NoResult> {
-    private static final Logger log = LoggerFactory.getLogger(UploadCurrentUserAvatarCommandHandler.class);
+class ChangeCurrentUserAvatarCommandHandler extends BaseCommandHandler<ChangeCurrentUserAvatarCommand, NoResult> {
+    private static final Logger log = LoggerFactory.getLogger(ChangeCurrentUserAvatarCommandHandler.class);
 
     private final UserRepository userRepository;
     private final StorageClient storageClient;
 
-    UploadCurrentUserAvatarCommandHandler(UserRepository userRepository, StorageClient storageClient) {
+    ChangeCurrentUserAvatarCommandHandler(UserRepository userRepository, StorageClient storageClient) {
         this.userRepository = userRepository;
         this.storageClient = storageClient;
     }
 
     @Override
-    protected NoResult doHandle(UploadCurrentUserAvatarCommand command) {
+    protected NoResult doHandle(ChangeCurrentUserAvatarCommand command) {
         var user = userRepository
-                .findByUsername(command.username())
-                .orElseThrow(() -> new UserNotFoundException(command.username()));
+                .findById(command.userId())
+                .orElseThrow(() -> new UserNotFoundException(command.userId()));
 
         var uploadResult = storageClient.upload(new StorageUploadRequest(
                 StorageObjectType.USER_AVATAR_IMAGE, command.originalFilename(), command.content()));
@@ -42,14 +42,14 @@ class UploadCurrentUserAvatarCommandHandler extends BaseCommandHandler<UploadCur
             try {
                 storageClient.delete(previousAvatarId);
                 log.info(
-                        "Previous avatar deleted after successful profile avatar upload. username={}, previousAvatarId={}",
-                        command.username(),
+                        "Previous avatar deleted after successful profile avatar change. userId={}, previousAvatarId={}",
+                        command.userId(),
                         previousAvatarId);
             } catch (StorageException ex) {
                 // Best-effort cleanup; current avatar is already set.
                 log.warn(
-                        "Failed to delete previous avatar after profile upload (best-effort). username={}, previousAvatarId={}",
-                        command.username(),
+                        "Failed to delete previous avatar after profile avatar change (best-effort). userId={}, previousAvatarId={}",
+                        command.userId(),
                         previousAvatarId);
             }
         }

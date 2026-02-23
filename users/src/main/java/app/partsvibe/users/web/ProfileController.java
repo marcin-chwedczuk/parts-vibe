@@ -6,8 +6,8 @@ import app.partsvibe.storage.api.StorageException;
 import app.partsvibe.storage.api.StorageFileSizeLimitExceededException;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
+import app.partsvibe.users.commands.profile.ChangeCurrentUserAvatarCommand;
 import app.partsvibe.users.commands.profile.UpdateCurrentUserProfileCommand;
-import app.partsvibe.users.commands.profile.UploadCurrentUserAvatarCommand;
 import app.partsvibe.users.models.UserProfileModel;
 import app.partsvibe.users.queries.profile.GetCurrentUserProfileQuery;
 import app.partsvibe.users.web.form.ProfileForm;
@@ -49,8 +49,8 @@ public class ProfileController {
 
     @GetMapping
     public String viewProfile(Model model, Locale locale) {
-        String username = currentUsername();
-        UserProfileModel userProfile = mediator.executeQuery(new GetCurrentUserProfileQuery(username));
+        Long userId = currentUserId();
+        UserProfileModel userProfile = mediator.executeQuery(new GetCurrentUserProfileQuery(userId));
 
         if (!model.containsAttribute("form")) {
             ProfileForm form = new ProfileForm();
@@ -74,15 +74,14 @@ public class ProfileController {
             Locale locale,
             Model model) {
         if (bindingResult.hasErrors()) {
-            UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUsername()));
+            UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
             model.addAttribute("profile", profile);
             model.addAttribute("avatarUrl", avatarUrl(profile.avatarId()));
             model.addAttribute("breadcrumbs", breadcrumbs(locale));
             return "profile/view";
         }
 
-        mediator.executeCommand(
-                new UpdateCurrentUserProfileCommand(currentUsername(), form.getBio(), form.getWebsite()));
+        mediator.executeCommand(new UpdateCurrentUserProfileCommand(currentUserId(), form.getBio(), form.getWebsite()));
         redirectAttributes.addFlashAttribute("profileMessageCode", "profile.info.updated");
         redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
         return "redirect:/profile";
@@ -90,9 +89,9 @@ public class ProfileController {
 
     @PostMapping("/avatar")
     public String updateAvatar(MultipartFile avatarFile, RedirectAttributes redirectAttributes) {
-        String username = currentUsername();
+        Long userId = currentUserId();
         if (avatarFile == null || avatarFile.isEmpty()) {
-            log.warn("Profile avatar upload rejected because file is empty. username={}", username);
+            log.warn("Profile avatar upload rejected because file is empty. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.empty");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
             return "redirect:/profile";
@@ -103,22 +102,22 @@ public class ProfileController {
 
         try {
             log.info(
-                    "Profile avatar upload started. username={}, originalFilename={}, contentType={}, sizeBytes={}",
-                    username,
+                    "Profile avatar upload started. userId={}, originalFilename={}, contentType={}, sizeBytes={}",
+                    userId,
                     originalFilename,
                     avatarFile.getContentType(),
                     avatarFile.getSize());
 
             mediator.executeCommand(
-                    new UploadCurrentUserAvatarCommand(username, originalFilename, readFileBytes(avatarFile)));
-            log.info("Profile avatar upload completed. username={}", username);
+                    new ChangeCurrentUserAvatarCommand(userId, originalFilename, readFileBytes(avatarFile)));
+            log.info("Profile avatar upload completed. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
             return "redirect:/profile";
         } catch (StorageFileSizeLimitExceededException ex) {
             log.warn(
-                    "Profile avatar upload failed due to size limit. username={}, originalFilename={}, contentType={}, sizeBytes={}, limitBytes={}",
-                    username,
+                    "Profile avatar upload failed due to size limit. userId={}, originalFilename={}, contentType={}, sizeBytes={}, limitBytes={}",
+                    userId,
                     originalFilename,
                     avatarFile.getContentType(),
                     avatarFile.getSize(),
@@ -129,8 +128,8 @@ public class ProfileController {
             return "redirect:/profile";
         } catch (IOException ex) {
             log.error(
-                    "Profile avatar upload failed while reading multipart bytes. username={}, originalFilename={}, contentType={}, sizeBytes={}",
-                    username,
+                    "Profile avatar upload failed while reading multipart bytes. userId={}, originalFilename={}, contentType={}, sizeBytes={}",
+                    userId,
                     originalFilename,
                     avatarFile.getContentType(),
                     avatarFile.getSize(),
@@ -140,8 +139,8 @@ public class ProfileController {
             return "redirect:/profile";
         } catch (StorageException ex) {
             log.error(
-                    "Profile avatar upload failed. username={}, originalFilename={}, contentType={}, sizeBytes={}",
-                    username,
+                    "Profile avatar upload failed. userId={}, originalFilename={}, contentType={}, sizeBytes={}",
+                    userId,
                     originalFilename,
                     avatarFile.getContentType(),
                     avatarFile.getSize(),
@@ -152,10 +151,10 @@ public class ProfileController {
         }
     }
 
-    private String currentUsername() {
+    private Long currentUserId() {
         return currentUserProvider
-                .currentUsername()
-                .orElseThrow(() -> new IllegalStateException("Authenticated username is required."));
+                .currentUserId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated userId is required."));
     }
 
     private static String defaultString(String value) {

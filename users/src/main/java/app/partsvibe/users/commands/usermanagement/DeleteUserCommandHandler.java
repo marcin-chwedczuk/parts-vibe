@@ -27,8 +27,8 @@ class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, Del
             return new DeleteUserCommandResult(null);
         }
 
-        String currentUsername = currentUserProvider.currentUsername().orElse(null);
-        if (currentUsername != null && currentUsername.equals(user.getUsername())) {
+        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
+        if (currentUserId != null && currentUserId.equals(user.getId())) {
             throw new CannotDeleteCurrentUserException();
         }
 

@@ -6,8 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 
 public class InMemoryCurrentUserProvider implements CurrentUserProvider {
+    private final ThreadLocal<Long> currentUserId = new ThreadLocal<>();
     private final ThreadLocal<String> currentUsername = new ThreadLocal<>();
     private final ThreadLocal<Set<String>> currentRoles = new ThreadLocal<>();
+
+    @Override
+    public Optional<Long> currentUserId() {
+        return Optional.ofNullable(currentUserId.get());
+    }
 
     @Override
     public Optional<String> currentUsername() {
@@ -26,16 +32,22 @@ public class InMemoryCurrentUserProvider implements CurrentUserProvider {
                 .contains(roleName);
     }
 
-    public void setCurrentUser(String username, Set<String> roles) {
+    public void setCurrentUser(Long userId, String username, Set<String> roles) {
+        currentUserId.set(userId);
         currentUsername.set(username);
         currentRoles.set(Set.copyOf(roles));
     }
 
     public void setCurrentUser(String username) {
-        setCurrentUser(username, Set.of());
+        setCurrentUser(null, username, Set.of());
+    }
+
+    public void setCurrentUser(String username, Set<String> roles) {
+        setCurrentUser(null, username, roles);
     }
 
     public void clear() {
+        currentUserId.remove();
         currentUsername.remove();
         currentRoles.remove();
     }

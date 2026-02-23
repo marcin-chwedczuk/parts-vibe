@@ -15,16 +15,22 @@ public class UserPrincipal implements UserDetails, Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private final Long userId;
     private final String username;
     private final String passwordHash;
     private final boolean enabled;
     private final Set<String> roleNames;
 
     public UserPrincipal(User user) {
+        this.userId = user.getId();
         this.username = user.getUsername();
         this.passwordHash = user.getPasswordHash();
         this.enabled = user.isEnabled();
         this.roleNames = user.getRoles().stream().map(Role::getName).collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 
     @Override

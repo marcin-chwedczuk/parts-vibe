@@ -18,15 +18,14 @@ class GetUserMenuQueryHandler extends BaseQueryHandler<GetUserMenuQuery, GetUser
     protected GetUserMenuQuery.UserMenuData doHandle(GetUserMenuQuery query) {
         QUser user = QUser.user;
         var tuple = queryFactory
-                .select(user.username, user.avatarId)
+                .select(user.id, user.avatarId)
                 .from(user)
-                .where(user.username.eq(query.username()))
+                .where(user.id.eq(query.userId()))
                 .fetchOne();
-
         if (tuple == null) {
-            throw new UserNotFoundException(query.username());
+            throw new UserNotFoundException(query.userId());
         }
 
-        return new GetUserMenuQuery.UserMenuData(tuple.get(user.username), tuple.get(user.avatarId));
+        return new GetUserMenuQuery.UserMenuData(tuple.get(user.avatarId));
     }
 }

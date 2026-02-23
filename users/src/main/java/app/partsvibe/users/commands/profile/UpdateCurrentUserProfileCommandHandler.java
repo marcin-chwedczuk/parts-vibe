@@ -17,8 +17,8 @@ class UpdateCurrentUserProfileCommandHandler extends BaseCommandHandler<UpdateCu
     @Override
     protected NoResult doHandle(UpdateCurrentUserProfileCommand command) {
         var user = userRepository
-                .findByUsername(command.username())
-                .orElseThrow(() -> new UserNotFoundException(command.username()));
+                .findById(command.userId())
+                .orElseThrow(() -> new UserNotFoundException(command.userId()));
 
         user.setBio(normalizeNullable(command.bio()));
         user.setWebsite(normalizeNullable(command.website()));

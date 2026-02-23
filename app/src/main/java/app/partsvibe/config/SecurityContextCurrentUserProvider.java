@@ -1,6 +1,7 @@
 package app.partsvibe.config;
 
 import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.users.security.UserPrincipal;
 import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -9,6 +10,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SecurityContextCurrentUserProvider implements CurrentUserProvider {
+    @Override
+    public Optional<Long> currentUserId() {
+        Optional<Authentication> authentication = currentAuthentication();
+        if (authentication.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Object principal = authentication.get().getPrincipal();
+        if (!(principal instanceof UserPrincipal userPrincipal)) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(userPrincipal.getUserId());
+    }
+
     @Override
     public boolean isAuthenticated() {
         return currentAuthentication().isPresent();
