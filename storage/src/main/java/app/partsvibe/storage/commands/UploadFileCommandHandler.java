@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
-class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFileCommand, StorageUploadResult> {
+class UploadFileCommandHandler extends BaseCommandHandler<UploadFileCommand, StorageUploadResult> {
     private static final String SYSTEM_UPLOADER = "system";
 
     private final StoredFileRepository storedFileRepository;
@@ -25,7 +25,7 @@ class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFile
     private final CurrentUserProvider currentUserProvider;
     private final TimeProvider timeProvider;
 
-    UploadStoredFileCommandHandler(
+    UploadFileCommandHandler(
             StoredFileRepository storedFileRepository,
             FilesystemStorage filesystemStorage,
             StorageRules storageRules,
@@ -41,7 +41,7 @@ class UploadStoredFileCommandHandler extends BaseCommandHandler<UploadStoredFile
     }
 
     @Override
-    protected StorageUploadResult doHandle(UploadStoredFileCommand command) {
+    protected StorageUploadResult doHandle(UploadFileCommand command) {
         String originalFilename = command.originalFilename().trim();
         byte[] content = command.content();
         storageRules.validateUpload(command.objectType(), originalFilename, content.length);

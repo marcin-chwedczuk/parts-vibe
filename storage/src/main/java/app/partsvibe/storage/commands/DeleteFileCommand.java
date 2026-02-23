@@ -5,4 +5,4 @@ import app.partsvibe.storage.api.DeleteFileResult;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
-public record DeleteStoredFileCommand(@NotNull UUID fileId) implements Command<DeleteFileResult> {}
+public record DeleteFileCommand(@NotNull UUID fileId) implements Command<DeleteFileResult> {}

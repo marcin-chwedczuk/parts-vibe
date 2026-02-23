@@ -3,8 +3,8 @@ package app.partsvibe.storage.api;
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.error.ApplicationException;
 import app.partsvibe.storage.api.DeleteFileResult.Status;
-import app.partsvibe.storage.commands.DeleteStoredFileCommand;
-import app.partsvibe.storage.commands.UploadStoredFileCommand;
+import app.partsvibe.storage.commands.DeleteFileCommand;
+import app.partsvibe.storage.commands.UploadFileCommand;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ class DefaultStorageClient implements StorageClient {
     public StorageUploadResult upload(StorageUploadRequest request) {
         try {
             return mediator.executeCommand(
-                    new UploadStoredFileCommand(request.objectType(), request.originalFilename(), request.content()));
+                    new UploadFileCommand(request.objectType(), request.originalFilename(), request.content()));
         } catch (StorageException ex) {
             throw ex;
         } catch (ApplicationException ex) {
@@ -35,7 +35,7 @@ class DefaultStorageClient implements StorageClient {
     @Override
     public DeleteFileResult delete(UUID fileId) {
         try {
-            DeleteFileResult result = mediator.executeCommand(new DeleteStoredFileCommand(fileId));
+            DeleteFileResult result = mediator.executeCommand(new DeleteFileCommand(fileId));
             if (result.status() == Status.FAILED) {
                 log.warn("Storage delete returned FAILED status. fileId={}", fileId);
             }

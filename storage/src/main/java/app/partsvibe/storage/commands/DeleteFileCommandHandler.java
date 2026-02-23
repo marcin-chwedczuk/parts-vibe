@@ -9,12 +9,12 @@ import app.partsvibe.storage.service.FilesystemStorage;
 import org.springframework.stereotype.Component;
 
 @Component
-class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFileCommand, DeleteFileResult> {
+class DeleteFileCommandHandler extends BaseCommandHandler<DeleteFileCommand, DeleteFileResult> {
     private final StoredFileRepository storedFileRepository;
     private final FilesystemStorage filesystemStorage;
     private final TimeProvider timeProvider;
 
-    DeleteStoredFileCommandHandler(
+    DeleteFileCommandHandler(
             StoredFileRepository storedFileRepository, FilesystemStorage filesystemStorage, TimeProvider timeProvider) {
         this.storedFileRepository = storedFileRepository;
         this.filesystemStorage = filesystemStorage;
@@ -22,7 +22,7 @@ class DeleteStoredFileCommandHandler extends BaseCommandHandler<DeleteStoredFile
     }
 
     @Override
-    protected DeleteFileResult doHandle(DeleteStoredFileCommand command) {
+    protected DeleteFileResult doHandle(DeleteFileCommand command) {
         var storedFile = storedFileRepository.findByFileId(command.fileId()).orElse(null);
         if (storedFile == null) {
             log.info("Storage delete skipped; file not found. fileId={}", command.fileId());

@@ -14,15 +14,14 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
-class ResolveStoredFileQueryHandler
-        extends BaseQueryHandler<ResolveStoredFileQuery, ResolveStoredFileQuery.StoredFileResource> {
+class ResolveFileQueryHandler extends BaseQueryHandler<ResolveFileQuery, ResolveFileQuery.FileResource> {
     private static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
     private final JPAQueryFactory queryFactory;
     private final StoragePathResolver pathResolver;
     private final FilesystemStorage filesystemStorage;
 
-    ResolveStoredFileQueryHandler(
+    ResolveFileQueryHandler(
             JPAQueryFactory queryFactory, StoragePathResolver pathResolver, FilesystemStorage filesystemStorage) {
         this.queryFactory = queryFactory;
         this.pathResolver = pathResolver;
@@ -30,7 +29,7 @@ class ResolveStoredFileQueryHandler
     }
 
     @Override
-    protected ResolveStoredFileQuery.StoredFileResource doHandle(ResolveStoredFileQuery query) {
+    protected ResolveFileQuery.FileResource doHandle(ResolveFileQuery query) {
         QStoredFile storedFile = QStoredFile.storedFile;
 
         var projection = queryFactory
@@ -67,7 +66,7 @@ class ResolveStoredFileQueryHandler
         String mimeType = projection.get(storedFile.mimeType);
         long sizeBytes = fileSizeOf(targetPath);
 
-        return new ResolveStoredFileQuery.StoredFileResource(
+        return new ResolveFileQuery.FileResource(
                 targetPath, mimeType == null ? APPLICATION_OCTET_STREAM : mimeType, sizeBytes);
     }
 

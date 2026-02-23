@@ -3,7 +3,7 @@ package app.partsvibe.storage.web;
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.storage.api.StorageFileVariant;
 import app.partsvibe.storage.errors.StoredFileNotFoundException;
-import app.partsvibe.storage.queries.ResolveStoredFileQuery;
+import app.partsvibe.storage.queries.ResolveFileQuery;
 import java.util.UUID;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
@@ -41,8 +41,7 @@ public class StorageFileController {
 
     private ResponseEntity<InputStreamResource> read(UUID fileId, StorageFileVariant variant) {
         try {
-            ResolveStoredFileQuery.StoredFileResource resource =
-                    mediator.executeQuery(new ResolveStoredFileQuery(fileId, variant));
+            ResolveFileQuery.FileResource resource = mediator.executeQuery(new ResolveFileQuery(fileId, variant));
             InputStreamResource body = new InputStreamResource(java.nio.file.Files.newInputStream(resource.path()));
             return ResponseEntity.ok()
                     .contentLength(resource.sizeBytes())
