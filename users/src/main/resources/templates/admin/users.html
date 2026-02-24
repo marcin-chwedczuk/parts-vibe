@@ -168,6 +168,12 @@
                     <span th:text="#{admin.users.actions.edit}">Edit</span>
                   </a>
                 </li>
+                <li>
+                  <a class="dropdown-item" th:href="${filters.toUserPasswordResetUrl(user.id)}">
+                    <i class="bi bi-key me-2" aria-hidden="true"></i>
+                    <span th:text="#{admin.users.actions.resetPassword}">Reset password</span>
+                  </a>
+                </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li th:if="${user.enabled}">
                   <form method="post" class="m-0" th:action="@{/admin/users/{id}/do-lock(id=${user.id})}">

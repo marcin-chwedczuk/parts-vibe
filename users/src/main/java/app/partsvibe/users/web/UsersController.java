@@ -2,6 +2,7 @@ package app.partsvibe.users.web;
 
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.cqrs.PageResult;
+import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
@@ -12,12 +13,16 @@ import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
+import app.partsvibe.users.commands.usermanagement.password.ResetUserPasswordByAdminCommand;
+import app.partsvibe.users.errors.AdminPrivilegesRequiredException;
+import app.partsvibe.users.errors.AdminReauthenticationFailedException;
 import app.partsvibe.users.errors.InvalidInviteRoleException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.errors.UsernameAlreadyExistsException;
 import app.partsvibe.users.models.UserDetailsModel;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
+import app.partsvibe.users.web.form.AdminResetUserPasswordForm;
 import app.partsvibe.users.web.form.ConfirmationDialogData;
 import app.partsvibe.users.web.form.HiddenField;
 import app.partsvibe.users.web.form.InviteUserForm;
@@ -61,11 +66,17 @@ public class UsersController {
     private static final Object[] NO_MESSAGE_ARGS = new Object[0];
 
     private final Mediator mediator;
+    private final CurrentUserProvider currentUserProvider;
     private final UserWebMapper userWebMapper;
     private final MessageSource messageSource;
 
-    public UsersController(Mediator mediator, UserWebMapper userWebMapper, MessageSource messageSource) {
+    public UsersController(
+            Mediator mediator,
+            CurrentUserProvider currentUserProvider,
+            UserWebMapper userWebMapper,
+            MessageSource messageSource) {
         this.mediator = mediator;
+        this.currentUserProvider = currentUserProvider;
         this.userWebMapper = userWebMapper;
         this.messageSource = messageSource;
     }
@@ -164,6 +175,71 @@ public class UsersController {
         model.addAttribute("userId", userId);
         addUserFormPageModel(filters, model, locale, "admin.user.edit.heading");
         return "admin/user-edit";
+    }
+
+    @GetMapping("/{userId}/password-reset")
+    public String resetUserPassword(
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
+            Model model,
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+
+        try {
+            UserDetailsModel user = mediator.executeQuery(new UserByIdQuery(userId));
+            if (!model.containsAttribute("form")) {
+                model.addAttribute("form", new AdminResetUserPasswordForm());
+            }
+            model.addAttribute("targetUser", toUserRow(user));
+            model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+            model.addAttribute(
+                    "breadcrumbs",
+                    adminUsersDetailBreadcrumbs(
+                            locale,
+                            filters,
+                            messageSource.getMessage("admin.user.passwordReset.heading", null, locale)));
+            return "admin/user-password-reset";
+        } catch (UserNotFoundException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+            return "redirect:" + filters.toUserManagementUrl();
+        }
+    }
+
+    @PostMapping("/{userId}/password-reset")
+    public String resetUserPasswordSubmit(
+            @PathVariable("userId") @Positive Long userId,
+            @ModelAttribute("filters") UserFilters filters,
+            @Valid @ModelAttribute("form") AdminResetUserPasswordForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+
+        if (bindingResult.hasErrors()) {
+            return renderResetUserPasswordForm(userId, filters, model, redirectAttributes, locale);
+        }
+
+        try {
+            var result = mediator.executeCommand(
+                    new ResetUserPasswordByAdminCommand(userId, currentAdminUserId(), form.getAdminPassword()));
+            redirectAttributes.addFlashAttribute("passwordResetSuccess", true);
+            redirectAttributes.addFlashAttribute("resetPasswordTargetUsername", result.targetUsername());
+            redirectAttributes.addFlashAttribute("generatedTemporaryPassword", result.temporaryPassword());
+            return "redirect:" + filters.toUserPasswordResetUrl(userId);
+        } catch (AdminReauthenticationFailedException ex) {
+            bindingResult.rejectValue("adminPassword", "admin.user.passwordReset.validation.adminPassword.invalid");
+            return renderResetUserPasswordForm(userId, filters, model, redirectAttributes, locale);
+        } catch (UserNotFoundException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+            return "redirect:" + filters.toUserManagementUrl();
+        } catch (AdminPrivilegesRequiredException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.adminPrivilegesRequired", "alert-danger");
+            return "redirect:" + filters.toUserManagementUrl();
+        }
     }
 
     @GetMapping("/create")
@@ -485,6 +561,31 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
+    }
+
+    private String renderResetUserPasswordForm(
+            Long userId, UserFilters filters, Model model, RedirectAttributes redirectAttributes, Locale locale) {
+        try {
+            UserDetailsModel user = mediator.executeQuery(new UserByIdQuery(userId));
+            model.addAttribute("targetUser", toUserRow(user));
+            model.addAttribute("hiddenFieldsForActions", buildHiddenFieldsForActions(filters));
+            model.addAttribute(
+                    "breadcrumbs",
+                    adminUsersDetailBreadcrumbs(
+                            locale,
+                            filters,
+                            messageSource.getMessage("admin.user.passwordReset.heading", null, locale)));
+            return "admin/user-password-reset";
+        } catch (UserNotFoundException ex) {
+            setActionMessage(redirectAttributes, "admin.users.action.userNotFound", "alert-danger", userId);
+            return "redirect:" + filters.toUserManagementUrl();
+        }
+    }
+
+    private Long currentAdminUserId() {
+        return currentUserProvider
+                .currentUserId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated admin userId is required."));
     }
 
     private Integer mapInviteValidity(String validity) {
