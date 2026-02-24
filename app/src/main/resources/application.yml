@@ -62,9 +62,9 @@ app:
     base-url: ${SOLR_BASE_URL:http://localhost:8983/solr}
     core: ${SOLR_CORE:catalog}
   security:
-    admin-username: ${APP_ADMIN_USERNAME:admin}
+    admin-username: ${APP_ADMIN_USERNAME:admin@example.com}
     admin-password: ${APP_ADMIN_PASSWORD:admin123}
-    user-username: ${APP_USER_USERNAME:user}
+    user-username: ${APP_USER_USERNAME:user@example.com}
     user-password: ${APP_USER_PASSWORD:user123}
   antivirus:
     host: ${CLAMAV_HOST:localhost}
