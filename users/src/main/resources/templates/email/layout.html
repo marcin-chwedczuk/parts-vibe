@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="base(content)">
+<body style="margin:0;padding:0;background:#f6f7f9;font-family:Arial,sans-serif;color:#1f2937;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f7f9;padding:24px 12px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+        <tr>
+          <td style="padding:18px 24px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">
+            <img th:src="${logoUrl}" alt="parts-vibe" style="height:36px;display:block;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px;line-height:1.55;">
+            <th:block th:replace="${content}">
+              Email content
+            </th:block>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px;border-top:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;font-size:12px;">
+            <span th:text="#{email.common.footer}">This email was sent by parts-vibe.</span>
+            <a th:href="${appBaseUrl}" style="color:#6b7280;" th:text="${appBaseUrl}">http://localhost:8080</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

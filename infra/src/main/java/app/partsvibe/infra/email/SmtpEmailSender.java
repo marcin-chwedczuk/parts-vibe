@@ -39,7 +39,9 @@ public class SmtpEmailSender implements EmailSender {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         boolean multipart = message.bodyHtml() != null && !message.bodyHtml().isBlank();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, multipart, "UTF-8");
+            MimeMessageHelper helper = multipart
+                    ? new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED, "UTF-8")
+                    : new MimeMessageHelper(mimeMessage, false, "UTF-8");
             helper.setTo(toArray(message.to()));
             if (!message.cc().isEmpty()) {
                 helper.setCc(toArray(message.cc()));

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email/layout :: base(~{::div})}">
+<div>
+  <h1 style="margin:0 0 12px 0;font-size:22px;" th:text="#{email.invite.heading}">You're invited to parts-vibe</h1>
+
+  <p style="margin:0 0 10px 0;" th:text="#{email.invite.line1}">
+    You have been invited to Parts Vibe.
+  </p>
+
+  <p style="margin:0 0 10px 0;">
+    <strong th:text="#{email.invite.role}">Role:</strong>
+    <span th:text="${invitedRole}">ROLE_USER</span>
+  </p>
+
+  <p style="margin:0 0 14px 0;" th:text="#{email.invite.linkIntro}">
+    Use this link to set your password:
+  </p>
+
+  <p style="margin:0 0 16px 0;">
+    <a th:href="${resetUrl}" th:text="${resetUrl}" style="color:#2563eb;word-break:break-all;">reset link</a>
+  </p>
+
+  <p style="margin:0 0 16px 0;" th:text="#{email.common.expiresAt(${expiresAtFormatted})}">
+    Link expires at: ...
+  </p>
+
+  <div th:if="${inviteMessage != null}" style="margin-top:18px;padding:12px;border-left:3px solid #9ca3af;background:#f9fafb;">
+    <p style="margin:0 0 8px 0;font-weight:600;" th:text="#{email.invite.adminMessage}">Message from admin:</p>
+    <p style="margin:0;white-space:pre-wrap;" th:text="${inviteMessage}">Optional message</p>
+  </div>
+</div>
+</html>
