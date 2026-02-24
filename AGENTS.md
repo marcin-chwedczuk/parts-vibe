@@ -96,6 +96,8 @@ Treat it as the default unless explicitly overridden.
 - CQRS contracts live in `app.partsvibe.shared.cqrs`.
 - Spring mediator implementation lives in `infra` and resolves handlers by generic type.
 - Controllers should use `Mediator` instead of direct service interfaces.
+- In storage module CQRS naming should stay concise and domain-first:
+  - `UploadFileCommand`, `DeleteFileCommand`, `ResolveFileQuery` (avoid redundant `Stored` prefixes).
 - Command/query handlers can use shared base classes:
   - `BaseCommandHandler` with transactional boundary (`REQUIRED`)
   - `BaseQueryHandler` with read-only transactional boundary (`REQUIRED`, `readOnly=true`)
@@ -111,12 +113,20 @@ Treat it as the default unless explicitly overridden.
 - `EventHandler` contract requires idempotency (at-least-once delivery).
 - Event queue consumer deserializes payload separately per handler invocation to isolate mutable side effects.
 - RequestId scope is set per handler call.
+- Event handler class names should be explicit action-oriented names when event fan-out grows
+  (for example `GenerateImageThumbnailsOnFileReadyEventHandler`).
 - Event handler discovery/registry is Spring-based:
   - `EventHandlerRegistry`
   - `SpringEventHandlerRegistry`
 - Dispatcher/consumer responsibilities are separated:
   - Dispatcher: claiming/timeout/DB state transitions
   - Consumer: deserialization + invoking handlers
+- Event queue integration tests should be separated by concern:
+  - publisher
+  - consumer
+  - dispatcher
+  - repository
+  - maintenance jobs (stale-processing recovery and retention cleanup)
 
 ### Event Metrics / Logging
 - Event queue metric prefix convention: `app.event-queue.*`.
@@ -189,6 +199,21 @@ Treat it as the default unless explicitly overridden.
 - Static assets (e.g. logos) must be explicitly allowed by security config.
 - Default app entry (`/`) redirects to catalog search (`/catalog/search`).
 - Everything under `/admin/**` must be accessible only to `ROLE_ADMIN` (keep URL-based rules and method-level checks aligned).
+
+### Storage Security
+- AV-first flow is required for uploaded files:
+  - upload file
+  - scan with ClamAV
+  - detect/validate MIME type
+  - only then mark as `READY` and emit follow-up events.
+- For AV observability, scanner-level logs must include successful scan completion
+  (not only FOUND/ERROR cases).
+- Thumbnail generation must be hardened against decompression-bomb style inputs:
+  - read metadata first (width/height) before full decode
+  - enforce limits for max dimension, max pixels, max decoded bytes, max aspect ratio
+  - decode with subsampling (`ImageReadParam.setSourceSubsampling`) to cap memory
+  - keep `ImageIO` cache disabled to avoid writing untrusted intermediates to disk.
+- Tika MIME detection must run on bounded input bytes (`maxSniffBytes`) instead of full payload.
 
 ### Frontend / Thymeleaf Layout
 - Static resources follow `static/resources/*` subdivision (`css`, `images`, `fonts`, `js`).
