@@ -50,6 +50,7 @@ public class ClamAvAntivirusScanner implements AntivirusScanner {
     @Override
     public ScanResult scan(InputStream bytes) {
         scansCounter.increment();
+        log.debug("Starting ClamAV scan. host={}, port={}", host, port);
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), connectTimeoutMs);
             socket.setSoTimeout(readTimeoutMs);
@@ -60,6 +61,7 @@ public class ClamAvAntivirusScanner implements AntivirusScanner {
             String response = readResponse(inputStream);
 
             if (response.endsWith("OK")) {
+                log.info("ClamAV scan completed successfully.");
                 return new ScanResult(ScanResult.Status.OK, Optional.empty());
             }
             if (response.endsWith("FOUND")) {

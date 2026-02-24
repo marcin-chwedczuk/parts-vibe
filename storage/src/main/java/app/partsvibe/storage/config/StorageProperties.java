@@ -17,6 +17,12 @@ public class StorageProperties {
     @Valid
     private final Limits limits = new Limits();
 
+    @Valid
+    private final ImageProcessing imageProcessing = new ImageProcessing();
+
+    @Valid
+    private final MimeDetection mimeDetection = new MimeDetection();
+
     @Data
     public static class Limits {
         @Min(1)
@@ -30,5 +36,26 @@ public class StorageProperties {
 
         @Min(1)
         private long attachmentBytes = 10_485_760;
+    }
+
+    @Data
+    public static class ImageProcessing {
+        @Min(1)
+        private int maxDimensionPx = 10_000;
+
+        @Min(1)
+        private long maxPixels = 40_000_000;
+
+        @Min(1)
+        private long maxDecodedBytes = 160_000_000;
+
+        @Min(1)
+        private int maxAspectRatio = 20;
+    }
+
+    @Data
+    public static class MimeDetection {
+        @Min(256)
+        private int maxSniffBytes = 65_536;
     }
 }
