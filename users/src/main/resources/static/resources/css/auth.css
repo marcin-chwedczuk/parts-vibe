@@ -12,3 +12,7 @@
 .auth-form-label {
   white-space: nowrap;
 }
+
+.auth-form-row {
+  align-items: flex-start;
+}

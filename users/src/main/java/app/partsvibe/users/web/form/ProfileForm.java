@@ -1,6 +1,8 @@
 package app.partsvibe.users.web.form;
 
 import jakarta.validation.constraints.Size;
+import java.io.Serial;
+import java.io.Serializable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -8,7 +10,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProfileForm {
+public class ProfileForm implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @Size(max = 1000, message = "{profile.validation.bio.max}")
     private String bio = "";
 

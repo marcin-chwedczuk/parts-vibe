@@ -3,6 +3,8 @@ package app.partsvibe.users.web.form;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.io.Serial;
+import java.io.Serializable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,7 +12,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class UserForm {
+public class UserForm implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @NotBlank(message = "{admin.user.validation.username.required}")
     @Email(message = "{admin.user.validation.username.invalidEmail}")
     @Size(max = 64, message = "{admin.user.validation.username.max}")
