@@ -29,26 +29,24 @@ public class PasswordResetEmailTemplate implements TypedEmailTemplate<PasswordRe
     }
 
     @Override
+    public String textTemplateName() {
+        return "email/password-reset-text";
+    }
+
+    @Override
     public Map<String, Object> variables(PasswordResetEmailModel model, Locale locale) {
         Map<String, Object> vars = new LinkedHashMap<>();
         vars.put("logoUrl", model.logoUrl());
         vars.put("appBaseUrl", model.appBaseUrl());
         vars.put("resetUrl", model.resetUrl());
-        vars.put("expiresAtFormatted", formatDateTime(model.expiresAt(), locale));
+        String expiresAtFormatted = formatDateTime(model.expiresAt(), locale);
+        vars.put("expiresAtFormatted", expiresAtFormatted);
+        vars.put("textLine1", messageSource.getMessage("email.passwordReset.text.line1", null, locale));
+        vars.put("textLinkIntro", messageSource.getMessage("email.passwordReset.text.link", null, locale));
+        vars.put(
+                "textExpiresLine",
+                messageSource.getMessage("email.common.expiresAt", new Object[] {expiresAtFormatted}, locale));
         return vars;
-    }
-
-    @Override
-    public String textBody(PasswordResetEmailModel model, Locale locale) {
-        return messageSource.getMessage("email.passwordReset.text.line1", null, locale)
-                + "\n\n"
-                + messageSource.getMessage("email.passwordReset.text.link", null, locale)
-                + "\n"
-                + model.resetUrl()
-                + "\n\n"
-                + messageSource.getMessage(
-                        "email.common.expiresAt", new Object[] {formatDateTime(model.expiresAt(), locale)}, locale)
-                + "\n";
     }
 
     private static String formatDateTime(java.time.Instant instant, Locale locale) {

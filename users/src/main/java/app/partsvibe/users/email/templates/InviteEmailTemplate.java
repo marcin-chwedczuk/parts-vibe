@@ -1,6 +1,5 @@
 package app.partsvibe.users.email.templates;
 
-import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.users.email.TypedEmailTemplate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -30,45 +29,32 @@ public class InviteEmailTemplate implements TypedEmailTemplate<InviteEmailModel>
     }
 
     @Override
+    public String textTemplateName() {
+        return "email/invite-text";
+    }
+
+    @Override
     public Map<String, Object> variables(InviteEmailModel model, Locale locale) {
         Map<String, Object> vars = new LinkedHashMap<>();
         vars.put("logoUrl", model.logoUrl());
         vars.put("appBaseUrl", model.appBaseUrl());
         vars.put("resetUrl", model.resetUrl());
         vars.put("invitedRole", model.invitedRole());
-        vars.put("expiresAtFormatted", formatDateTime(model.expiresAt(), locale));
+        String expiresAtFormatted = formatDateTime(model.expiresAt(), locale);
+        vars.put("expiresAtFormatted", expiresAtFormatted);
         vars.put(
                 "inviteMessage",
-                StringUtils.hasText(model.inviteMessage())
-                        ? model.inviteMessage().trim()
-                        : null);
+                model.inviteMessage() != null ? model.inviteMessage().trim() : null);
+        vars.put("textLine1", messageSource.getMessage("email.invite.text.line1", null, locale));
+        vars.put(
+                "textRoleLine",
+                messageSource.getMessage("email.invite.text.role", new Object[] {model.invitedRole()}, locale));
+        vars.put("textLinkIntro", messageSource.getMessage("email.invite.text.link", null, locale));
+        vars.put(
+                "textExpiresLine",
+                messageSource.getMessage("email.common.expiresAt", new Object[] {expiresAtFormatted}, locale));
+        vars.put("textAdminMessageTitle", messageSource.getMessage("email.invite.text.adminMessage", null, locale));
         return vars;
-    }
-
-    @Override
-    public String textBody(InviteEmailModel model, Locale locale) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(messageSource.getMessage("email.invite.text.line1", null, locale))
-                .append("\n\n")
-                .append(messageSource.getMessage("email.invite.text.role", new Object[] {model.invitedRole()}, locale))
-                .append("\n")
-                .append(messageSource.getMessage("email.invite.text.link", null, locale))
-                .append("\n")
-                .append(model.resetUrl())
-                .append("\n\n")
-                .append(messageSource.getMessage(
-                        "email.common.expiresAt", new Object[] {formatDateTime(model.expiresAt(), locale)}, locale))
-                .append("\n");
-
-        if (StringUtils.hasText(model.inviteMessage())) {
-            sb.append("\n")
-                    .append(messageSource.getMessage("email.invite.text.adminMessage", null, locale))
-                    .append("\n")
-                    .append(model.inviteMessage().trim())
-                    .append("\n");
-        }
-
-        return sb.toString();
     }
 
     private static String formatDateTime(java.time.Instant instant, Locale locale) {

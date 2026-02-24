@@ -8,7 +8,7 @@ public interface TypedEmailTemplate<T> {
 
     String htmlTemplateName();
 
-    Map<String, Object> variables(T model, Locale locale);
+    String textTemplateName();
 
-    String textBody(T model, Locale locale);
+    Map<String, Object> variables(T model, Locale locale);
 }

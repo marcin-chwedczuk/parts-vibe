@@ -1,0 +1,12 @@
+[[${textLine1}]]
+
+[[${textRoleLine}]]
+[[${textLinkIntro}]]
+[[${resetUrl}]]
+
+[[${textExpiresLine}]]
+
+[# th:if="${inviteMessage != null and !inviteMessage.isBlank()}" ]
+[[${textAdminMessageTitle}]]
+[(${inviteMessage})]
+[/]
