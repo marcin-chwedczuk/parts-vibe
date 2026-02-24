@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @HandlesEvent(name = FileUploadedEvent.EVENT_NAME, version = 1)
-class FileUploadedEventHandler extends BaseEventHandler<FileUploadedEvent> {
+class ScanAndValidateUploadedFileOnFileUploadedEventHandler extends BaseEventHandler<FileUploadedEvent> {
     private final StoredFileRepository storedFileRepository;
     private final AntivirusScanner antivirusScanner;
     private final FilesystemStorage filesystemStorage;
@@ -31,7 +31,7 @@ class FileUploadedEventHandler extends BaseEventHandler<FileUploadedEvent> {
     private final EventPublisher eventPublisher;
     private final TimeProvider timeProvider;
 
-    FileUploadedEventHandler(
+    ScanAndValidateUploadedFileOnFileUploadedEventHandler(
             StoredFileRepository storedFileRepository,
             AntivirusScanner antivirusScanner,
             FilesystemStorage filesystemStorage,

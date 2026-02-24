@@ -14,13 +14,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @HandlesEvent(name = FileReadyEvent.EVENT_NAME, version = 1)
-class FileReadyEventHandler extends BaseEventHandler<FileReadyEvent> {
+class GenerateImageThumbnailsOnFileReadyEventHandler extends BaseEventHandler<FileReadyEvent> {
     private final StoredFileRepository storedFileRepository;
     private final FilesystemStorage filesystemStorage;
     private final StoragePathResolver storagePathResolver;
     private final ThumbnailImageService thumbnailImageService;
 
-    FileReadyEventHandler(
+    GenerateImageThumbnailsOnFileReadyEventHandler(
             StoredFileRepository storedFileRepository,
             FilesystemStorage filesystemStorage,
             StoragePathResolver storagePathResolver,
