@@ -1,6 +1,7 @@
 package app.partsvibe.storage.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import app.partsvibe.storage.config.StorageProperties;
 import java.awt.image.BufferedImage;
@@ -19,6 +20,20 @@ class TikaFileMimeDetectorTest {
         String mimeType = detector.detect(pngBytes, "sample.PNG");
 
         assertEquals("image/png", mimeType);
+    }
+
+    @Test
+    void detectWorksWhenInputIsLargerThanConfiguredSniffWindow() throws Exception {
+        StorageProperties properties = new StorageProperties();
+        properties.getMimeDetection().setMaxSniffBytes(256);
+        TikaFileMimeDetector detector = new TikaFileMimeDetector(properties);
+
+        byte[] pngBytes = toPngBytes(8, 8);
+        byte[] large = new byte[pngBytes.length + 10_000];
+        System.arraycopy(pngBytes, 0, large, 0, pngBytes.length);
+        String mimeType = detector.detect(large, "sample.png");
+
+        assertFalse(mimeType.isBlank());
     }
 
     private static byte[] toPngBytes(int width, int height) throws Exception {

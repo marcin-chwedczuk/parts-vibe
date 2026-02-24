@@ -1,17 +1,20 @@
 package app.partsvibe.storage.events.handling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.shared.antivirus.ScanResult;
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.events.FileReadyEvent;
 import app.partsvibe.storage.api.events.FileUploadedEvent;
 import app.partsvibe.storage.domain.StoredFileStatus;
+import app.partsvibe.storage.errors.StoredFileNotFoundException;
 import app.partsvibe.storage.repo.StoredFileRepository;
 import app.partsvibe.storage.service.FilesystemStorage;
 import app.partsvibe.storage.service.StoragePathResolver;
 import app.partsvibe.storage.test.it.AbstractStorageIntegrationTest;
 import app.partsvibe.storage.test.support.StorageTestData;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -86,5 +89,31 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
         assertThat(saved.getScannedAt()).isNotNull();
         assertThat(filesystemStorage.exists(pathResolver.fileDirectory(fileId))).isFalse();
         assertThat(eventPublisher.publishedEvents()).isEmpty();
+    }
+
+    @Test
+    void skipsProcessingWhenFileIsNotPendingScan() {
+        UUID fileId = UUID.randomUUID();
+        byte[] png = StorageTestData.pngBytes(8, 8);
+        var stored =
+                StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "ok.png", png.length);
+        stored.setStatus(StoredFileStatus.READY);
+        stored.setScannedAt(Instant.now());
+        storedFileRepository.save(stored);
+        filesystemStorage.writeBlob(fileId, png);
+
+        handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+
+        var unchanged = storedFileRepository.findByFileId(fileId).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(StoredFileStatus.READY);
+        assertThat(eventPublisher.publishedEvents()).isEmpty();
+    }
+
+    @Test
+    void throwsWhenStoredFileDoesNotExist() {
+        UUID fileId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE)))
+                .isInstanceOf(StoredFileNotFoundException.class);
     }
 }

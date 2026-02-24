@@ -1,6 +1,7 @@
 package app.partsvibe.storage.events.handling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.events.FileReadyEvent;
@@ -74,5 +75,30 @@ class GenerateImageThumbnailsOnFileReadyEventHandlerIT extends AbstractStorageIn
                 .isFalse();
         assertThat(filesystemStorage.exists(pathResolver.thumbnail512Path(fileId)))
                 .isFalse();
+    }
+
+    @Test
+    void skipsWhenFileIsNotReady() {
+        UUID fileId = UUID.randomUUID();
+        byte[] png = StorageTestData.pngBytes(30, 10);
+
+        var stored =
+                StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "ok.png", png.length);
+        stored.setStatus(StoredFileStatus.PENDING_SCAN);
+        storedFileRepository.save(stored);
+        filesystemStorage.writeBlob(fileId, png);
+
+        handler.handle(FileReadyEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+
+        var unchanged = storedFileRepository.findByFileId(fileId).orElseThrow();
+        assertThat(unchanged.isThumbnail128Ready()).isFalse();
+        assertThat(unchanged.isThumbnail512Ready()).isFalse();
+    }
+
+    @Test
+    void skipsWhenFileDoesNotExist() {
+        assertThatCode(() ->
+                        handler.handle(FileReadyEvent.create(UUID.randomUUID(), StorageObjectType.USER_AVATAR_IMAGE)))
+                .doesNotThrowAnyException();
     }
 }

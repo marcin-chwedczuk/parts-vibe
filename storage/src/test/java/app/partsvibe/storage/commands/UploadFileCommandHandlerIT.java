@@ -1,8 +1,10 @@
 package app.partsvibe.storage.commands;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.storage.api.StorageObjectType;
+import app.partsvibe.storage.api.StorageValidationException;
 import app.partsvibe.storage.api.events.FileUploadedEvent;
 import app.partsvibe.storage.domain.StoredFileStatus;
 import app.partsvibe.storage.repo.StoredFileRepository;
@@ -52,5 +54,17 @@ class UploadFileCommandHandlerIT extends AbstractStorageIntegrationTest {
                 (FileUploadedEvent) eventPublisher.publishedEvents().getFirst();
         assertThat(published.fileId()).isEqualTo(result.fileId());
         assertThat(published.objectType()).isEqualTo(StorageObjectType.USER_AVATAR_IMAGE);
+    }
+
+    @Test
+    void uploadRejectsImageWithInvalidExtension() {
+        byte[] content = StorageTestData.pngBytes(8, 8);
+
+        assertThatThrownBy(() -> commandHandler.handle(
+                        new UploadFileCommand(StorageObjectType.USER_AVATAR_IMAGE, "avatar.gif", content)))
+                .isInstanceOf(StorageValidationException.class);
+
+        assertThat(storedFileRepository.count()).isZero();
+        assertThat(eventPublisher.publishedEvents()).isEmpty();
     }
 }

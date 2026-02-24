@@ -1,9 +1,12 @@
 package app.partsvibe.storage.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import app.partsvibe.storage.api.StorageException;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import java.io.IOException;
@@ -29,6 +32,26 @@ class FilesystemStorageTest {
 
             storage.deleteFileDirectory(fileId);
             assertFalse(Files.exists(pathResolver.fileDirectory(fileId)));
+        }
+    }
+
+    @Test
+    void deleteFileDirectoryShouldIgnoreMissingDirectory() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            StoragePathResolver pathResolver = new StoragePathResolver(fs.getPath("/storage"));
+            FilesystemStorage storage = new FilesystemStorage(pathResolver);
+
+            assertDoesNotThrow(() -> storage.deleteFileDirectory(UUID.randomUUID()));
+        }
+    }
+
+    @Test
+    void openForReadShouldThrowStorageExceptionWhenPathDoesNotExist() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            StoragePathResolver pathResolver = new StoragePathResolver(fs.getPath("/storage"));
+            FilesystemStorage storage = new FilesystemStorage(pathResolver);
+
+            assertThrows(StorageException.class, () -> storage.openForRead(pathResolver.blobPath(UUID.randomUUID())));
         }
     }
 }

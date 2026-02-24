@@ -60,4 +60,17 @@ class DeleteFileCommandHandlerIT extends AbstractStorageIntegrationTest {
 
         assertThat(result.status()).isEqualTo(DeleteFileResult.Status.NOT_FOUND);
     }
+
+    @Test
+    void deleteReturnsNotFoundWhenFileAlreadyDeleted() {
+        UUID fileId = UUID.randomUUID();
+        var stored = StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "avatar.png", 123);
+        stored.setStatus(StoredFileStatus.DELETED);
+        stored.setDeletedAt(Instant.now());
+        storedFileRepository.save(stored);
+
+        DeleteFileResult result = commandHandler.handle(new DeleteFileCommand(fileId));
+
+        assertThat(result.status()).isEqualTo(DeleteFileResult.Status.NOT_FOUND);
+    }
 }

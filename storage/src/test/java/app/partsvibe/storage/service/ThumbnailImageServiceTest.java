@@ -34,6 +34,45 @@ class ThumbnailImageServiceTest {
         assertArrayEquals(new int[] {128, 128}, new int[] {decoded.getWidth(), decoded.getHeight()});
     }
 
+    @Test
+    void createThumbnailRejectsInvalidTargetBoxSize() throws Exception {
+        StorageProperties properties = defaultProperties();
+        ThumbnailImageService service = new ThumbnailImageService(properties);
+        byte[] source = toPngBytes(10, 10);
+
+        assertThrows(StorageValidationException.class, () -> service.createThumbnail(source, 0, "png"));
+    }
+
+    @Test
+    void createThumbnailRejectsImageExceedingPixelLimit() throws Exception {
+        StorageProperties properties = defaultProperties();
+        properties.getImageProcessing().setMaxPixels(90);
+        ThumbnailImageService service = new ThumbnailImageService(properties);
+        byte[] source = toPngBytes(10, 10);
+
+        assertThrows(StorageValidationException.class, () -> service.createThumbnail(source, 128, "png"));
+    }
+
+    @Test
+    void createThumbnailRejectsImageExceedingDecodedBytesLimit() throws Exception {
+        StorageProperties properties = defaultProperties();
+        properties.getImageProcessing().setMaxDecodedBytes(300);
+        ThumbnailImageService service = new ThumbnailImageService(properties);
+        byte[] source = toPngBytes(10, 10);
+
+        assertThrows(StorageValidationException.class, () -> service.createThumbnail(source, 128, "png"));
+    }
+
+    @Test
+    void createThumbnailRejectsImageExceedingAspectRatioLimit() throws Exception {
+        StorageProperties properties = defaultProperties();
+        properties.getImageProcessing().setMaxAspectRatio(3);
+        ThumbnailImageService service = new ThumbnailImageService(properties);
+        byte[] source = toPngBytes(40, 10);
+
+        assertThrows(StorageValidationException.class, () -> service.createThumbnail(source, 128, "png"));
+    }
+
     private static StorageProperties defaultProperties() {
         return new StorageProperties();
     }

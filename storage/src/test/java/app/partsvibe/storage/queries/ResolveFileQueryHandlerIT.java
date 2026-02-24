@@ -80,4 +80,56 @@ class ResolveFileQueryHandlerIT extends AbstractStorageIntegrationTest {
         assertThatThrownBy(() -> queryHandler.handle(new ResolveFileQuery(fileId, StorageFileVariant.ORIGINAL)))
                 .isInstanceOf(StoredFileNotFoundException.class);
     }
+
+    @Test
+    void resolvesWithOctetStreamWhenMimeTypeIsMissing() {
+        UUID fileId = UUID.randomUUID();
+        var stored = StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "image.png", 100);
+        stored.setStatus(StoredFileStatus.READY);
+        stored.setMimeType(null);
+        stored.setScannedAt(Instant.now());
+        storedFileRepository.save(stored);
+
+        byte[] original = StorageTestData.pngBytes(10, 10);
+        filesystemStorage.writeBlob(fileId, original);
+
+        var result = queryHandler.handle(new ResolveFileQuery(fileId, StorageFileVariant.ORIGINAL));
+
+        assertThat(result.mimeType()).isEqualTo("application/octet-stream");
+    }
+
+    @Test
+    void throwsWhenNeitherThumbnailNorOriginalExists() {
+        UUID fileId = UUID.randomUUID();
+        var stored = StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "image.png", 100);
+        stored.setStatus(StoredFileStatus.READY);
+        stored.setMimeType("image/png");
+        stored.setScannedAt(Instant.now());
+        stored.setThumbnail128Ready(true);
+        storedFileRepository.save(stored);
+
+        assertThatThrownBy(() -> queryHandler.handle(new ResolveFileQuery(fileId, StorageFileVariant.THUMBNAIL_128)))
+                .isInstanceOf(StoredFileNotFoundException.class);
+    }
+
+    @Test
+    void resolvesThumbnail512WhenReadyAndPresent() {
+        UUID fileId = UUID.randomUUID();
+        var stored = StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "image.png", 100);
+        stored.setStatus(StoredFileStatus.READY);
+        stored.setMimeType("image/png");
+        stored.setScannedAt(Instant.now());
+        stored.setThumbnail512Ready(true);
+        storedFileRepository.save(stored);
+
+        byte[] original = StorageTestData.pngBytes(10, 10);
+        byte[] thumb512 = StorageTestData.pngBytes(5, 5);
+        filesystemStorage.writeBlob(fileId, original);
+        filesystemStorage.writeThumbnail512(fileId, thumb512);
+
+        var result = queryHandler.handle(new ResolveFileQuery(fileId, StorageFileVariant.THUMBNAIL_512));
+
+        assertThat(result.path()).isEqualTo(pathResolver.thumbnail512Path(fileId));
+        assertThat(result.sizeBytes()).isEqualTo(thumb512.length);
+    }
 }
