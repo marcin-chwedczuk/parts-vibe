@@ -8,8 +8,8 @@ import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
 import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
+import app.partsvibe.users.security.password.PasswordPolicyValidator;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
-import java.util.Locale;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +50,7 @@ class ResetPasswordWithTokenCommandHandler extends BaseCommandHandler<ResetPassw
         }
 
         var user = token.getUser();
-        validatePasswordPolicy(command.password(), user.getUsername());
+        PasswordPolicyValidator.validate(command.password(), user.getUsername());
 
         user.setPasswordHash(passwordEncoder.encode(command.password()));
         userRepository.save(user);
@@ -64,21 +64,5 @@ class ResetPasswordWithTokenCommandHandler extends BaseCommandHandler<ResetPassw
                 user.getId(), UserCredentialTokenPurpose.INVITE_ACTIVATION, now);
 
         return NoResult.INSTANCE;
-    }
-
-    private static void validatePasswordPolicy(String password, String username) {
-        if (password.length() < 12) {
-            throw new WeakPasswordException("Password must have at least 12 characters.");
-        }
-
-        String normalizedPassword = password.toLowerCase(Locale.ROOT);
-        String normalizedUsername = username.toLowerCase(Locale.ROOT);
-        if (normalizedPassword.contains(normalizedUsername)) {
-            throw new WeakPasswordException("Password cannot contain your username/email.");
-        }
-        int at = normalizedUsername.indexOf('@');
-        if (at > 0 && normalizedPassword.contains(normalizedUsername.substring(0, at))) {
-            throw new WeakPasswordException("Password cannot contain your username/email.");
-        }
     }
 }

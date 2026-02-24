@@ -8,9 +8,13 @@ import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
 import app.partsvibe.users.commands.profile.ChangeCurrentUserAvatarCommand;
 import app.partsvibe.users.commands.profile.UpdateCurrentUserProfileCommand;
+import app.partsvibe.users.commands.profile.password.ChangeCurrentUserPasswordCommand;
+import app.partsvibe.users.errors.InvalidCurrentPasswordException;
+import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.models.UserProfileModel;
 import app.partsvibe.users.queries.profile.GetCurrentUserProfileQuery;
 import app.partsvibe.users.web.form.ProfileForm;
+import app.partsvibe.users.web.form.ProfilePasswordForm;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
@@ -60,6 +64,7 @@ public class ProfileController {
         }
 
         model.addAttribute("profile", userProfile);
+        model.addAttribute("showProfileEmail", true);
         model.addAttribute("avatarUrl", avatarUrl(userProfile.avatarId()));
         model.addAttribute("breadcrumbs", breadcrumbs(locale));
 
@@ -76,6 +81,7 @@ public class ProfileController {
         if (bindingResult.hasErrors()) {
             UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
             model.addAttribute("profile", profile);
+            model.addAttribute("showProfileEmail", true);
             model.addAttribute("avatarUrl", avatarUrl(profile.avatarId()));
             model.addAttribute("breadcrumbs", breadcrumbs(locale));
             return "profile/view";
@@ -151,6 +157,59 @@ public class ProfileController {
         }
     }
 
+    @GetMapping("/password")
+    public String viewChangePassword(Model model, Locale locale) {
+        UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
+        if (!model.containsAttribute("passwordForm")) {
+            model.addAttribute("passwordForm", new ProfilePasswordForm());
+        }
+        model.addAttribute("profile", profile);
+        model.addAttribute("showProfileEmail", true);
+        model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
+        return "profile/password";
+    }
+
+    @PostMapping("/password")
+    public String changePassword(
+            @Valid @ModelAttribute("passwordForm") ProfilePasswordForm passwordForm,
+            BindingResult bindingResult,
+            Model model,
+            Locale locale,
+            RedirectAttributes redirectAttributes) {
+        if (!passwordForm.getNewPassword().equals(passwordForm.getRepeatedNewPassword())) {
+            bindingResult.rejectValue("repeatedNewPassword", "profile.password.validation.repeat.mismatch");
+        }
+
+        if (bindingResult.hasErrors()) {
+            UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
+            model.addAttribute("profile", profile);
+            model.addAttribute("showProfileEmail", true);
+            model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
+            return "profile/password";
+        }
+
+        try {
+            mediator.executeCommand(new ChangeCurrentUserPasswordCommand(
+                    currentUserId(),
+                    passwordForm.getCurrentPassword(),
+                    passwordForm.getNewPassword(),
+                    passwordForm.getRepeatedNewPassword()));
+            redirectAttributes.addFlashAttribute("profileMessageCode", "profile.password.updated");
+            redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
+            return "redirect:/profile";
+        } catch (InvalidCurrentPasswordException ex) {
+            bindingResult.rejectValue("currentPassword", "profile.password.validation.current.invalid");
+        } catch (WeakPasswordException ex) {
+            bindingResult.rejectValue("newPassword", "profile.password.validation.new.weak");
+        }
+
+        UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
+        model.addAttribute("profile", profile);
+        model.addAttribute("showProfileEmail", true);
+        model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
+        return "profile/password";
+    }
+
     private Long currentUserId() {
         return currentUserProvider
                 .currentUserId()
@@ -172,5 +231,12 @@ public class ProfileController {
     private BreadcrumbsData breadcrumbs(Locale locale) {
         return new BreadcrumbsData(
                 List.of(new BreadcrumbItemData(messageSource.getMessage("nav.profile", null, locale), null, true)));
+    }
+
+    private BreadcrumbsData passwordBreadcrumbs(Locale locale) {
+        return new BreadcrumbsData(List.of(
+                new BreadcrumbItemData(messageSource.getMessage("nav.profile", null, locale), "/profile", false),
+                new BreadcrumbItemData(
+                        messageSource.getMessage("profile.password.heading", null, locale), null, true)));
     }
 }
