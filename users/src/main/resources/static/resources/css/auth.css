@@ -1,0 +1,14 @@
+.auth-card-body-grid {
+  align-items: flex-start;
+}
+
+.auth-key-image {
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+}
+
+.auth-form-label {
+  white-space: nowrap;
+}
