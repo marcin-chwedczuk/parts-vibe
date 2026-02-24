@@ -39,6 +39,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @PreAuthorize("isAuthenticated()")
 public class ProfileController {
     private static final String PLACEHOLDER_IMAGE_URL = "/resources/images/placeholder.png";
+    private static final String PROFILE_MESSAGE_TARGET_AVATAR = "avatar";
+    private static final String PROFILE_MESSAGE_TARGET_INFO = "info";
+    private static final String PROFILE_MESSAGE_TARGET_PASSWORD = "password";
     private static final Logger log = LoggerFactory.getLogger(ProfileController.class);
 
     private final Mediator mediator;
@@ -53,20 +56,7 @@ public class ProfileController {
 
     @GetMapping
     public String viewProfile(Model model, Locale locale) {
-        Long userId = currentUserId();
-        UserProfileModel userProfile = mediator.executeQuery(new GetCurrentUserProfileQuery(userId));
-
-        if (!model.containsAttribute("form")) {
-            ProfileForm form = new ProfileForm();
-            form.setBio(defaultString(userProfile.bio()));
-            form.setWebsite(defaultString(userProfile.website()));
-            model.addAttribute("form", form);
-        }
-
-        model.addAttribute("profile", userProfile);
-        model.addAttribute("showProfileEmail", true);
-        model.addAttribute("avatarUrl", avatarUrl(userProfile.avatarId()));
-        model.addAttribute("breadcrumbs", breadcrumbs(locale));
+        populateProfileViewModel(model, locale);
 
         return "profile/view";
     }
@@ -79,17 +69,14 @@ public class ProfileController {
             Locale locale,
             Model model) {
         if (bindingResult.hasErrors()) {
-            UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
-            model.addAttribute("profile", profile);
-            model.addAttribute("showProfileEmail", true);
-            model.addAttribute("avatarUrl", avatarUrl(profile.avatarId()));
-            model.addAttribute("breadcrumbs", breadcrumbs(locale));
+            populateProfileViewModel(model, locale);
             return "profile/view";
         }
 
         mediator.executeCommand(new UpdateCurrentUserProfileCommand(currentUserId(), form.getBio(), form.getWebsite()));
         redirectAttributes.addFlashAttribute("profileMessageCode", "profile.info.updated");
         redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
+        redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_INFO);
         return "redirect:/profile";
     }
 
@@ -100,6 +87,7 @@ public class ProfileController {
             log.warn("Profile avatar upload rejected because file is empty. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.empty");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_AVATAR);
             return "redirect:/profile";
         }
 
@@ -119,6 +107,7 @@ public class ProfileController {
             log.info("Profile avatar upload completed. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_AVATAR);
             return "redirect:/profile";
         } catch (StorageFileSizeLimitExceededException ex) {
             log.warn(
@@ -131,6 +120,7 @@ public class ProfileController {
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.tooLarge");
             redirectAttributes.addFlashAttribute("profileMessageArgs", new Object[] {ex.maxAllowedBytes() / 1024});
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_AVATAR);
             return "redirect:/profile";
         } catch (IOException ex) {
             log.error(
@@ -142,6 +132,7 @@ public class ProfileController {
                     ex);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.failed");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_AVATAR);
             return "redirect:/profile";
         } catch (StorageException ex) {
             log.error(
@@ -153,20 +144,14 @@ public class ProfileController {
                     ex);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.failed");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-danger");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_AVATAR);
             return "redirect:/profile";
         }
     }
 
     @GetMapping("/password")
-    public String viewChangePassword(Model model, Locale locale) {
-        UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
-        if (!model.containsAttribute("passwordForm")) {
-            model.addAttribute("passwordForm", new ProfilePasswordForm());
-        }
-        model.addAttribute("profile", profile);
-        model.addAttribute("showProfileEmail", true);
-        model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
-        return "profile/password";
+    public String viewChangePassword() {
+        return "redirect:/profile";
     }
 
     @PostMapping("/password")
@@ -181,11 +166,8 @@ public class ProfileController {
         }
 
         if (bindingResult.hasErrors()) {
-            UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
-            model.addAttribute("profile", profile);
-            model.addAttribute("showProfileEmail", true);
-            model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
-            return "profile/password";
+            populateProfileViewModel(model, locale);
+            return "profile/view";
         }
 
         try {
@@ -196,6 +178,7 @@ public class ProfileController {
                     passwordForm.getRepeatedNewPassword()));
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.password.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
+            redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_PASSWORD);
             return "redirect:/profile";
         } catch (InvalidCurrentPasswordException ex) {
             bindingResult.rejectValue("currentPassword", "profile.password.validation.current.invalid");
@@ -203,11 +186,8 @@ public class ProfileController {
             bindingResult.rejectValue("newPassword", "profile.password.validation.new.weak");
         }
 
-        UserProfileModel profile = mediator.executeQuery(new GetCurrentUserProfileQuery(currentUserId()));
-        model.addAttribute("profile", profile);
-        model.addAttribute("showProfileEmail", true);
-        model.addAttribute("breadcrumbs", passwordBreadcrumbs(locale));
-        return "profile/password";
+        populateProfileViewModel(model, locale);
+        return "profile/view";
     }
 
     private Long currentUserId() {
@@ -233,10 +213,23 @@ public class ProfileController {
                 List.of(new BreadcrumbItemData(messageSource.getMessage("nav.profile", null, locale), null, true)));
     }
 
-    private BreadcrumbsData passwordBreadcrumbs(Locale locale) {
-        return new BreadcrumbsData(List.of(
-                new BreadcrumbItemData(messageSource.getMessage("nav.profile", null, locale), "/profile", false),
-                new BreadcrumbItemData(
-                        messageSource.getMessage("profile.password.heading", null, locale), null, true)));
+    private void populateProfileViewModel(Model model, Locale locale) {
+        Long userId = currentUserId();
+        UserProfileModel userProfile = mediator.executeQuery(new GetCurrentUserProfileQuery(userId));
+
+        if (!model.containsAttribute("form")) {
+            ProfileForm form = new ProfileForm();
+            form.setBio(defaultString(userProfile.bio()));
+            form.setWebsite(defaultString(userProfile.website()));
+            model.addAttribute("form", form);
+        }
+        if (!model.containsAttribute("passwordForm")) {
+            model.addAttribute("passwordForm", new ProfilePasswordForm());
+        }
+
+        model.addAttribute("profile", userProfile);
+        model.addAttribute("showProfileEmail", true);
+        model.addAttribute("avatarUrl", avatarUrl(userProfile.avatarId()));
+        model.addAttribute("breadcrumbs", breadcrumbs(locale));
     }
 }
