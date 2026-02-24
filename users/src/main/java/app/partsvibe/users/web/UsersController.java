@@ -5,12 +5,14 @@ import app.partsvibe.shared.cqrs.PageResult;
 import app.partsvibe.shared.utils.StringUtils;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
+import app.partsvibe.users.commands.invite.InviteUserCommand;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteCurrentUserException;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteLastActiveAdminException;
 import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
+import app.partsvibe.users.errors.InvalidInviteRoleException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.errors.UsernameAlreadyExistsException;
 import app.partsvibe.users.models.UserDetailsModel;
@@ -18,6 +20,7 @@ import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
 import app.partsvibe.users.web.form.ConfirmationDialogData;
 import app.partsvibe.users.web.form.HiddenField;
+import app.partsvibe.users.web.form.InviteUserForm;
 import app.partsvibe.users.web.form.PageLink;
 import app.partsvibe.users.web.form.PaginationData;
 import app.partsvibe.users.web.form.UserFilters;
@@ -172,6 +175,80 @@ public class UsersController {
         }
         addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
         return "admin/user-create";
+    }
+
+    @GetMapping("/invite")
+    public String inviteUser(@ModelAttribute("filters") UserFilters filters, Model model, Locale locale) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+        if (!model.containsAttribute("form")) {
+            model.addAttribute("form", new InviteUserForm());
+        }
+        model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
+        addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
+        return "admin/user-invite";
+    }
+
+    @PostMapping("/invite")
+    public String saveUserInvite(
+            @ModelAttribute("filters") UserFilters filters,
+            @Valid @ModelAttribute("form") InviteUserForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes,
+            Locale locale) {
+        filters.sanitize();
+        sanitizeRoleFilters(filters);
+
+        Integer validityHours = mapInviteValidity(form.getValidity());
+        if (validityHours == null) {
+            bindingResult.rejectValue("validity", "admin.user.invite.validation.validity.invalid");
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+            model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
+            addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
+            return "admin/user-invite";
+        }
+
+        try {
+            var result = mediator.executeCommand(new InviteUserCommand(
+                    form.getEmail(),
+                    form.getRoleName(),
+                    validityHours,
+                    StringUtils.hasText(form.getInviteMessage())
+                            ? form.getInviteMessage().trim()
+                            : null));
+            switch (result.outcome()) {
+                case INVITE_SENT ->
+                    setActionMessage(redirectAttributes, "admin.users.action.invited", "alert-success", result.email());
+                case INVITE_RESENT ->
+                    setActionMessage(
+                            redirectAttributes, "admin.users.action.inviteResent", "alert-success", result.email());
+                case ALREADY_ONBOARDED ->
+                    setActionMessage(
+                            redirectAttributes,
+                            "admin.users.action.inviteSkippedOnboarded",
+                            "alert-warning",
+                            result.email());
+                case ALREADY_ONBOARDED_LOCKED ->
+                    setActionMessage(
+                            redirectAttributes,
+                            "admin.users.action.inviteSkippedOnboardedLocked",
+                            "alert-warning",
+                            result.email());
+            }
+            return "redirect:" + filters.toUserManagementUrl();
+        } catch (InvalidInviteRoleException ex) {
+            bindingResult.rejectValue("roleName", "admin.user.invite.validation.role.invalid");
+        }
+
+        model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
+        addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
+        return "admin/user-invite";
     }
 
     @PostMapping("/create")
@@ -408,6 +485,16 @@ public class UsersController {
                 .filter(ALLOWED_ROLES::contains)
                 .distinct()
                 .toList());
+    }
+
+    private Integer mapInviteValidity(String validity) {
+        if ("24h".equals(validity)) {
+            return 24;
+        }
+        if ("7d".equals(validity)) {
+            return 24 * 7;
+        }
+        return null;
     }
 
     private static final class CanonicalEmailEditor extends PropertyEditorSupport {
