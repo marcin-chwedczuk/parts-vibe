@@ -9,8 +9,6 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsernameIgnoreCase(String username);
 
-    boolean existsByUsernameIgnoreCase(String username);
-
     boolean existsByUsernameIgnoreCaseAndIdNot(String username, Long id);
 
     @Query(

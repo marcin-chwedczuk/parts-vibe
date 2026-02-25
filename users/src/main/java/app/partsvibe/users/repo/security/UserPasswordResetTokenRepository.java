@@ -22,15 +22,4 @@ public interface UserPasswordResetTokenRepository extends JpaRepository<UserPass
               and t.expiresAt > :now
             """)
     int revokeActiveTokensByUserId(@Param("userId") Long userId, @Param("now") Instant now);
-
-    @Modifying
-    @Query(
-            """
-            update UserPasswordResetToken t
-            set t.revokedAt = :now
-            where t.user.id = :userId
-              and t.usedAt is null
-              and t.revokedAt is null
-            """)
-    int revokeUnconsumedTokensByUserId(@Param("userId") Long userId, @Param("now") Instant now);
 }
