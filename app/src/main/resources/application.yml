@@ -2,6 +2,7 @@ spring:
   application:
     name: parts-vibe
   messages:
+    basename: users/messages,messages
     encoding: UTF-8
   jpa:
     hibernate:

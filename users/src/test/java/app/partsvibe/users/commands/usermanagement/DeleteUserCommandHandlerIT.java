@@ -52,7 +52,7 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         Role roleAdmin = roleRepository.save(aRole().withName("ROLE_ADMIN").build());
         User self = userRepository.save(
                 aUser().withUsername("admin-self").enabled().withRole(roleAdmin).build());
-        currentUserProvider.setCurrentUser("admin-self", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser(self.getId(), "admin-self", Set.of("ROLE_ADMIN"));
 
         assertThatThrownBy(() -> commandHandler.handle(new DeleteUserCommand(self.getId())))
                 .isInstanceOf(CannotDeleteCurrentUserException.class);

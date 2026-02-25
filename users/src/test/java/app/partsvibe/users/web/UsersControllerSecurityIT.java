@@ -63,7 +63,7 @@ class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
         mockMvc.perform(get("/admin/users/create")).andExpect(status().isOk());
         mockMvc.perform(get("/admin/users/1")).andExpect(status().isOk());
         mockMvc.perform(get("/admin/users/1/edit")).andExpect(status().isOk());
-        mockMvc.perform(get("/admin")).andExpect(status().isOk());
+        mockMvc.perform(get("/admin")).andExpect(status().is3xxRedirection());
 
         mockMvc.perform(post("/admin/users/create").with(csrf()).param("username", "john@example.com"))
                 .andExpect(status().is3xxRedirection());
