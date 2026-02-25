@@ -1,6 +1,8 @@
 package app.partsvibe.users.commands.usermanagement.password;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
+import app.partsvibe.shared.security.AuthorizationService;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.errors.AdminPrivilegesRequiredException;
 import app.partsvibe.users.errors.AdminReauthenticationFailedException;
@@ -20,24 +22,27 @@ class ResetUserPasswordByAdminCommandHandler
     private static final int TEMP_PASSWORD_LENGTH = 20;
 
     private final UserRepository userRepository;
+    private final AuthorizationService authorizationService;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    ResetUserPasswordByAdminCommandHandler(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    ResetUserPasswordByAdminCommandHandler(
+            UserRepository userRepository, AuthorizationService authorizationService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.authorizationService = authorizationService;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     protected ResetUserPasswordByAdminCommandResult doHandle(ResetUserPasswordByAdminCommand command) {
+        authorizationService.assertCurrentUserHasId(
+                command.adminUserId(), (expected, current) -> new AdminPrivilegesRequiredException(expected));
+        authorizationService.assertCurrentUserHasRole(
+                RoleNames.ADMIN, () -> new AdminPrivilegesRequiredException(command.adminUserId()));
+
         User admin = userRepository
                 .findById(command.adminUserId())
                 .orElseThrow(() -> new UserNotFoundException(command.adminUserId()));
-
-        boolean isAdmin = admin.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
-        if (!isAdmin) {
-            throw new AdminPrivilegesRequiredException(command.adminUserId());
-        }
 
         if (!passwordEncoder.matches(command.adminPassword(), admin.getPasswordHash())) {
             throw new AdminReauthenticationFailedException();

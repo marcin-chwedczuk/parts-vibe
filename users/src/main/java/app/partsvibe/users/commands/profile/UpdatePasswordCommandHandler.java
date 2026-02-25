@@ -2,7 +2,7 @@ package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
-import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.shared.security.AuthorizationService;
 import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
 import app.partsvibe.users.errors.PasswordsDoNotMatchException;
@@ -15,19 +15,19 @@ import org.springframework.stereotype.Component;
 @Component
 class UpdatePasswordCommandHandler extends BaseCommandHandler<UpdatePasswordCommand, NoResult> {
     private final UserRepository userRepository;
-    private final CurrentUserProvider currentUserProvider;
+    private final AuthorizationService authorizationService;
     private final PasswordEncoder passwordEncoder;
 
     UpdatePasswordCommandHandler(
-            UserRepository userRepository, CurrentUserProvider currentUserProvider, PasswordEncoder passwordEncoder) {
+            UserRepository userRepository, AuthorizationService authorizationService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.currentUserProvider = currentUserProvider;
+        this.authorizationService = authorizationService;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     protected NoResult doHandle(UpdatePasswordCommand command) {
-        assertCurrentUserMatches(command.userId());
+        authorizationService.assertCurrentUserHasId(command.userId(), CurrentUserMismatchException::new);
 
         if (!command.newPassword().equals(command.repeatedNewPassword())) {
             throw new PasswordsDoNotMatchException();
@@ -46,12 +46,5 @@ class UpdatePasswordCommandHandler extends BaseCommandHandler<UpdatePasswordComm
         userRepository.save(user);
 
         return NoResult.INSTANCE;
-    }
-
-    private void assertCurrentUserMatches(Long commandUserId) {
-        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
-        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
-            throw new CurrentUserMismatchException(commandUserId, currentUserId);
-        }
     }
 }

@@ -1,5 +1,6 @@
 package app.partsvibe.users.web.form;
 
+import app.partsvibe.users.domain.RoleNames;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,7 +21,7 @@ public class InviteUserForm implements Serializable {
     private String email;
 
     @NotBlank(message = "{admin.user.invite.validation.role.required}")
-    private String roleName = "ROLE_USER";
+    private String roleName = RoleNames.USER;
 
     @NotBlank(message = "{admin.user.invite.validation.validity.required}")
     private String validity = "24h";

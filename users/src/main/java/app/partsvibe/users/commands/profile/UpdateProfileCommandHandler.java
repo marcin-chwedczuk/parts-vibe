@@ -2,7 +2,7 @@ package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
-import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.shared.security.AuthorizationService;
 import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.repo.UserRepository;
@@ -11,16 +11,16 @@ import org.springframework.stereotype.Component;
 @Component
 class UpdateProfileCommandHandler extends BaseCommandHandler<UpdateProfileCommand, NoResult> {
     private final UserRepository userRepository;
-    private final CurrentUserProvider currentUserProvider;
+    private final AuthorizationService authorizationService;
 
-    UpdateProfileCommandHandler(UserRepository userRepository, CurrentUserProvider currentUserProvider) {
+    UpdateProfileCommandHandler(UserRepository userRepository, AuthorizationService authorizationService) {
         this.userRepository = userRepository;
-        this.currentUserProvider = currentUserProvider;
+        this.authorizationService = authorizationService;
     }
 
     @Override
     protected NoResult doHandle(UpdateProfileCommand command) {
-        assertCurrentUserMatches(command.userId());
+        authorizationService.assertCurrentUserHasId(command.userId(), CurrentUserMismatchException::new);
 
         var user = userRepository
                 .findById(command.userId())
@@ -38,12 +38,5 @@ class UpdateProfileCommandHandler extends BaseCommandHandler<UpdateProfileComman
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
-    }
-
-    private void assertCurrentUserMatches(Long commandUserId) {
-        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
-        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
-            throw new CurrentUserMismatchException(commandUserId, currentUserId);
-        }
     }
 }

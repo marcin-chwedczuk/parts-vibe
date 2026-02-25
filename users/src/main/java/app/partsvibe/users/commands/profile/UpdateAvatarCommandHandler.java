@@ -2,7 +2,7 @@ package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
-import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.shared.security.AuthorizationService;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.storage.api.StorageClient;
 import app.partsvibe.storage.api.StorageObjectType;
@@ -20,26 +20,26 @@ import org.springframework.stereotype.Component;
 class UpdateAvatarCommandHandler extends BaseCommandHandler<UpdateAvatarCommand, NoResult> {
     private final UserRepository userRepository;
     private final UserAvatarChangeRequestRepository avatarChangeRequestRepository;
-    private final CurrentUserProvider currentUserProvider;
+    private final AuthorizationService authorizationService;
     private final StorageClient storageClient;
     private final TimeProvider timeProvider;
 
     UpdateAvatarCommandHandler(
             UserRepository userRepository,
             UserAvatarChangeRequestRepository avatarChangeRequestRepository,
-            CurrentUserProvider currentUserProvider,
+            AuthorizationService authorizationService,
             StorageClient storageClient,
             TimeProvider timeProvider) {
         this.userRepository = userRepository;
         this.avatarChangeRequestRepository = avatarChangeRequestRepository;
-        this.currentUserProvider = currentUserProvider;
+        this.authorizationService = authorizationService;
         this.storageClient = storageClient;
         this.timeProvider = timeProvider;
     }
 
     @Override
     protected NoResult doHandle(UpdateAvatarCommand command) {
-        assertCurrentUserMatches(command.userId());
+        authorizationService.assertCurrentUserHasId(command.userId(), CurrentUserMismatchException::new);
 
         var user = userRepository
                 .findById(command.userId())
@@ -62,12 +62,5 @@ class UpdateAvatarCommandHandler extends BaseCommandHandler<UpdateAvatarCommand,
         avatarChangeRequestRepository.save(request);
 
         return NoResult.INSTANCE;
-    }
-
-    private void assertCurrentUserMatches(Long commandUserId) {
-        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
-        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
-            throw new CurrentUserMismatchException(commandUserId, currentUserId);
-        }
     }
 }

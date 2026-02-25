@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import app.partsvibe.shared.cqrs.PageResult;
+import app.partsvibe.users.commands.invite.InviteUserCommand;
+import app.partsvibe.users.commands.invite.InviteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
@@ -26,6 +28,10 @@ class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
         mediator.onQuery(GetAvailableRolesQuery.class, query -> List.of("ROLE_ADMIN", "ROLE_USER"));
         mediator.onQuery(SearchUsersQuery.class, query -> new PageResult<>(List.of(), 0, 0, 1, 10));
         mediator.onQuery(UserByIdQuery.class, query -> new UserDetailsModel(1L, "bob@example.com", true, List.of()));
+        mediator.onCommand(
+                InviteUserCommand.class,
+                command -> new InviteUserCommandResult(
+                        command.email(), null, InviteUserCommandResult.InviteOutcome.INVITE_SENT));
         mediator.onCommand(
                 UpdateUserCommand.class, command -> new UserDetailsModel(1L, "bob@example.com", true, List.of()));
         mediator.onCommand(DeleteUserCommand.class, command -> new DeleteUserCommandResult("bob@example.com"));

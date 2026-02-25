@@ -3,6 +3,7 @@ package app.partsvibe.users.commands.provision;
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
@@ -25,10 +26,12 @@ class SeedUsersCommandHandler extends BaseCommandHandler<SeedUsersCommand, NoRes
 
     @Override
     protected NoResult doHandle(SeedUsersCommand command) {
-        var adminRole =
-                roleRepository.findByName("ROLE_ADMIN").orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
-        var userRole =
-                roleRepository.findByName("ROLE_USER").orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
+        var adminRole = roleRepository
+                .findByName(RoleNames.ADMIN)
+                .orElseGet(() -> roleRepository.save(new Role(RoleNames.ADMIN)));
+        var userRole = roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() -> roleRepository.save(new Role(RoleNames.USER)));
 
         for (var userDefinition : command.users()) {
             userRepository.findByUsername(userDefinition.username()).orElseGet(() -> {

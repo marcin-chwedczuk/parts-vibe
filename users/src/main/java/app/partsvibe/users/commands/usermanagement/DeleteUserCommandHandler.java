@@ -3,6 +3,7 @@ package app.partsvibe.users.commands.usermanagement;
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, DeleteUserCommandResult> {
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
-
     private final UserRepository userRepository;
     private final UserAvatarChangeRequestRepository userAvatarChangeRequestRepository;
     private final CurrentUserProvider currentUserProvider;
@@ -39,7 +38,7 @@ class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, Del
         }
 
         if (user.isEnabled() && hasAdminRole(user)) {
-            long activeAdminUsersCount = userRepository.countActiveUsersByRoleName(ROLE_ADMIN);
+            long activeAdminUsersCount = userRepository.countActiveUsersByRoleName(RoleNames.ADMIN);
             if (activeAdminUsersCount <= 1) {
                 throw new CannotDeleteLastActiveAdminException();
             }
@@ -52,6 +51,6 @@ class DeleteUserCommandHandler extends BaseCommandHandler<DeleteUserCommand, Del
     }
 
     private boolean hasAdminRole(User user) {
-        return user.getRoles().stream().map(Role::getName).anyMatch(ROLE_ADMIN::equals);
+        return user.getRoles().stream().map(Role::getName).anyMatch(RoleNames.ADMIN::equals);
     }
 }

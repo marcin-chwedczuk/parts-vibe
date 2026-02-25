@@ -1,6 +1,7 @@
 package app.partsvibe.users.test.it;
 
 import app.partsvibe.shared.email.EmailSender;
+import app.partsvibe.shared.security.AuthorizationService;
 import app.partsvibe.storage.api.DeleteFileResult;
 import app.partsvibe.storage.api.StorageClient;
 import app.partsvibe.storage.api.StorageUploadRequest;
@@ -46,7 +47,8 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
     ThymeleafEmailTemplateRenderer.class,
     InviteEmailTemplate.class,
     PasswordResetEmailTemplate.class,
-    CredentialTokenCodec.class
+    CredentialTokenCodec.class,
+    AuthorizationService.class
 })
 public class UsersItTestApplication {
     @Bean
