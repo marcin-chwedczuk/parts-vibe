@@ -52,7 +52,10 @@ class SendPasswordResetEmailOnPasswordResetRequestedEventHandlerIT extends Abstr
         assertThat(email.bodyText()).isEqualTo("Reset text");
         assertThat(email.bodyHtml()).isEqualTo("<p>Reset html</p>");
         assertThat(renderQueryRef.get()).isNotNull();
-        assertThat(renderQueryRef.get().model().resetUrl()).contains("reset-token");
+        assertThat(renderQueryRef.get().model().resetUrl())
+                .isEqualTo("http://localhost:8080/password-reset?token=reset-token");
         assertThat(renderQueryRef.get().model().appBaseUrl()).isEqualTo("http://localhost:8080");
+        assertThat(renderQueryRef.get().model().logoUrl())
+                .isEqualTo("http://localhost:8080/resources/images/logo-full.png");
     }
 }

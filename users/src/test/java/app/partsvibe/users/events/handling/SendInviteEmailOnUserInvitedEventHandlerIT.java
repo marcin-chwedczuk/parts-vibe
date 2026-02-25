@@ -52,7 +52,10 @@ class SendInviteEmailOnUserInvitedEventHandlerIT extends AbstractUsersIntegratio
         assertThat(email.bodyText()).isEqualTo("Invite text");
         assertThat(email.bodyHtml()).isEqualTo("<p>Invite html</p>");
         assertThat(renderQueryRef.get()).isNotNull();
-        assertThat(renderQueryRef.get().model().resetUrl()).contains("invite-token");
+        assertThat(renderQueryRef.get().model().resetUrl())
+                .isEqualTo("http://localhost:8080/invite?token=invite-token");
         assertThat(renderQueryRef.get().model().appBaseUrl()).isEqualTo("http://localhost:8080");
+        assertThat(renderQueryRef.get().model().logoUrl())
+                .isEqualTo("http://localhost:8080/resources/images/logo-full.png");
     }
 }
