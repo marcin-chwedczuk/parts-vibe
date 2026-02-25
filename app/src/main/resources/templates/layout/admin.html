@@ -6,12 +6,11 @@
          style="width: 280px;">
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
-          <a th:href="@{/admin}"
-             th:with="active=${currentPath == '/admin'}"
-             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
-             th:aria-current="${active} ? 'page' : null">
-            <i class="bi bi-shield-lock me-2" aria-hidden="true"></i>
-            <span th:text="#{nav.admin}">Admin</span>
+          <a th:href="@{/}"
+             th:class="'nav-link text-white d-flex align-items-center'"
+             aria-label="Back to application">
+            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>
+            <span th:text="#{nav.back}">Back</span>
           </a>
         </li>
         <li class="nav-item" th:if="${isAdminUser}">
@@ -21,6 +20,15 @@
              th:aria-current="${active} ? 'page' : null">
             <i class="bi bi-people me-2" aria-hidden="true"></i>
             <span th:text="#{nav.admin.users}">User Management</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a th:href="@{/admin/maintenance}"
+             th:with="active=${currentPath == '/admin/maintenance'}"
+             th:class="${active} ? 'nav-link active d-flex align-items-center' : 'nav-link text-white d-flex align-items-center'"
+             th:aria-current="${active} ? 'page' : null">
+            <i class="bi bi-tools me-2" aria-hidden="true"></i>
+            <span th:text="#{nav.admin.maintenance}">Maintenance</span>
           </a>
         </li>
       </ul>
