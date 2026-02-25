@@ -14,9 +14,9 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class ResolvePasswordSetupTokenQueryHandlerIT extends AbstractUsersIntegrationTest {
+class ResolvePasswordResetTokenContextQueryHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
-    private ResolvePasswordSetupTokenQueryHandler queryHandler;
+    private ResolvePasswordResetTokenContextQueryHandler queryHandler;
 
     @Autowired
     private UserRepository userRepository;
@@ -31,27 +31,25 @@ class ResolvePasswordSetupTokenQueryHandlerIT extends AbstractUsersIntegrationTe
     private CredentialTokenCodec tokenCodec;
 
     @Test
-    void returnsPasswordResetContextForActivePasswordResetToken() {
+    void returnsContextForActivePasswordResetToken() {
         // given
         Instant now = Instant.parse("2026-02-25T12:00:00Z");
         timeProvider.setNow(now);
-
         var user = userRepository.save(
                 aUser().withUsername("reset-user@example.com").build());
         resetTokenRepository.save(
                 new UserPasswordResetToken(user, tokenCodec.hash("reset-token"), now.plusSeconds(3600)));
 
         // when
-        var result = queryHandler.handle(new ResolvePasswordSetupTokenQuery("reset-token"));
+        var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("reset-token"));
 
         // then
         assertThat(result).isPresent();
         assertThat(result.get().username()).isEqualTo("reset-user@example.com");
-        assertThat(result.get().mode()).isEqualTo(ResolvePasswordSetupTokenQuery.SetupMode.PASSWORD_RESET);
     }
 
     @Test
-    void returnsInviteContextForActiveInviteToken() {
+    void returnsEmptyForInviteToken() {
         // given
         Instant now = Instant.parse("2026-02-25T12:00:00Z");
         timeProvider.setNow(now);
@@ -59,35 +57,9 @@ class ResolvePasswordSetupTokenQueryHandlerIT extends AbstractUsersIntegrationTe
                 "invite-user@example.com", "ROLE_USER", null, tokenCodec.hash("invite-token"), now.plusSeconds(3600)));
 
         // when
-        var result = queryHandler.handle(new ResolvePasswordSetupTokenQuery("invite-token"));
+        var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("invite-token"));
 
         // then
-        assertThat(result).isPresent();
-        assertThat(result.get().username()).isEqualTo("invite-user@example.com");
-        assertThat(result.get().mode()).isEqualTo(ResolvePasswordSetupTokenQuery.SetupMode.INVITE);
-    }
-
-    @Test
-    void returnsInviteAlreadyRegisteredContextForUsedInviteTokenWhenUserExists() {
-        // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-        userRepository.save(aUser().withUsername("invite-user2@example.com").build());
-        var invite = userInviteRepository.save(new UserInvite(
-                "invite-user2@example.com",
-                "ROLE_USER",
-                null,
-                tokenCodec.hash("invite-used-token"),
-                now.plusSeconds(3600)));
-        invite.setUsedAt(now.minusSeconds(10));
-        userInviteRepository.save(invite);
-
-        // when
-        var result = queryHandler.handle(new ResolvePasswordSetupTokenQuery("invite-used-token"));
-
-        // then
-        assertThat(result).isPresent();
-        assertThat(result.get().username()).isEqualTo("invite-user2@example.com");
-        assertThat(result.get().mode()).isEqualTo(ResolvePasswordSetupTokenQuery.SetupMode.INVITE_ALREADY_REGISTERED);
+        assertThat(result).isEmpty();
     }
 }

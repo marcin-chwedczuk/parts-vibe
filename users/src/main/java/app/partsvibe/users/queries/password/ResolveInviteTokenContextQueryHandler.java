@@ -4,21 +4,20 @@ import app.partsvibe.shared.cqrs.BaseQueryHandler;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.users.domain.QUser;
 import app.partsvibe.users.domain.invite.QUserInvite;
-import app.partsvibe.users.domain.security.QUserPasswordResetToken;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
-class ResolvePasswordSetupTokenQueryHandler
+class ResolveInviteTokenContextQueryHandler
         extends BaseQueryHandler<
-                ResolvePasswordSetupTokenQuery, Optional<ResolvePasswordSetupTokenQuery.TokenContext>> {
+                ResolveInviteTokenContextQuery, Optional<ResolveInviteTokenContextQuery.TokenContext>> {
     private final JPAQueryFactory queryFactory;
     private final CredentialTokenCodec tokenCodec;
     private final TimeProvider timeProvider;
 
-    ResolvePasswordSetupTokenQueryHandler(
+    ResolveInviteTokenContextQueryHandler(
             JPAQueryFactory queryFactory, CredentialTokenCodec tokenCodec, TimeProvider timeProvider) {
         this.queryFactory = queryFactory;
         this.tokenCodec = tokenCodec;
@@ -26,27 +25,9 @@ class ResolvePasswordSetupTokenQueryHandler
     }
 
     @Override
-    protected Optional<ResolvePasswordSetupTokenQuery.TokenContext> doHandle(ResolvePasswordSetupTokenQuery query) {
+    protected Optional<ResolveInviteTokenContextQuery.TokenContext> doHandle(ResolveInviteTokenContextQuery query) {
         String tokenHash = tokenCodec.hash(query.token().trim());
         var now = timeProvider.now();
-
-        var resetToken = QUserPasswordResetToken.userPasswordResetToken;
-        var user = QUser.user;
-        String resetUsername = queryFactory
-                .select(user.username)
-                .from(resetToken)
-                .join(resetToken.user, user)
-                .where(resetToken
-                        .tokenHash
-                        .eq(tokenHash)
-                        .and(resetToken.usedAt.isNull())
-                        .and(resetToken.revokedAt.isNull())
-                        .and(resetToken.expiresAt.after(now)))
-                .fetchOne();
-        if (resetUsername != null) {
-            return Optional.of(new ResolvePasswordSetupTokenQuery.TokenContext(
-                    resetUsername, ResolvePasswordSetupTokenQuery.SetupMode.PASSWORD_RESET));
-        }
 
         var invite = QUserInvite.userInvite;
         String inviteEmail = queryFactory
@@ -59,8 +40,8 @@ class ResolvePasswordSetupTokenQueryHandler
                         .and(invite.expiresAt.after(now)))
                 .fetchOne();
         if (inviteEmail != null) {
-            return Optional.of(new ResolvePasswordSetupTokenQuery.TokenContext(
-                    inviteEmail, ResolvePasswordSetupTokenQuery.SetupMode.INVITE));
+            return Optional.of(new ResolveInviteTokenContextQuery.TokenContext(
+                    inviteEmail, ResolveInviteTokenContextQuery.InviteTokenMode.ACTIVE));
         }
 
         String anyInviteEmail = queryFactory
@@ -69,14 +50,15 @@ class ResolvePasswordSetupTokenQueryHandler
                 .where(invite.tokenHash.eq(tokenHash))
                 .fetchOne();
         if (anyInviteEmail != null) {
+            var user = QUser.user;
             Long existingUserCount = queryFactory
                     .select(user.id.count())
                     .from(user)
                     .where(user.username.equalsIgnoreCase(anyInviteEmail))
                     .fetchOne();
             if (existingUserCount != null && existingUserCount > 0) {
-                return Optional.of(new ResolvePasswordSetupTokenQuery.TokenContext(
-                        anyInviteEmail, ResolvePasswordSetupTokenQuery.SetupMode.INVITE_ALREADY_REGISTERED));
+                return Optional.of(new ResolveInviteTokenContextQuery.TokenContext(
+                        anyInviteEmail, ResolveInviteTokenContextQuery.InviteTokenMode.ALREADY_REGISTERED));
             }
         }
 
