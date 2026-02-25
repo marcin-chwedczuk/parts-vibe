@@ -65,6 +65,15 @@ working pattern here like a modulith or 3-layer architecture.
 ## Testing
 - Unit tests end with `*Test` and run with `./mvnw test`.
 - Integration tests end with `*IT` and run with `./mvnw -Pintegration-test verify`.
+- Prefer outcome/state-based tests over interaction-based tests:
+  - avoid Mockito-style call-order/count verification in IT tests
+  - verify persisted state, emitted events, and observable outputs.
+- Structure tests with explicit `// given`, `// when`, `// then` sections for readability.
+- For JPA integration tests, if assertions depend on fresh DB state, use `entityManager.flush()` before `entityManager.clear()`.
+  - `clear()` without `flush()` can hide unflushed writes and produce misleading assertions.
+- For handler IT coverage, include both query handlers and event handlers (not only command handlers).
+- Use in-memory fakes from `test-support` where possible (`InMemoryMediator`, event/time/current-user/request-id fakes).
+- For users-module event/email handler ITs, prefer an in-memory `EmailSender` fake and assert final email content (`to`, `subject`, `bodyText`, `bodyHtml`).
 
 ## Extra
 
@@ -96,6 +105,9 @@ Treat it as the default unless explicitly overridden.
 - CQRS contracts live in `app.partsvibe.shared.cqrs`.
 - Spring mediator implementation lives in `infra` and resolves handlers by generic type.
 - Controllers should use `Mediator` instead of direct service interfaces.
+- Use domain services to share reusable domain logic across multiple command handlers.
+  - Domain services should stay close to the domain model and avoid use-case specific orchestration.
+  - Handlers should remain focused on application workflow (validation, transactions, orchestration).
 - In storage module CQRS naming should stay concise and domain-first:
   - `UploadFileCommand`, `DeleteFileCommand`, `ResolveFileQuery` (avoid redundant `Stored` prefixes).
 - Command/query handlers can use shared base classes:
@@ -185,6 +197,10 @@ Treat it as the default unless explicitly overridden.
 - `JPAQueryFactory` should be provided as a singleton Spring bean and injected into query handlers (do not instantiate per handler).
 - Users search query currently keeps a TODO to replace roles mapping with a paged-id + batched projection approach to avoid potential N+1 on roles.
 - Preserve PRG state using typed filter fields and hidden inputs/fragments; avoid free-form `returnUrl` redirects.
+
+### I18n / Message Bundles
+- Module-specific message keys should live in the owning module resources (for example users UI/email keys in `users/messages*`), not only in `app`.
+- Test contexts should load the same message basenames as runtime where possible, instead of using generic fallback/default test-only bundles.
 
 ### Lombok
 - Root `lombok.config` is required.
