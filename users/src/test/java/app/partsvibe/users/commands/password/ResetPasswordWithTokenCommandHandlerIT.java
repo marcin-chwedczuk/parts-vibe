@@ -7,13 +7,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
-import app.partsvibe.users.domain.invite.UserInvite;
 import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
-import app.partsvibe.users.errors.WeakPasswordException;
+import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.repo.invite.UserInviteRepository;
 import app.partsvibe.users.repo.security.UserPasswordResetTokenRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
@@ -34,9 +32,6 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
 
     @Autowired
     private UserPasswordResetTokenRepository tokenRepository;
-
-    @Autowired
-    private UserInviteRepository userInviteRepository;
 
     @Autowired
     private CredentialTokenCodec tokenCodec;
@@ -122,40 +117,8 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(
                         new ResetPasswordWithTokenCommand(rawToken, "new-secure-password", "different-password")))
-                .isInstanceOf(WeakPasswordException.class);
+                .isInstanceOf(PasswordsDoNotMatchException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-password");
-    }
-
-    @Test
-    void createsUserWhenUsingInviteTokenAndMarksInviteUsed() {
-        // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-
-        roleRepository.save(aRole().withName("ROLE_USER").build());
-        userInviteRepository.save(new UserInvite(
-                "invited-user@example.com", "ROLE_USER", null, tokenCodec.hash("invite-token"), now.plusSeconds(3600)));
-
-        // when
-        commandHandler.handle(
-                new ResetPasswordWithTokenCommand("invite-token", "new-secure-password", "new-secure-password"));
-
-        // then
-        entityManager.flush();
-        entityManager.clear();
-
-        User savedUser = userRepository
-                .findByUsernameIgnoreCase("invited-user@example.com")
-                .orElseThrow();
-        assertThat(savedUser.getPasswordHash()).isEqualTo("new-secure-password");
-        assertThat(savedUser.getRoles()).extracting(Role::getName).containsExactly("ROLE_USER");
-
-        UserInvite savedInvite = userInviteRepository.findAll().stream()
-                .filter(invite -> invite.getEmail().equals("invited-user@example.com"))
-                .findFirst()
-                .orElseThrow();
-        assertThat(savedInvite.getUsedAt()).isEqualTo(now);
-        assertThat(savedInvite.getRevokedAt()).isNull();
     }
 }

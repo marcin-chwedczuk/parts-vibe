@@ -2,9 +2,11 @@ package app.partsvibe.users.web;
 
 import app.partsvibe.shared.cqrs.Mediator;
 import app.partsvibe.shared.utils.StringUtils;
+import app.partsvibe.users.commands.invite.FinalizeUserInviteCommand;
 import app.partsvibe.users.commands.password.RequestPasswordResetCommand;
 import app.partsvibe.users.commands.password.ResetPasswordWithTokenCommand;
 import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
+import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.queries.password.ResolvePasswordSetupTokenQuery;
 import app.partsvibe.users.web.form.ForgotPasswordForm;
@@ -132,10 +134,18 @@ public class AuthController {
         }
 
         try {
-            mediator.executeCommand(
-                    new ResetPasswordWithTokenCommand(form.getToken(), form.getPassword(), form.getRepeatedPassword()));
+            if (requestedMode == PasswordSetupMode.INVITE) {
+                mediator.executeCommand(
+                        new FinalizeUserInviteCommand(form.getToken(), form.getPassword(), form.getRepeatedPassword()));
+            } else {
+                mediator.executeCommand(new ResetPasswordWithTokenCommand(
+                        form.getToken(), form.getPassword(), form.getRepeatedPassword()));
+            }
             redirectAttributes.addFlashAttribute("passwordResetDone", true);
             return "redirect:/login";
+        } catch (PasswordsDoNotMatchException ex) {
+            bindingResult.rejectValue("repeatedPassword", "auth.reset.validation.repeat.mismatch");
+            return renderSetupPageOrInvalid(form, model, requestedMode);
         } catch (WeakPasswordException ex) {
             bindingResult.rejectValue("password", "auth.reset.validation.password.weak");
             return renderSetupPageOrInvalid(form, model, requestedMode);

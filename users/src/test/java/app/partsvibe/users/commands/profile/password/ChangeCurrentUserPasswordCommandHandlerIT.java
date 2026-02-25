@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
-import app.partsvibe.users.errors.WeakPasswordException;
+import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
@@ -72,7 +72,7 @@ class ChangeCurrentUserPasswordCommandHandlerIT extends AbstractUsersIntegration
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(new ChangeCurrentUserPasswordCommand(
                         user.getId(), "current-password", "new-secure-password", "different-password")))
-                .isInstanceOf(WeakPasswordException.class);
+                .isInstanceOf(PasswordsDoNotMatchException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("current-password");
     }

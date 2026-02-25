@@ -3,8 +3,8 @@ package app.partsvibe.users.commands.profile.password;
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
+import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.errors.UserNotFoundException;
-import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.security.password.PasswordPolicyValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +23,7 @@ class ChangeCurrentUserPasswordCommandHandler extends BaseCommandHandler<ChangeC
     @Override
     protected NoResult doHandle(ChangeCurrentUserPasswordCommand command) {
         if (!command.newPassword().equals(command.repeatedNewPassword())) {
-            throw new WeakPasswordException("Passwords do not match.");
+            throw new PasswordsDoNotMatchException();
         }
 
         var user = userRepository

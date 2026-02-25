@@ -10,6 +10,7 @@ import app.partsvibe.users.commands.profile.ChangeCurrentUserAvatarCommand;
 import app.partsvibe.users.commands.profile.UpdateCurrentUserProfileCommand;
 import app.partsvibe.users.commands.profile.password.ChangeCurrentUserPasswordCommand;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
+import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.models.UserProfileModel;
 import app.partsvibe.users.queries.profile.GetCurrentUserProfileQuery;
@@ -182,6 +183,8 @@ public class ProfileController {
             return "redirect:/profile";
         } catch (InvalidCurrentPasswordException ex) {
             bindingResult.rejectValue("currentPassword", "profile.password.validation.current.invalid");
+        } catch (PasswordsDoNotMatchException ex) {
+            bindingResult.rejectValue("repeatedNewPassword", "profile.password.validation.repeat.mismatch");
         } catch (WeakPasswordException ex) {
             bindingResult.rejectValue("newPassword", "profile.password.validation.new.weak");
         }
