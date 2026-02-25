@@ -2,9 +2,8 @@ package app.partsvibe.users.queries.password;
 
 import app.partsvibe.shared.cqrs.BaseQueryHandler;
 import app.partsvibe.shared.time.TimeProvider;
-import app.partsvibe.users.domain.QUser;
-import app.partsvibe.users.domain.security.QUserCredentialToken;
-import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.domain.invite.QUserInvite;
+import app.partsvibe.users.domain.security.QUserPasswordResetToken;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Component;
@@ -25,23 +24,35 @@ class IsPasswordResetTokenActiveQueryHandler extends BaseQueryHandler<IsPassword
     @Override
     protected Boolean doHandle(IsPasswordResetTokenActiveQuery query) {
         String tokenHash = tokenCodec.hash(query.token().trim());
-        var token = QUserCredentialToken.userCredentialToken;
-        var user = QUser.user;
+        var credentialToken = QUserPasswordResetToken.userPasswordResetToken;
+        var invite = QUserInvite.userInvite;
+        var now = timeProvider.now();
 
-        Long count = queryFactory
-                .select(token.id.count())
-                .from(token)
-                .join(token.user, user)
-                .where(token.tokenHash
+        Long passwordResetTokenCount = queryFactory
+                .select(credentialToken.id.count())
+                .from(credentialToken)
+                .where(credentialToken
+                        .tokenHash
                         .eq(tokenHash)
-                        .and(token.usedAt.isNull())
-                        .and(token.revokedAt.isNull())
-                        .and(token.expiresAt.after(timeProvider.now()))
-                        .and(token.purpose.in(
-                                UserCredentialTokenPurpose.PASSWORD_RESET,
-                                UserCredentialTokenPurpose.INVITE_ACTIVATION)))
+                        .and(credentialToken.usedAt.isNull())
+                        .and(credentialToken.revokedAt.isNull())
+                        .and(credentialToken.expiresAt.after(now)))
                 .fetchOne();
 
-        return count != null && count > 0;
+        if (passwordResetTokenCount != null && passwordResetTokenCount > 0) {
+            return true;
+        }
+
+        Long activeInviteCount = queryFactory
+                .select(invite.id.count())
+                .from(invite)
+                .where(invite.tokenHash
+                        .eq(tokenHash)
+                        .and(invite.usedAt.isNull())
+                        .and(invite.revokedAt.isNull())
+                        .and(invite.expiresAt.after(now)))
+                .fetchOne();
+
+        return activeInviteCount != null && activeInviteCount > 0;
     }
 }

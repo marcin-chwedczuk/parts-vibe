@@ -18,6 +18,7 @@ public class SecurityConfig {
                                 "/login",
                                 "/forgot-password",
                                 "/password-reset",
+                                "/invite",
                                 "/error",
                                 "/error/**",
                                 "/favicon.ico",

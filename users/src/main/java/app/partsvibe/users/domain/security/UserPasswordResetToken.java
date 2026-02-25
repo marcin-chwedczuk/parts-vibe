@@ -4,8 +4,6 @@ import app.partsvibe.shared.persistence.BaseAuditableEntity;
 import app.partsvibe.users.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -22,18 +20,18 @@ import lombok.Setter;
 
 @Entity
 @Table(
-        name = "user_credential_tokens",
+        name = "user_password_reset_tokens",
         uniqueConstraints = {
-            @UniqueConstraint(name = "uk_user_credential_tokens_token_hash", columnNames = "token_hash")
+            @UniqueConstraint(name = "uk_user_password_reset_tokens_token_hash", columnNames = "token_hash")
         })
 @SequenceGenerator(
         name = BaseAuditableEntity.ID_GENERATOR_NAME,
-        sequenceName = "user_credential_tokens_id_seq",
+        sequenceName = "user_password_reset_tokens_id_seq",
         allocationSize = BaseAuditableEntity.ID_ALLOCATION_SIZE)
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserCredentialToken extends BaseAuditableEntity {
+public class UserPasswordResetToken extends BaseAuditableEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -42,11 +40,6 @@ public class UserCredentialToken extends BaseAuditableEntity {
     @NotBlank
     @Column(name = "token_hash", nullable = false, unique = true, length = 128)
     private String tokenHash;
-
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(name = "purpose", nullable = false, length = 32)
-    private UserCredentialTokenPurpose purpose;
 
     @NotNull
     @Column(name = "expires_at", nullable = false, columnDefinition = "timestamp with time zone")
@@ -58,10 +51,9 @@ public class UserCredentialToken extends BaseAuditableEntity {
     @Column(name = "revoked_at", columnDefinition = "timestamp with time zone")
     private Instant revokedAt;
 
-    public UserCredentialToken(User user, String tokenHash, UserCredentialTokenPurpose purpose, Instant expiresAt) {
+    public UserPasswordResetToken(User user, String tokenHash, Instant expiresAt) {
         this.user = user;
         this.tokenHash = tokenHash;
-        this.purpose = purpose;
         this.expiresAt = expiresAt;
     }
 

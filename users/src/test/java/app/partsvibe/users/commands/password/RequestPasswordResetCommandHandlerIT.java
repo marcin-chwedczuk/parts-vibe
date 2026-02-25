@@ -6,12 +6,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
-import app.partsvibe.users.domain.security.UserCredentialToken;
-import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.events.PasswordResetRequestedEvent;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
+import app.partsvibe.users.repo.security.UserPasswordResetTokenRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import jakarta.persistence.EntityManager;
@@ -30,7 +29,7 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
     private RoleRepository roleRepository;
 
     @Autowired
-    private UserCredentialTokenRepository tokenRepository;
+    private UserPasswordResetTokenRepository tokenRepository;
 
     @Autowired
     private CredentialTokenCodec tokenCodec;
@@ -50,11 +49,8 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
                 .withRole(roleUser)
                 .build());
 
-        UserCredentialToken previousToken = tokenRepository.save(new UserCredentialToken(
-                user,
-                tokenCodec.hash("previous-reset-token"),
-                UserCredentialTokenPurpose.PASSWORD_RESET,
-                now.plusSeconds(1800)));
+        UserPasswordResetToken previousToken = tokenRepository.save(
+                new UserPasswordResetToken(user, tokenCodec.hash("previous-reset-token"), now.plusSeconds(1800)));
 
         // when
         commandHandler.handle(new RequestPasswordResetCommand("  ALICE@Example.com "));
@@ -65,17 +61,16 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
 
         var passwordResetTokens = tokenRepository.findAll().stream()
                 .filter(token -> token.getUser().getId().equals(user.getId()))
-                .filter(token -> token.getPurpose() == UserCredentialTokenPurpose.PASSWORD_RESET)
                 .toList();
         assertThat(passwordResetTokens).hasSize(2);
 
-        UserCredentialToken revokedToken = passwordResetTokens.stream()
+        UserPasswordResetToken revokedToken = passwordResetTokens.stream()
                 .filter(token -> token.getId().equals(previousToken.getId()))
                 .findFirst()
                 .orElseThrow();
         assertThat(revokedToken.getRevokedAt()).isEqualTo(now);
 
-        UserCredentialToken activeToken = passwordResetTokens.stream()
+        UserPasswordResetToken activeToken = passwordResetTokens.stream()
                 .filter(token -> !token.getId().equals(previousToken.getId()))
                 .findFirst()
                 .orElseThrow();

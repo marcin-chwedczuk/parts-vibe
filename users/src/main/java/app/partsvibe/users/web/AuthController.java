@@ -6,10 +6,11 @@ import app.partsvibe.users.commands.password.RequestPasswordResetCommand;
 import app.partsvibe.users.commands.password.ResetPasswordWithTokenCommand;
 import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
 import app.partsvibe.users.errors.WeakPasswordException;
-import app.partsvibe.users.queries.password.IsPasswordResetTokenActiveQuery;
+import app.partsvibe.users.queries.password.ResolvePasswordSetupTokenQuery;
 import app.partsvibe.users.web.form.ForgotPasswordForm;
 import app.partsvibe.users.web.form.PasswordResetForm;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -62,22 +63,12 @@ public class AuthController {
 
     @GetMapping("/password-reset")
     public String passwordReset(@RequestParam(name = "token", required = false) String token, Model model) {
-        if (!StringUtils.hasText(token)) {
-            model.addAttribute("tokenInvalid", true);
-            return "password-reset";
-        }
+        return renderPasswordSetupPage(token, model, PasswordSetupMode.PASSWORD_RESET);
+    }
 
-        if (!mediator.executeQuery(new IsPasswordResetTokenActiveQuery(token))) {
-            model.addAttribute("tokenInvalid", true);
-            return "password-reset";
-        }
-
-        if (!model.containsAttribute("form")) {
-            PasswordResetForm form = new PasswordResetForm();
-            form.setToken(token);
-            model.addAttribute("form", form);
-        }
-        return "password-reset";
+    @GetMapping("/invite")
+    public String invitePasswordSetup(@RequestParam(name = "token", required = false) String token, Model model) {
+        return renderPasswordSetupPage(token, model, PasswordSetupMode.INVITE);
     }
 
     @PostMapping("/password-reset")
@@ -86,8 +77,58 @@ public class AuthController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        return completePasswordSetup(form, bindingResult, model, redirectAttributes, PasswordSetupMode.PASSWORD_RESET);
+    }
+
+    @PostMapping("/invite")
+    public String completeInvitePasswordSetup(
+            @Valid @ModelAttribute("form") PasswordResetForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        return completePasswordSetup(form, bindingResult, model, redirectAttributes, PasswordSetupMode.INVITE);
+    }
+
+    private String renderPasswordSetupPage(String token, Model model, PasswordSetupMode requestedMode) {
+        if (!StringUtils.hasText(token)) {
+            model.addAttribute("tokenInvalid", true);
+            applyPasswordSetupPageModel(model, requestedMode, null);
+            return "password-reset";
+        }
+
+        Optional<ResolvePasswordSetupTokenQuery.TokenContext> tokenContext =
+                mediator.executeQuery(new ResolvePasswordSetupTokenQuery(token));
+        if (tokenContext.isEmpty()) {
+            model.addAttribute("tokenInvalid", true);
+            applyPasswordSetupPageModel(model, requestedMode, null);
+            return "password-reset";
+        }
+
+        ResolvePasswordSetupTokenQuery.TokenContext context = tokenContext.get();
+        PasswordSetupMode effectiveMode = mapSetupMode(context.mode());
+        if (context.mode() == ResolvePasswordSetupTokenQuery.SetupMode.INVITE_ALREADY_REGISTERED) {
+            model.addAttribute("tokenAlreadyRegistered", true);
+            applyPasswordSetupPageModel(model, effectiveMode, context.username());
+            return "password-reset";
+        }
+
+        if (!model.containsAttribute("form")) {
+            PasswordResetForm form = new PasswordResetForm();
+            form.setToken(token);
+            model.addAttribute("form", form);
+        }
+        applyPasswordSetupPageModel(model, effectiveMode, context.username());
+        return "password-reset";
+    }
+
+    private String completePasswordSetup(
+            PasswordResetForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes,
+            PasswordSetupMode requestedMode) {
         if (bindingResult.hasErrors()) {
-            return renderResetPageOrInvalid(form, model);
+            return renderSetupPageOrInvalid(form, model, requestedMode);
         }
 
         try {
@@ -97,20 +138,61 @@ public class AuthController {
             return "redirect:/login";
         } catch (WeakPasswordException ex) {
             bindingResult.rejectValue("password", "auth.reset.validation.password.weak");
-            return renderResetPageOrInvalid(form, model);
+            return renderSetupPageOrInvalid(form, model, requestedMode);
         } catch (InvalidOrExpiredCredentialTokenException ex) {
             model.addAttribute("tokenInvalid", true);
+            applyPasswordSetupPageModel(model, requestedMode, null);
             return "password-reset";
         }
     }
 
-    private String renderResetPageOrInvalid(PasswordResetForm form, Model model) {
-        if (!StringUtils.hasText(form.getToken())
-                || !mediator.executeQuery(new IsPasswordResetTokenActiveQuery(form.getToken()))) {
+    private String renderSetupPageOrInvalid(PasswordResetForm form, Model model, PasswordSetupMode requestedMode) {
+        if (!StringUtils.hasText(form.getToken())) {
             model.addAttribute("tokenInvalid", true);
+            applyPasswordSetupPageModel(model, requestedMode, null);
             return "password-reset";
         }
+
+        Optional<ResolvePasswordSetupTokenQuery.TokenContext> tokenContext =
+                mediator.executeQuery(new ResolvePasswordSetupTokenQuery(form.getToken()));
+        if (tokenContext.isEmpty()) {
+            model.addAttribute("tokenInvalid", true);
+            applyPasswordSetupPageModel(model, requestedMode, null);
+            return "password-reset";
+        }
+
+        ResolvePasswordSetupTokenQuery.TokenContext context = tokenContext.get();
+        PasswordSetupMode effectiveMode = mapSetupMode(context.mode());
+        if (context.mode() == ResolvePasswordSetupTokenQuery.SetupMode.INVITE_ALREADY_REGISTERED) {
+            model.addAttribute("tokenAlreadyRegistered", true);
+            applyPasswordSetupPageModel(model, effectiveMode, context.username());
+            return "password-reset";
+        }
+        applyPasswordSetupPageModel(model, effectiveMode, context.username());
         model.addAttribute("form", form);
         return "password-reset";
+    }
+
+    private void applyPasswordSetupPageModel(Model model, PasswordSetupMode mode, String setupUsername) {
+        boolean inviteFlow = mode == PasswordSetupMode.INVITE;
+        model.addAttribute("inviteFlow", inviteFlow);
+        model.addAttribute("setupPageTitle", inviteFlow ? "auth.invite.setup.title" : "auth.reset.title");
+        model.addAttribute("setupPageHeading", inviteFlow ? "auth.invite.setup.heading" : "auth.reset.heading");
+        model.addAttribute("setupUsername", setupUsername);
+        model.addAttribute("setupActionPath", inviteFlow ? "/invite" : "/password-reset");
+        model.addAttribute(
+                "setupInvalidMessageKey", inviteFlow ? "auth.invite.tokenInvalid" : "auth.reset.tokenInvalid");
+    }
+
+    private PasswordSetupMode mapSetupMode(ResolvePasswordSetupTokenQuery.SetupMode setupMode) {
+        return switch (setupMode) {
+            case INVITE, INVITE_ALREADY_REGISTERED -> PasswordSetupMode.INVITE;
+            case PASSWORD_RESET -> PasswordSetupMode.PASSWORD_RESET;
+        };
+    }
+
+    private enum PasswordSetupMode {
+        PASSWORD_RESET,
+        INVITE
     }
 }

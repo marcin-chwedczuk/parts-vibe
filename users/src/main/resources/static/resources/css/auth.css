@@ -16,3 +16,7 @@
 .auth-form-row {
   align-items: flex-start;
 }
+
+.auth-form-shell {
+  max-width: 560px;
+}

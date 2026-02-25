@@ -32,7 +32,7 @@ class SendInviteEmailOnUserInvitedEventHandler extends BaseEventHandler<UserInvi
         String baseUrl = usersAuthProperties.getBaseUrl();
         var rendered = mediator.executeQuery(new RenderInviteEmailQuery(
                 new InviteEmailModel(
-                        baseUrl + "/password-reset?token=" + event.token(),
+                        baseUrl + "/invite?token=" + event.token(),
                         event.expiresAt(),
                         event.invitedRole(),
                         event.inviteMessage(),

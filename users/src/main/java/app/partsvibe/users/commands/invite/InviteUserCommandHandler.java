@@ -5,44 +5,38 @@ import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
-import app.partsvibe.users.domain.security.UserCredentialToken;
-import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.domain.invite.UserInvite;
 import app.partsvibe.users.errors.InvalidInviteRoleException;
 import app.partsvibe.users.events.UserInvitedEvent;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
+import app.partsvibe.users.repo.invite.UserInviteRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.UUID;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, InviteUserCommandResult> {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final UserCredentialTokenRepository tokenRepository;
+    private final UserInviteRepository userInviteRepository;
     private final CredentialTokenCodec tokenCodec;
     private final EventPublisher eventPublisher;
-    private final PasswordEncoder passwordEncoder;
     private final TimeProvider timeProvider;
 
     InviteUserCommandHandler(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            UserCredentialTokenRepository tokenRepository,
+            UserInviteRepository userInviteRepository,
             CredentialTokenCodec tokenCodec,
             EventPublisher eventPublisher,
-            PasswordEncoder passwordEncoder,
             TimeProvider timeProvider) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.tokenRepository = tokenRepository;
+        this.userInviteRepository = userInviteRepository;
         this.tokenCodec = tokenCodec;
         this.eventPublisher = eventPublisher;
-        this.passwordEncoder = passwordEncoder;
         this.timeProvider = timeProvider;
     }
 
@@ -59,56 +53,32 @@ class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, Inv
             User existing = existingOpt.get();
             if (!existing.isEnabled()) {
                 return new InviteUserCommandResult(
-                        existing.getId(),
-                        existing.getUsername(),
-                        null,
-                        InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED_LOCKED);
+                        existing.getUsername(), null, InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED_LOCKED);
             }
-
-            boolean hasInviteHistory = tokenRepository.existsByUserIdAndPurpose(
-                    existing.getId(), UserCredentialTokenPurpose.INVITE_ACTIVATION);
-            boolean usedInviteToken = tokenRepository.existsByUserIdAndPurposeAndUsedAtIsNotNull(
-                    existing.getId(), UserCredentialTokenPurpose.INVITE_ACTIVATION);
-
-            if (!hasInviteHistory || usedInviteToken) {
-                return new InviteUserCommandResult(
-                        existing.getId(),
-                        existing.getUsername(),
-                        null,
-                        InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED);
-            }
-
-            existing.getRoles().clear();
-            existing.getRoles().add(role);
-            User saved = userRepository.save(existing);
-            Instant expiresAt = publishInvite(saved, roleName, command.validityHours(), inviteMessage);
             return new InviteUserCommandResult(
-                    saved.getId(), saved.getUsername(), expiresAt, InviteUserCommandResult.InviteOutcome.INVITE_RESENT);
+                    existing.getUsername(), null, InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED);
         }
 
-        User user = new User(email, passwordEncoder.encode(UUID.randomUUID().toString()));
-        user.setEnabled(true);
-        user.getRoles().add(role);
-        User saved = userRepository.save(user);
-        Instant expiresAt = publishInvite(saved, roleName, command.validityHours(), inviteMessage);
+        boolean hasInviteHistory = userInviteRepository.existsByEmailIgnoreCase(email);
+        Instant expiresAt = publishInvite(email, role.getName(), command.validityHours(), inviteMessage);
         return new InviteUserCommandResult(
-                saved.getId(), saved.getUsername(), expiresAt, InviteUserCommandResult.InviteOutcome.INVITE_SENT);
+                email,
+                expiresAt,
+                hasInviteHistory
+                        ? InviteUserCommandResult.InviteOutcome.INVITE_RESENT
+                        : InviteUserCommandResult.InviteOutcome.INVITE_SENT);
     }
 
-    private Instant publishInvite(User user, String roleName, int validityHours, String inviteMessage) {
+    private Instant publishInvite(String email, String roleName, int validityHours, String inviteMessage) {
         Instant now = timeProvider.now();
-        tokenRepository.revokeUnconsumedTokensByUserAndPurpose(
-                user.getId(), UserCredentialTokenPurpose.INVITE_ACTIVATION, now);
+        userInviteRepository.revokeUnconsumedInvitesByEmail(email, now);
         Instant expiresAt = now.plusSeconds(validityHours * 3600L);
         String rawToken = tokenCodec.newRawToken();
         String tokenHash = tokenCodec.hash(rawToken);
 
-        UserCredentialToken token =
-                new UserCredentialToken(user, tokenHash, UserCredentialTokenPurpose.INVITE_ACTIVATION, expiresAt);
-        tokenRepository.save(token);
+        userInviteRepository.save(new UserInvite(email, roleName, inviteMessage, tokenHash, expiresAt));
 
-        eventPublisher.publish(
-                UserInvitedEvent.create(user.getUsername(), rawToken, expiresAt, inviteMessage, roleName));
+        eventPublisher.publish(UserInvitedEvent.create(email, rawToken, expiresAt, inviteMessage, roleName));
         return expiresAt;
     }
 

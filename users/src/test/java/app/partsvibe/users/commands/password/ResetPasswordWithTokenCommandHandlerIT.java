@@ -7,13 +7,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
-import app.partsvibe.users.domain.security.UserCredentialToken;
-import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.domain.invite.UserInvite;
+import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
 import app.partsvibe.users.errors.WeakPasswordException;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
+import app.partsvibe.users.repo.invite.UserInviteRepository;
+import app.partsvibe.users.repo.security.UserPasswordResetTokenRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import jakarta.persistence.EntityManager;
@@ -32,7 +33,10 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
     private RoleRepository roleRepository;
 
     @Autowired
-    private UserCredentialTokenRepository tokenRepository;
+    private UserPasswordResetTokenRepository tokenRepository;
+
+    @Autowired
+    private UserInviteRepository userInviteRepository;
 
     @Autowired
     private CredentialTokenCodec tokenCodec;
@@ -41,7 +45,7 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
     private EntityManager entityManager;
 
     @Test
-    void changesPasswordMarksTokenUsedAndRevokesOtherActiveTokens() {
+    void changesPasswordMarksTokenUsedAndRevokesOtherPasswordResetTokens() {
         // given
         Instant now = Instant.parse("2026-02-25T12:00:00Z");
         timeProvider.setNow(now);
@@ -53,42 +57,31 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .build());
 
         String rawToken = "reset-token-primary";
-        UserCredentialToken usedToken = tokenRepository.save(new UserCredentialToken(
-                user, tokenCodec.hash(rawToken), UserCredentialTokenPurpose.PASSWORD_RESET, now.plusSeconds(3600)));
+        UserPasswordResetToken usedToken = tokenRepository.save(
+                new UserPasswordResetToken(user, tokenCodec.hash(rawToken), now.plusSeconds(3600)));
 
-        UserCredentialToken otherResetToken = tokenRepository.save(new UserCredentialToken(
-                user,
-                tokenCodec.hash("reset-token-secondary"),
-                UserCredentialTokenPurpose.PASSWORD_RESET,
-                now.plusSeconds(3600)));
-        UserCredentialToken inviteToken = tokenRepository.save(new UserCredentialToken(
-                user,
-                tokenCodec.hash("invite-token"),
-                UserCredentialTokenPurpose.INVITE_ACTIVATION,
-                now.plusSeconds(3600)));
+        UserPasswordResetToken otherResetToken = tokenRepository.save(
+                new UserPasswordResetToken(user, tokenCodec.hash("reset-token-secondary"), now.plusSeconds(3600)));
 
         // when
         commandHandler.handle(
                 new ResetPasswordWithTokenCommand(rawToken, "new-secure-password", "new-secure-password"));
 
         // then
+        entityManager.flush();
         entityManager.clear();
 
         User savedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(savedUser.getPasswordHash()).isEqualTo("new-secure-password");
 
-        UserCredentialToken savedUsedToken =
+        UserPasswordResetToken savedUsedToken =
                 tokenRepository.findById(usedToken.getId()).orElseThrow();
         assertThat(savedUsedToken.getUsedAt()).isEqualTo(now);
         assertThat(savedUsedToken.getRevokedAt()).isNull();
 
-        UserCredentialToken savedOtherReset =
+        UserPasswordResetToken savedOtherReset =
                 tokenRepository.findById(otherResetToken.getId()).orElseThrow();
         assertThat(savedOtherReset.getRevokedAt()).isEqualTo(now);
-
-        UserCredentialToken savedInvite =
-                tokenRepository.findById(inviteToken.getId()).orElseThrow();
-        assertThat(savedInvite.getRevokedAt()).isEqualTo(now);
     }
 
     @Test
@@ -124,8 +117,7 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .build());
 
         String rawToken = "reset-token-primary";
-        tokenRepository.save(new UserCredentialToken(
-                user, tokenCodec.hash(rawToken), UserCredentialTokenPurpose.PASSWORD_RESET, now.plusSeconds(3600)));
+        tokenRepository.save(new UserPasswordResetToken(user, tokenCodec.hash(rawToken), now.plusSeconds(3600)));
 
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(
@@ -133,5 +125,37 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .isInstanceOf(WeakPasswordException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-password");
+    }
+
+    @Test
+    void createsUserWhenUsingInviteTokenAndMarksInviteUsed() {
+        // given
+        Instant now = Instant.parse("2026-02-25T12:00:00Z");
+        timeProvider.setNow(now);
+
+        roleRepository.save(aRole().withName("ROLE_USER").build());
+        userInviteRepository.save(new UserInvite(
+                "invited-user@example.com", "ROLE_USER", null, tokenCodec.hash("invite-token"), now.plusSeconds(3600)));
+
+        // when
+        commandHandler.handle(
+                new ResetPasswordWithTokenCommand("invite-token", "new-secure-password", "new-secure-password"));
+
+        // then
+        entityManager.flush();
+        entityManager.clear();
+
+        User savedUser = userRepository
+                .findByUsernameIgnoreCase("invited-user@example.com")
+                .orElseThrow();
+        assertThat(savedUser.getPasswordHash()).isEqualTo("new-secure-password");
+        assertThat(savedUser.getRoles()).extracting(Role::getName).containsExactly("ROLE_USER");
+
+        UserInvite savedInvite = userInviteRepository.findAll().stream()
+                .filter(invite -> invite.getEmail().equals("invited-user@example.com"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedInvite.getUsedAt()).isEqualTo(now);
+        assertThat(savedInvite.getRevokedAt()).isNull();
     }
 }

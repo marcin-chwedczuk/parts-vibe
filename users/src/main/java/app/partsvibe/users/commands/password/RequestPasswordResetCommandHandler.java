@@ -4,11 +4,10 @@ import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
 import app.partsvibe.shared.events.publishing.EventPublisher;
 import app.partsvibe.shared.time.TimeProvider;
-import app.partsvibe.users.domain.security.UserCredentialToken;
-import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.events.PasswordResetRequestedEvent;
 import app.partsvibe.users.repo.UserRepository;
-import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
+import app.partsvibe.users.repo.security.UserPasswordResetTokenRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import java.time.Instant;
 import java.util.Locale;
@@ -19,14 +18,14 @@ class RequestPasswordResetCommandHandler extends BaseCommandHandler<RequestPassw
     private static final long RESET_TOKEN_TTL_SECONDS = 24 * 3600L;
 
     private final UserRepository userRepository;
-    private final UserCredentialTokenRepository tokenRepository;
+    private final UserPasswordResetTokenRepository tokenRepository;
     private final CredentialTokenCodec tokenCodec;
     private final EventPublisher eventPublisher;
     private final TimeProvider timeProvider;
 
     RequestPasswordResetCommandHandler(
             UserRepository userRepository,
-            UserCredentialTokenRepository tokenRepository,
+            UserPasswordResetTokenRepository tokenRepository,
             CredentialTokenCodec tokenCodec,
             EventPublisher eventPublisher,
             TimeProvider timeProvider) {
@@ -48,13 +47,12 @@ class RequestPasswordResetCommandHandler extends BaseCommandHandler<RequestPassw
 
         var user = userOpt.get();
         Instant now = timeProvider.now();
-        tokenRepository.revokeActiveTokensByUserAndPurpose(
-                user.getId(), UserCredentialTokenPurpose.PASSWORD_RESET, now);
+        tokenRepository.revokeActiveTokensByUserId(user.getId(), now);
 
         Instant expiresAt = now.plusSeconds(RESET_TOKEN_TTL_SECONDS);
         String rawToken = tokenCodec.newRawToken();
         String hash = tokenCodec.hash(rawToken);
-        tokenRepository.save(new UserCredentialToken(user, hash, UserCredentialTokenPurpose.PASSWORD_RESET, expiresAt));
+        tokenRepository.save(new UserPasswordResetToken(user, hash, expiresAt));
 
         eventPublisher.publish(PasswordResetRequestedEvent.create(user.getUsername(), rawToken, expiresAt));
 
