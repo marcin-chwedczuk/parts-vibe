@@ -1,7 +1,9 @@
-package app.partsvibe.users.commands.profile.password;
+package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
+import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
 import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.errors.UserNotFoundException;
@@ -11,17 +13,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-class ChangeCurrentUserPasswordCommandHandler extends BaseCommandHandler<ChangeCurrentUserPasswordCommand, NoResult> {
+class UpdatePasswordCommandHandler extends BaseCommandHandler<UpdatePasswordCommand, NoResult> {
     private final UserRepository userRepository;
+    private final CurrentUserProvider currentUserProvider;
     private final PasswordEncoder passwordEncoder;
 
-    ChangeCurrentUserPasswordCommandHandler(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    UpdatePasswordCommandHandler(
+            UserRepository userRepository, CurrentUserProvider currentUserProvider, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.currentUserProvider = currentUserProvider;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    protected NoResult doHandle(ChangeCurrentUserPasswordCommand command) {
+    protected NoResult doHandle(UpdatePasswordCommand command) {
+        assertCurrentUserMatches(command.userId());
+
         if (!command.newPassword().equals(command.repeatedNewPassword())) {
             throw new PasswordsDoNotMatchException();
         }
@@ -39,5 +46,12 @@ class ChangeCurrentUserPasswordCommandHandler extends BaseCommandHandler<ChangeC
         userRepository.save(user);
 
         return NoResult.INSTANCE;
+    }
+
+    private void assertCurrentUserMatches(Long commandUserId) {
+        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
+        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
+            throw new CurrentUserMismatchException(commandUserId, currentUserId);
+        }
     }
 }

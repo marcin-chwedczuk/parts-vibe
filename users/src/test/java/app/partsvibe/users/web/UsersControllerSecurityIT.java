@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import app.partsvibe.shared.cqrs.PageResult;
-import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
@@ -28,8 +27,6 @@ class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
         mediator.onQuery(SearchUsersQuery.class, query -> new PageResult<>(List.of(), 0, 0, 1, 10));
         mediator.onQuery(UserByIdQuery.class, query -> new UserDetailsModel(1L, "bob@example.com", true, List.of()));
         mediator.onCommand(
-                CreateUserCommand.class, command -> new UserDetailsModel(2L, "new@example.com", true, List.of()));
-        mediator.onCommand(
                 UpdateUserCommand.class, command -> new UserDetailsModel(1L, "bob@example.com", true, List.of()));
         mediator.onCommand(DeleteUserCommand.class, command -> new DeleteUserCommandResult("bob@example.com"));
         mediator.onCommand(
@@ -42,12 +39,16 @@ class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
     @WithMockUser(roles = "USER")
     void roleUserCannotAccessAdminUsersEndpoints() throws Exception {
         mockMvc.perform(get("/admin/users")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/users/create")).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/users/1")).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/users/1/edit")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/users/invite")).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin")).andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/admin/users/create").with(csrf()).param("username", "john@example.com"))
+        mockMvc.perform(post("/admin/users/invite")
+                        .with(csrf())
+                        .param("email", "john@example.com")
+                        .param("roleName", "ROLE_USER")
+                        .param("validity", "24h"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/admin/users/1/edit").with(csrf()).param("username", "john@example.com"))
                 .andExpect(status().isForbidden());
@@ -62,12 +63,16 @@ class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     void roleAdminCanAccessAdminUsersEndpoints() throws Exception {
         mockMvc.perform(get("/admin/users")).andExpect(status().isOk());
-        mockMvc.perform(get("/admin/users/create")).andExpect(status().isOk());
         mockMvc.perform(get("/admin/users/1")).andExpect(status().isOk());
         mockMvc.perform(get("/admin/users/1/edit")).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/users/invite")).andExpect(status().isOk());
         mockMvc.perform(get("/admin")).andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(post("/admin/users/create").with(csrf()).param("username", "john@example.com"))
+        mockMvc.perform(post("/admin/users/invite")
+                        .with(csrf())
+                        .param("email", "john@example.com")
+                        .param("roleName", "ROLE_USER")
+                        .param("validity", "24h"))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/admin/users/1/edit").with(csrf()).param("username", "john@example.com"))
                 .andExpect(status().is3xxRedirection());

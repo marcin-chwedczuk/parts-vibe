@@ -6,9 +6,9 @@ import app.partsvibe.storage.api.StorageException;
 import app.partsvibe.storage.api.StorageFileSizeLimitExceededException;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbItemData;
 import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
-import app.partsvibe.users.commands.profile.ChangeCurrentUserAvatarCommand;
-import app.partsvibe.users.commands.profile.UpdateCurrentUserProfileCommand;
-import app.partsvibe.users.commands.profile.password.ChangeCurrentUserPasswordCommand;
+import app.partsvibe.users.commands.profile.UpdateAvatarCommand;
+import app.partsvibe.users.commands.profile.UpdatePasswordCommand;
+import app.partsvibe.users.commands.profile.UpdateProfileCommand;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
 import app.partsvibe.users.errors.PasswordsDoNotMatchException;
 import app.partsvibe.users.errors.WeakPasswordException;
@@ -74,7 +74,7 @@ public class ProfileController {
             return "profile/view";
         }
 
-        mediator.executeCommand(new UpdateCurrentUserProfileCommand(currentUserId(), form.getBio(), form.getWebsite()));
+        mediator.executeCommand(new UpdateProfileCommand(currentUserId(), form.getBio(), form.getWebsite()));
         redirectAttributes.addFlashAttribute("profileMessageCode", "profile.info.updated");
         redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
         redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_INFO);
@@ -103,8 +103,7 @@ public class ProfileController {
                     avatarFile.getContentType(),
                     avatarFile.getSize());
 
-            mediator.executeCommand(
-                    new ChangeCurrentUserAvatarCommand(userId, originalFilename, readFileBytes(avatarFile)));
+            mediator.executeCommand(new UpdateAvatarCommand(userId, originalFilename, readFileBytes(avatarFile)));
             log.info("Profile avatar upload completed. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
@@ -172,7 +171,7 @@ public class ProfileController {
         }
 
         try {
-            mediator.executeCommand(new ChangeCurrentUserPasswordCommand(
+            mediator.executeCommand(new UpdatePasswordCommand(
                     currentUserId(),
                     passwordForm.getCurrentPassword(),
                     passwordForm.getNewPassword(),

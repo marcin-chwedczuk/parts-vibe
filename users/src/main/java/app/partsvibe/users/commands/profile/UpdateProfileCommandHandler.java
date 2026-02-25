@@ -2,20 +2,26 @@ package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
+import app.partsvibe.shared.security.CurrentUserProvider;
+import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.repo.UserRepository;
 import org.springframework.stereotype.Component;
 
 @Component
-class UpdateCurrentUserProfileCommandHandler extends BaseCommandHandler<UpdateCurrentUserProfileCommand, NoResult> {
+class UpdateProfileCommandHandler extends BaseCommandHandler<UpdateProfileCommand, NoResult> {
     private final UserRepository userRepository;
+    private final CurrentUserProvider currentUserProvider;
 
-    UpdateCurrentUserProfileCommandHandler(UserRepository userRepository) {
+    UpdateProfileCommandHandler(UserRepository userRepository, CurrentUserProvider currentUserProvider) {
         this.userRepository = userRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Override
-    protected NoResult doHandle(UpdateCurrentUserProfileCommand command) {
+    protected NoResult doHandle(UpdateProfileCommand command) {
+        assertCurrentUserMatches(command.userId());
+
         var user = userRepository
                 .findById(command.userId())
                 .orElseThrow(() -> new UserNotFoundException(command.userId()));
@@ -32,5 +38,12 @@ class UpdateCurrentUserProfileCommandHandler extends BaseCommandHandler<UpdateCu
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private void assertCurrentUserMatches(Long commandUserId) {
+        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
+        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
+            throw new CurrentUserMismatchException(commandUserId, currentUserId);
+        }
     }
 }

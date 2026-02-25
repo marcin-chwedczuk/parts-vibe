@@ -61,10 +61,6 @@ public class UserFilters {
                 .toUriString();
     }
 
-    public String toUserCreateUrl() {
-        return managementUrlBuilder().replacePath("/admin/users/create").build().toUriString();
-    }
-
     public String toUserInviteUrl() {
         return managementUrlBuilder().replacePath("/admin/users/invite").build().toUriString();
     }

@@ -2,12 +2,14 @@ package app.partsvibe.users.commands.profile;
 
 import app.partsvibe.shared.cqrs.BaseCommandHandler;
 import app.partsvibe.shared.cqrs.NoResult;
+import app.partsvibe.shared.security.CurrentUserProvider;
 import app.partsvibe.shared.time.TimeProvider;
 import app.partsvibe.storage.api.StorageClient;
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.StorageUploadRequest;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequest;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequestStatus;
+import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
@@ -15,25 +17,30 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
-class ChangeCurrentUserAvatarCommandHandler extends BaseCommandHandler<ChangeCurrentUserAvatarCommand, NoResult> {
+class UpdateAvatarCommandHandler extends BaseCommandHandler<UpdateAvatarCommand, NoResult> {
     private final UserRepository userRepository;
     private final UserAvatarChangeRequestRepository avatarChangeRequestRepository;
+    private final CurrentUserProvider currentUserProvider;
     private final StorageClient storageClient;
     private final TimeProvider timeProvider;
 
-    ChangeCurrentUserAvatarCommandHandler(
+    UpdateAvatarCommandHandler(
             UserRepository userRepository,
             UserAvatarChangeRequestRepository avatarChangeRequestRepository,
+            CurrentUserProvider currentUserProvider,
             StorageClient storageClient,
             TimeProvider timeProvider) {
         this.userRepository = userRepository;
         this.avatarChangeRequestRepository = avatarChangeRequestRepository;
+        this.currentUserProvider = currentUserProvider;
         this.storageClient = storageClient;
         this.timeProvider = timeProvider;
     }
 
     @Override
-    protected NoResult doHandle(ChangeCurrentUserAvatarCommand command) {
+    protected NoResult doHandle(UpdateAvatarCommand command) {
+        assertCurrentUserMatches(command.userId());
+
         var user = userRepository
                 .findById(command.userId())
                 .orElseThrow(() -> new UserNotFoundException(command.userId()));
@@ -55,5 +62,12 @@ class ChangeCurrentUserAvatarCommandHandler extends BaseCommandHandler<ChangeCur
         avatarChangeRequestRepository.save(request);
 
         return NoResult.INSTANCE;
+    }
+
+    private void assertCurrentUserMatches(Long commandUserId) {
+        Long currentUserId = currentUserProvider.currentUserId().orElse(null);
+        if (currentUserId == null || !currentUserId.equals(commandUserId)) {
+            throw new CurrentUserMismatchException(commandUserId, currentUserId);
+        }
     }
 }

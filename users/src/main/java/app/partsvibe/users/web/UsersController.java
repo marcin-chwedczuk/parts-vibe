@@ -9,7 +9,6 @@ import app.partsvibe.uicomponents.breadcrumbs.BreadcrumbsData;
 import app.partsvibe.users.commands.invite.InviteUserCommand;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteCurrentUserException;
 import app.partsvibe.users.commands.usermanagement.CannotDeleteLastActiveAdminException;
-import app.partsvibe.users.commands.usermanagement.CreateUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
@@ -241,17 +240,6 @@ public class UsersController {
         }
     }
 
-    @GetMapping("/create")
-    public String createUser(@ModelAttribute("filters") UserFilters filters, Model model, Locale locale) {
-        filters.sanitize();
-        sanitizeRoleFilters(filters);
-        if (!model.containsAttribute("form")) {
-            model.addAttribute("form", new UserForm());
-        }
-        addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
-        return "admin/user-create";
-    }
-
     @GetMapping("/invite")
     public String inviteUser(@ModelAttribute("filters") UserFilters filters, Model model, Locale locale) {
         filters.sanitize();
@@ -324,33 +312,6 @@ public class UsersController {
         model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
         addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
         return "admin/user-invite";
-    }
-
-    @PostMapping("/create")
-    public String saveUserCreate(
-            @ModelAttribute("filters") UserFilters filters,
-            @Valid @ModelAttribute("form") UserForm form,
-            BindingResult bindingResult,
-            Model model,
-            RedirectAttributes redirectAttributes,
-            Locale locale) {
-        filters.sanitize();
-        sanitizeRoleFilters(filters);
-        if (bindingResult.hasErrors()) {
-            addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
-            return "admin/user-create";
-        }
-
-        try {
-            UserDetailsModel created =
-                    mediator.executeCommand(new CreateUserCommand(form.getUsername(), form.isEnabled()));
-            setActionMessage(redirectAttributes, "admin.users.action.created", "alert-success", created.username());
-            return "redirect:" + filters.toUserViewUrl(created.id());
-        } catch (UsernameAlreadyExistsException ex) {
-            bindingResult.rejectValue("username", "admin.user.validation.username.duplicate");
-            addUserFormPageModel(filters, model, locale, "admin.user.create.heading");
-            return "admin/user-create";
-        }
     }
 
     @PostMapping("/{userId}/edit")
