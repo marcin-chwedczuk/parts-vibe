@@ -27,7 +27,7 @@ class FindUserDetailsByUsernameQueryHandler extends BaseQueryHandler<FindUserDet
         log.info("Loading user details for username={}", query.username());
         User userDetails = queryFactory
                 .selectFrom(user)
-                .where(user.username.eq(query.username()))
+                .where(user.username.equalsIgnoreCase(query.username()))
                 .fetchOne();
 
         if (userDetails == null) {

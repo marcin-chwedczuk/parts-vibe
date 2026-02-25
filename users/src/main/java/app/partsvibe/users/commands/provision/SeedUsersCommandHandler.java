@@ -34,7 +34,7 @@ class SeedUsersCommandHandler extends BaseCommandHandler<SeedUsersCommand, NoRes
                 .orElseGet(() -> roleRepository.save(new Role(RoleNames.USER)));
 
         for (var userDefinition : command.users()) {
-            userRepository.findByUsername(userDefinition.username()).orElseGet(() -> {
+            userRepository.findByUsernameIgnoreCase(userDefinition.username()).orElseGet(() -> {
                 var user = new User(userDefinition.username(), passwordEncoder.encode(userDefinition.password()));
                 if (userDefinition.isAdmin()) {
                     user.getRoles().addAll(Set.of(adminRole, userRole));
