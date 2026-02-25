@@ -20,6 +20,7 @@ import app.partsvibe.users.errors.InvalidInviteRoleException;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.errors.UsernameAlreadyExistsException;
 import app.partsvibe.users.models.UserDetailsModel;
+import app.partsvibe.users.queries.usermanagement.GetAvailableRolesQuery;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
 import app.partsvibe.users.web.form.AdminResetUserPasswordForm;
@@ -38,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -61,7 +61,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
 public class UsersController {
-    private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
     private static final Logger log = LoggerFactory.getLogger(UsersController.class);
     private static final Object[] NO_MESSAGE_ARGS = new Object[0];
 
@@ -110,7 +109,7 @@ public class UsersController {
         List<Integer> pageNumbers = buildPageNumbers(totalPages);
 
         model.addAttribute("users", pagedUsers);
-        model.addAttribute("availableRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("availableRoles", availableRoleNames());
         model.addAttribute("pageSizes", UserFilters.allowedPageSizes());
         model.addAttribute("sortUsername", filters.buildSortLink(SearchUsersQuery.SORT_BY_USERNAME));
         model.addAttribute("sortEnabled", filters.buildSortLink(SearchUsersQuery.SORT_BY_ENABLED));
@@ -260,7 +259,7 @@ public class UsersController {
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new InviteUserForm());
         }
-        model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("inviteRoles", availableRoleNames());
         model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
         addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
         return "admin/user-invite";
@@ -283,7 +282,7 @@ public class UsersController {
         }
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+            model.addAttribute("inviteRoles", availableRoleNames());
             model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
             addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
             return "admin/user-invite";
@@ -321,7 +320,7 @@ public class UsersController {
             bindingResult.rejectValue("roleName", "admin.user.invite.validation.role.invalid");
         }
 
-        model.addAttribute("inviteRoles", ALLOWED_ROLES.stream().sorted().toList());
+        model.addAttribute("inviteRoles", availableRoleNames());
         model.addAttribute("inviteValidityOptions", List.of("24h", "7d"));
         addUserFormPageModel(filters, model, locale, "admin.user.invite.heading");
         return "admin/user-invite";
@@ -557,10 +556,15 @@ public class UsersController {
         if (filters.getRolesContainAll() == null) {
             filters.setRolesContainAll(new ArrayList<>());
         }
+        var availableRoles = availableRoleNames();
         filters.setRolesContainAll(filters.getRolesContainAll().stream()
-                .filter(ALLOWED_ROLES::contains)
+                .filter(availableRoles::contains)
                 .distinct()
                 .toList());
+    }
+
+    private List<String> availableRoleNames() {
+        return mediator.executeQuery(new GetAvailableRolesQuery());
     }
 
     private String renderResetUserPasswordForm(

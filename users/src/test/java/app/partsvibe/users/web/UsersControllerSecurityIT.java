@@ -11,6 +11,7 @@ import app.partsvibe.users.commands.usermanagement.DeleteUserCommand;
 import app.partsvibe.users.commands.usermanagement.DeleteUserCommandResult;
 import app.partsvibe.users.commands.usermanagement.UpdateUserCommand;
 import app.partsvibe.users.models.UserDetailsModel;
+import app.partsvibe.users.queries.usermanagement.GetAvailableRolesQuery;
 import app.partsvibe.users.queries.usermanagement.SearchUsersQuery;
 import app.partsvibe.users.queries.usermanagement.UserByIdQuery;
 import app.partsvibe.users.test.web.AbstractUsersWebIntegrationTest;
@@ -23,6 +24,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 class UsersControllerSecurityIT extends AbstractUsersWebIntegrationTest {
     @BeforeEach
     void setUpMediatorHandlers() {
+        mediator.onQuery(GetAvailableRolesQuery.class, query -> List.of("ROLE_ADMIN", "ROLE_USER"));
         mediator.onQuery(SearchUsersQuery.class, query -> new PageResult<>(List.of(), 0, 0, 1, 10));
         mediator.onQuery(UserByIdQuery.class, query -> new UserDetailsModel(1L, "bob@example.com", true, List.of()));
         mediator.onCommand(

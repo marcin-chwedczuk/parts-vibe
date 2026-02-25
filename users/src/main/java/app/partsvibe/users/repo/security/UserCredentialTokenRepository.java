@@ -31,4 +31,19 @@ public interface UserCredentialTokenRepository extends JpaRepository<UserCredent
             @Param("userId") Long userId,
             @Param("purpose") UserCredentialTokenPurpose purpose,
             @Param("now") Instant now);
+
+    @Modifying
+    @Query(
+            """
+            update UserCredentialToken t
+            set t.revokedAt = :now
+            where t.user.id = :userId
+              and t.purpose = :purpose
+              and t.usedAt is null
+              and t.revokedAt is null
+            """)
+    int revokeUnconsumedTokensByUserAndPurpose(
+            @Param("userId") Long userId,
+            @Param("purpose") UserCredentialTokenPurpose purpose,
+            @Param("now") Instant now);
 }

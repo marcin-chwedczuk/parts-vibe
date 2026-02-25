@@ -3,11 +3,13 @@ package app.partsvibe.users.commands.invite;
 import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.domain.security.UserCredentialToken;
 import app.partsvibe.users.domain.security.UserCredentialTokenPurpose;
+import app.partsvibe.users.errors.InvalidInviteRoleException;
 import app.partsvibe.users.events.UserInvitedEvent;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
@@ -43,6 +45,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         // given
         Instant now = Instant.parse("2026-02-25T12:00:00Z");
         timeProvider.setNow(now);
+        roleRepository.save(aRole().withName("ROLE_USER").build());
 
         // when
         InviteUserCommandResult result =
@@ -80,10 +83,11 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         Instant now = Instant.parse("2026-02-25T12:00:00Z");
         timeProvider.setNow(now);
 
+        Role roleAdmin = roleRepository.save(aRole().withName("ROLE_ADMIN").build());
         Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
         User user = userRepository.save(aUser().withUsername("invited@example.com")
                 .withPasswordHash("placeholder-password")
-                .withRole(roleUser)
+                .withRole(roleAdmin)
                 .build());
 
         UserCredentialToken previousInvite = tokenRepository.save(new UserCredentialToken(
@@ -117,9 +121,57 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                         .orElseThrow()
                         .getRevokedAt())
                 .isNull();
+        var updatedUser = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(updatedUser.getRoles()).extracting(Role::getName).containsExactly("ROLE_USER");
 
         assertThat(eventPublisher.publishedEvents()).hasSize(1);
         assertThat(eventPublisher.publishedEvents().get(0)).isInstanceOf(UserInvitedEvent.class);
+    }
+
+    @Test
+    void resendInviteRevokesAllOutstandingUnusedInviteTokens() {
+        // given
+        Instant now = Instant.parse("2026-02-25T12:00:00Z");
+        timeProvider.setNow(now);
+
+        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        User user = userRepository.save(aUser().withUsername("multiple-tokens@example.com")
+                .withPasswordHash("placeholder-password")
+                .withRole(roleUser)
+                .build());
+
+        UserCredentialToken firstOldToken = tokenRepository.save(new UserCredentialToken(
+                user,
+                tokenCodec.hash("old-invite-token-1"),
+                UserCredentialTokenPurpose.INVITE_ACTIVATION,
+                now.plusSeconds(3600)));
+        UserCredentialToken secondOldToken = tokenRepository.save(new UserCredentialToken(
+                user,
+                tokenCodec.hash("old-invite-token-2"),
+                UserCredentialTokenPurpose.INVITE_ACTIVATION,
+                now.plusSeconds(7200)));
+
+        // when
+        commandHandler.handle(new InviteUserCommand("multiple-tokens@example.com", "ROLE_USER", 24, null));
+
+        // then
+        entityManager.flush();
+        entityManager.clear();
+
+        UserCredentialToken firstOldSaved =
+                tokenRepository.findById(firstOldToken.getId()).orElseThrow();
+        UserCredentialToken secondOldSaved =
+                tokenRepository.findById(secondOldToken.getId()).orElseThrow();
+        assertThat(firstOldSaved.getRevokedAt()).isEqualTo(now);
+        assertThat(secondOldSaved.getRevokedAt()).isEqualTo(now);
+
+        var inviteTokens = tokenRepository.findAll().stream()
+                .filter(token -> token.getUser().getId().equals(user.getId()))
+                .filter(token -> token.getPurpose() == UserCredentialTokenPurpose.INVITE_ACTIVATION)
+                .toList();
+        assertThat(inviteTokens).hasSize(3);
+        assertThat(inviteTokens.stream().filter(token -> token.getRevokedAt() == null))
+                .hasSize(1);
     }
 
     @Test
@@ -140,5 +192,16 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         assertThat(tokenRepository.findAll()).isEmpty();
         assertThat(eventPublisher.publishedEvents()).isEmpty();
         assertThat(userRepository.findById(user.getId())).isPresent();
+    }
+
+    @Test
+    void rejectsInviteWhenRoleDoesNotExistInDatabase() {
+        // given
+        timeProvider.setNow(Instant.parse("2026-02-25T12:00:00Z"));
+
+        // when / then
+        assertThatThrownBy(() -> commandHandler.handle(
+                        new InviteUserCommand("missing-role@example.com", "ROLE_UNKNOWN", 24, null)))
+                .isInstanceOf(InvalidInviteRoleException.class);
     }
 }

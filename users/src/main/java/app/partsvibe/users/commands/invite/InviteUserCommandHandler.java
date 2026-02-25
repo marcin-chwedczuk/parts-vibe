@@ -15,15 +15,12 @@ import app.partsvibe.users.repo.security.UserCredentialTokenRepository;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, InviteUserCommandResult> {
-    private static final Set<String> ALLOWED_ROLES = Set.of("ROLE_USER", "ROLE_ADMIN");
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserCredentialTokenRepository tokenRepository;
@@ -55,11 +52,7 @@ class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, Inv
         String roleName = normalizeRole(command.roleName());
         String inviteMessage = command.inviteMessage();
 
-        if (!ALLOWED_ROLES.contains(roleName)) {
-            throw new InvalidInviteRoleException(roleName);
-        }
-
-        Role role = roleRepository.findByName(roleName).orElseGet(() -> roleRepository.save(new Role(roleName)));
+        Role role = roleRepository.findByName(roleName).orElseThrow(() -> new InvalidInviteRoleException(roleName));
 
         var existingOpt = userRepository.findByUsernameIgnoreCase(email);
         if (existingOpt.isPresent()) {
@@ -85,6 +78,7 @@ class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, Inv
                         InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED);
             }
 
+            existing.getRoles().clear();
             existing.getRoles().add(role);
             User saved = userRepository.save(existing);
             Instant expiresAt = publishInvite(saved, roleName, command.validityHours(), inviteMessage);
@@ -103,7 +97,7 @@ class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, Inv
 
     private Instant publishInvite(User user, String roleName, int validityHours, String inviteMessage) {
         Instant now = timeProvider.now();
-        tokenRepository.revokeActiveTokensByUserAndPurpose(
+        tokenRepository.revokeUnconsumedTokensByUserAndPurpose(
                 user.getId(), UserCredentialTokenPurpose.INVITE_ACTIVATION, now);
         Instant expiresAt = now.plusSeconds(validityHours * 3600L);
         String rawToken = tokenCodec.newRawToken();
