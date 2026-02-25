@@ -13,6 +13,7 @@ import app.partsvibe.users.email.ThymeleafEmailTemplateRenderer;
 import app.partsvibe.users.email.config.EmailTextTemplateEngineConfig;
 import app.partsvibe.users.email.templates.InviteEmailTemplate;
 import app.partsvibe.users.email.templates.PasswordResetEmailTemplate;
+import app.partsvibe.users.security.links.UserAuthLinkBuilder;
 import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import app.partsvibe.users.test.fakes.InMemoryEmailSender;
 import java.util.HashSet;
@@ -48,7 +49,8 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
     InviteEmailTemplate.class,
     PasswordResetEmailTemplate.class,
     CredentialTokenCodec.class,
-    AuthorizationService.class
+    AuthorizationService.class,
+    UserAuthLinkBuilder.class
 })
 public class UsersItTestApplication {
     @Bean
