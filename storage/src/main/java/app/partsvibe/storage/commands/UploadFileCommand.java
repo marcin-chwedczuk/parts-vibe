@@ -6,7 +6,9 @@ import app.partsvibe.storage.api.StorageUploadResult;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
+@Builder
 public record UploadFileCommand(
         @NotNull StorageObjectType objectType,
         @NotBlank @Size(max = 256) String originalFilename,

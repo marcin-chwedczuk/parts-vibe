@@ -23,8 +23,11 @@ class DefaultStorageClient implements StorageClient {
     @Override
     public StorageUploadResult upload(StorageUploadRequest request) {
         try {
-            return mediator.executeCommand(
-                    new UploadFileCommand(request.objectType(), request.originalFilename(), request.content()));
+            return mediator.executeCommand(UploadFileCommand.builder()
+                    .objectType(request.objectType())
+                    .originalFilename(request.originalFilename())
+                    .content(request.content())
+                    .build());
         } catch (StorageException ex) {
             throw ex;
         } catch (ApplicationException ex) {

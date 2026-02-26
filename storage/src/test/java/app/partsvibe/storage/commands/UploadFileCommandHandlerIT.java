@@ -33,8 +33,11 @@ class UploadFileCommandHandlerIT extends AbstractStorageIntegrationTest {
     void uploadStoresPendingFileWritesBlobAndPublishesFileUploadedEvent() throws Exception {
         byte[] content = StorageTestData.pngBytes(8, 8);
 
-        var result = commandHandler.handle(
-                new UploadFileCommand(StorageObjectType.USER_AVATAR_IMAGE, "avatar.png", content));
+        var result = commandHandler.handle(UploadFileCommand.builder()
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .originalFilename("avatar.png")
+                .content(content)
+                .build());
 
         var saved = storedFileRepository.findByFileId(result.fileId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(StoredFileStatus.PENDING_SCAN);
@@ -60,8 +63,11 @@ class UploadFileCommandHandlerIT extends AbstractStorageIntegrationTest {
     void uploadRejectsImageWithInvalidExtension() {
         byte[] content = StorageTestData.pngBytes(8, 8);
 
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new UploadFileCommand(StorageObjectType.USER_AVATAR_IMAGE, "avatar.gif", content)))
+        assertThatThrownBy(() -> commandHandler.handle(UploadFileCommand.builder()
+                        .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                        .originalFilename("avatar.gif")
+                        .content(content)
+                        .build()))
                 .isInstanceOf(StorageValidationException.class);
 
         assertThat(storedFileRepository.count()).isZero();
