@@ -94,13 +94,13 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
         assertThat(activeToken.getUsedAt()).isNull();
         assertThat(activeToken.getExpiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
 
-        assertThat(eventPublisher.publishedEvents()).hasSize(1);
-        assertThat(eventPublisher.publishedEvents().get(0)).isInstanceOf(PasswordResetRequestedEvent.class);
-        PasswordResetRequestedEvent event =
-                (PasswordResetRequestedEvent) eventPublisher.publishedEvents().get(0);
-        assertThat(event.email()).isEqualTo("alice@example.com");
-        assertThat(event.expiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
-        assertThat(tokenCodec.hash(event.token())).isEqualTo(activeToken.getTokenHash());
+        assertThat(eventPublisher.publishedEvents())
+                .singleElement()
+                .isInstanceOfSatisfying(PasswordResetRequestedEvent.class, event -> {
+                    assertThat(event.email()).isEqualTo("alice@example.com");
+                    assertThat(event.expiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
+                    assertThat(tokenCodec.hash(event.token())).isEqualTo(activeToken.getTokenHash());
+                });
     }
 
     @Test

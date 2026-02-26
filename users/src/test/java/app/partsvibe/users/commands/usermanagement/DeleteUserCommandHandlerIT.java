@@ -1,6 +1,8 @@
 package app.partsvibe.users.commands.usermanagement;
 
 import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
+import static app.partsvibe.users.test.databuilders.UserAvatarChangeRequestTestDataBuilder.aUserAvatarChangeRequest;
+import static app.partsvibe.users.test.databuilders.UserPasswordResetTokenTestDataBuilder.aUserPasswordResetToken;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,7 +12,11 @@ import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
+import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
+import app.partsvibe.users.repo.security.UserPasswordResetTokenRepository;
+import app.partsvibe.users.security.tokens.CredentialTokenCodec;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
+import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -26,6 +32,15 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private UserPasswordResetTokenRepository tokenRepository;
+
+    @Autowired
+    private CredentialTokenCodec tokenCodec;
+
+    @Autowired
+    private UserAvatarChangeRequestRepository avatarChangeRequestRepository;
+
     @Override
     protected void beforeEachTest(TestInfo testInfo) {
         roleRepository
@@ -36,6 +51,7 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .findByName(RoleNames.ADMIN)
                 .orElseGet(() ->
                         roleRepository.save(aRole().withName(RoleNames.ADMIN).build()));
+        timeProvider.setNow(Instant.parse("2026-02-25T12:00:00Z"));
     }
 
     @Test
@@ -101,5 +117,37 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         assertThat(result.deletedUsername()).isEqualTo("admin-b");
         assertThat(userRepository.findById(adminB.getId())).isEmpty();
         assertThat(userRepository.countActiveUsersByRoleName(RoleNames.ADMIN)).isEqualTo(1);
+    }
+
+    @Test
+    void deletesPasswordResetTokensAndAvatarChangeRequestsOwnedByDeletedUser() {
+        // given
+        currentUserProvider.setCurrentUser("admin-operator", Set.of(RoleNames.ADMIN));
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
+        User target = userRepository.save(aUser().withUsername("deletable-with-token@example.com")
+                .withRole(roleUser)
+                .build());
+        tokenRepository.save(aUserPasswordResetToken()
+                .withUser(target)
+                .withTokenHash(tokenCodec.hash("deletable-with-token"))
+                .withExpiresAt(timeProvider.now().plusSeconds(3600))
+                .build());
+        avatarChangeRequestRepository.save(aUserAvatarChangeRequest()
+                .withUser(target)
+                .withRequestedAt(timeProvider.now())
+                .build());
+
+        // when
+        DeleteUserCommandResult result = commandHandler.handle(new DeleteUserCommand(target.getId()));
+
+        // then
+        assertThat(result.deletedUsername()).isEqualTo("deletable-with-token@example.com");
+        assertThat(userRepository.findById(target.getId())).isEmpty();
+        assertThat(tokenRepository.findAll().stream()
+                        .filter(token -> token.getUser().getId().equals(target.getId())))
+                .isEmpty();
+        assertThat(avatarChangeRequestRepository.findAll().stream()
+                        .filter(request -> request.getUser().getId().equals(target.getId())))
+                .isEmpty();
     }
 }

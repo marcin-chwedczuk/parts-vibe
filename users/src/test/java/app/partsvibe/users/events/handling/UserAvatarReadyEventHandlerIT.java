@@ -1,11 +1,11 @@
 package app.partsvibe.users.events.handling;
 
+import static app.partsvibe.users.test.databuilders.UserAvatarChangeRequestTestDataBuilder.aUserAvatarChangeRequest;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.storage.api.StorageObjectType;
 import app.partsvibe.storage.api.events.FileReadyEvent;
-import app.partsvibe.users.domain.avatar.UserAvatarChangeRequest;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequestStatus;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.repo.avatar.UserAvatarChangeRequestRepository;
@@ -47,7 +47,12 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         user.setAvatarId(previousAvatarId);
         user = userRepository.save(user);
 
-        requestRepository.save(new UserAvatarChangeRequest(user, newAvatarId, previousAvatarId, now.minusSeconds(5)));
+        requestRepository.save(aUserAvatarChangeRequest()
+                .withUser(user)
+                .withNewAvatarFileId(newAvatarId)
+                .withPreviousAvatarFileId(previousAvatarId)
+                .withRequestedAt(now.minusSeconds(5))
+                .build());
 
         // when
         handler.handle(FileReadyEvent.create(newAvatarId, StorageObjectType.USER_AVATAR_IMAGE));
@@ -86,8 +91,11 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         UUID newAvatarId = UUID.randomUUID();
         var user = userRepository.save(
                 aUser().withUsername("avatar-user-2@example.com").build());
-        var request =
-                requestRepository.save(new UserAvatarChangeRequest(user, newAvatarId, null, now.minusSeconds(10)));
+        var request = requestRepository.save(aUserAvatarChangeRequest()
+                .withUser(user)
+                .withNewAvatarFileId(newAvatarId)
+                .withRequestedAt(now.minusSeconds(10))
+                .build());
         request.setStatus(UserAvatarChangeRequestStatus.APPLIED);
         request.setResolvedAt(now.minusSeconds(1));
         requestRepository.save(request);

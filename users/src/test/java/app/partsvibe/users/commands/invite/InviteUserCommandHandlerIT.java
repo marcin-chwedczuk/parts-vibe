@@ -72,18 +72,19 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .filter(invite -> invite.getEmail().equals("new@example.com"))
                 .toList();
         assertThat(invites).hasSize(1);
-        assertThat(invites.get(0).getRoleName()).isEqualTo(RoleNames.USER);
-        assertThat(invites.get(0).getExpiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
-        assertThat(invites.get(0).getRevokedAt()).isNull();
+        assertThat(invites.getFirst().getRoleName()).isEqualTo(RoleNames.USER);
+        assertThat(invites.getFirst().getExpiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
+        assertThat(invites.getFirst().getRevokedAt()).isNull();
 
-        assertThat(eventPublisher.publishedEvents()).hasSize(1);
-        assertThat(eventPublisher.publishedEvents().get(0)).isInstanceOf(UserInvitedEvent.class);
-        UserInvitedEvent event =
-                (UserInvitedEvent) eventPublisher.publishedEvents().get(0);
-        assertThat(event.email()).isEqualTo("new@example.com");
-        assertThat(event.invitedRole()).isEqualTo(RoleNames.USER);
-        assertThat(event.inviteMessage()).isEqualTo("Welcome aboard");
-        assertThat(tokenCodec.hash(event.token())).isEqualTo(invites.get(0).getTokenHash());
+        assertThat(eventPublisher.publishedEvents())
+                .singleElement()
+                .isInstanceOfSatisfying(UserInvitedEvent.class, event -> {
+                    assertThat(event.email()).isEqualTo("new@example.com");
+                    assertThat(event.invitedRole()).isEqualTo(RoleNames.USER);
+                    assertThat(event.inviteMessage()).isEqualTo("Welcome aboard");
+                    assertThat(tokenCodec.hash(event.token()))
+                            .isEqualTo(invites.getFirst().getTokenHash());
+                });
     }
 
     @Test
@@ -131,8 +132,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         assertThat(userRepository.findByUsernameIgnoreCase("invited@example.com"))
                 .isEmpty();
 
-        assertThat(eventPublisher.publishedEvents()).hasSize(1);
-        assertThat(eventPublisher.publishedEvents().get(0)).isInstanceOf(UserInvitedEvent.class);
+        assertThat(eventPublisher.publishedEvents()).singleElement().isInstanceOf(UserInvitedEvent.class);
     }
 
     @Test

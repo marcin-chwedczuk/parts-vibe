@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 public interface UserPasswordResetTokenRepository extends JpaRepository<UserPasswordResetToken, Long> {
     Optional<UserPasswordResetToken> findByTokenHash(String tokenHash);
 
+    long deleteByUserId(Long userId);
+
     @Modifying
     @Query(
             """
