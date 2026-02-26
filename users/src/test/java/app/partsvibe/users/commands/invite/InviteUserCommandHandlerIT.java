@@ -59,8 +59,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         Instant now = NOW_2026_02_25T12_00Z;
 
         // when
-        InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("New@Example.com", "role_user", 24, "Welcome aboard"));
+        InviteUserCommandResult result = commandHandler.handle(InviteUserCommand.builder()
+                .email("New@Example.com")
+                .roleName("role_user")
+                .validityHours(24)
+                .inviteMessage("Welcome aboard")
+                .build());
 
         // then
         assertThat(result.outcome()).isEqualTo(InviteUserCommandResult.InviteOutcome.INVITE_SENT);
@@ -100,8 +104,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("invited@example.com", RoleNames.USER, 24, null));
+        InviteUserCommandResult result = commandHandler.handle(InviteUserCommand.builder()
+                .email("invited@example.com")
+                .roleName(RoleNames.USER)
+                .validityHours(24)
+                .inviteMessage(null)
+                .build());
 
         // then
         entityManager.flush();
@@ -154,7 +162,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        commandHandler.handle(new InviteUserCommand("multiple-tokens@example.com", RoleNames.USER, 24, null));
+        commandHandler.handle(InviteUserCommand.builder()
+                .email("multiple-tokens@example.com")
+                .roleName(RoleNames.USER)
+                .validityHours(24)
+                .inviteMessage(null)
+                .build());
 
         // then
         entityManager.flush();
@@ -185,8 +198,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("active@example.com", RoleNames.USER, 24, null));
+        InviteUserCommandResult result = commandHandler.handle(InviteUserCommand.builder()
+                .email("active@example.com")
+                .roleName(RoleNames.USER)
+                .validityHours(24)
+                .inviteMessage(null)
+                .build());
 
         // then
         assertThat(result.outcome()).isEqualTo(InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED);
@@ -206,8 +223,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("locked@example.com", RoleNames.USER, 24, null));
+        InviteUserCommandResult result = commandHandler.handle(InviteUserCommand.builder()
+                .email("locked@example.com")
+                .roleName(RoleNames.USER)
+                .validityHours(24)
+                .inviteMessage(null)
+                .build());
 
         // then
         assertThat(result.outcome()).isEqualTo(InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED_LOCKED);
@@ -220,8 +241,12 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     void rejectsInviteWhenRoleDoesNotExistInDatabase() {
         // given
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new InviteUserCommand("missing-role@example.com", "ROLE_UNKNOWN", 24, null)))
+        assertThatThrownBy(() -> commandHandler.handle(InviteUserCommand.builder()
+                        .email("missing-role@example.com")
+                        .roleName("ROLE_UNKNOWN")
+                        .validityHours(24)
+                        .inviteMessage(null)
+                        .build()))
                 .isInstanceOf(InvalidInviteRoleException.class);
     }
 }

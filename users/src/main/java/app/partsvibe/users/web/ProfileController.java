@@ -74,7 +74,11 @@ public class ProfileController {
             return "profile/view";
         }
 
-        mediator.executeCommand(new UpdateProfileCommand(currentUserId(), form.getBio(), form.getWebsite()));
+        mediator.executeCommand(UpdateProfileCommand.builder()
+                .userId(currentUserId())
+                .bio(form.getBio())
+                .website(form.getWebsite())
+                .build());
         redirectAttributes.addFlashAttribute("profileMessageCode", "profile.info.updated");
         redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
         redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_INFO);
@@ -103,7 +107,11 @@ public class ProfileController {
                     avatarFile.getContentType(),
                     avatarFile.getSize());
 
-            mediator.executeCommand(new UpdateAvatarCommand(userId, originalFilename, readFileBytes(avatarFile)));
+            mediator.executeCommand(UpdateAvatarCommand.builder()
+                    .userId(userId)
+                    .originalFilename(originalFilename)
+                    .content(readFileBytes(avatarFile))
+                    .build());
             log.info("Profile avatar upload completed. userId={}", userId);
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.avatar.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
@@ -171,11 +179,12 @@ public class ProfileController {
         }
 
         try {
-            mediator.executeCommand(new UpdatePasswordCommand(
-                    currentUserId(),
-                    passwordForm.getCurrentPassword(),
-                    passwordForm.getNewPassword(),
-                    passwordForm.getRepeatedNewPassword()));
+            mediator.executeCommand(UpdatePasswordCommand.builder()
+                    .userId(currentUserId())
+                    .currentPassword(passwordForm.getCurrentPassword())
+                    .newPassword(passwordForm.getNewPassword())
+                    .repeatedNewPassword(passwordForm.getRepeatedNewPassword())
+                    .build());
             redirectAttributes.addFlashAttribute("profileMessageCode", "profile.password.updated");
             redirectAttributes.addFlashAttribute("profileMessageLevel", "alert-success");
             redirectAttributes.addFlashAttribute("profileMessageTarget", PROFILE_MESSAGE_TARGET_PASSWORD);

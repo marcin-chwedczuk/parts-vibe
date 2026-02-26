@@ -222,8 +222,11 @@ public class UsersController {
         }
 
         try {
-            var result = mediator.executeCommand(
-                    new ResetUserPasswordByAdminCommand(userId, currentAdminUserId(), form.getAdminPassword()));
+            var result = mediator.executeCommand(ResetUserPasswordByAdminCommand.builder()
+                    .targetUserId(userId)
+                    .adminUserId(currentAdminUserId())
+                    .adminPassword(form.getAdminPassword())
+                    .build());
             redirectAttributes.addFlashAttribute("passwordResetSuccess", true);
             redirectAttributes.addFlashAttribute("resetPasswordTargetUsername", result.targetUsername());
             redirectAttributes.addFlashAttribute("generatedTemporaryPassword", result.temporaryPassword());
@@ -277,13 +280,15 @@ public class UsersController {
         }
 
         try {
-            var result = mediator.executeCommand(new InviteUserCommand(
-                    form.getEmail(),
-                    form.getRoleName(),
-                    validityHours,
-                    StringUtils.hasText(form.getInviteMessage())
-                            ? form.getInviteMessage().trim()
-                            : null));
+            var result = mediator.executeCommand(InviteUserCommand.builder()
+                    .email(form.getEmail())
+                    .roleName(form.getRoleName())
+                    .validityHours(validityHours)
+                    .inviteMessage(
+                            StringUtils.hasText(form.getInviteMessage())
+                                    ? form.getInviteMessage().trim()
+                                    : null)
+                    .build());
             switch (result.outcome()) {
                 case INVITE_SENT ->
                     setActionMessage(redirectAttributes, "admin.users.action.invited", "alert-success", result.email());
@@ -332,8 +337,11 @@ public class UsersController {
         }
 
         try {
-            UserDetailsModel updated =
-                    mediator.executeCommand(new UpdateUserCommand(userId, form.getUsername(), form.isEnabled()));
+            UserDetailsModel updated = mediator.executeCommand(UpdateUserCommand.builder()
+                    .userId(userId)
+                    .username(form.getUsername())
+                    .enabled(form.isEnabled())
+                    .build());
             setActionMessage(redirectAttributes, "admin.users.action.updated", "alert-success", updated.username());
             return "redirect:" + filters.toUserViewUrl(userId);
         } catch (UsernameAlreadyExistsException ex) {

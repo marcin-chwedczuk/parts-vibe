@@ -78,8 +78,11 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .build());
 
         // when
-        commandHandler.handle(
-                new ResetPasswordWithTokenCommand(rawToken, "new-secure-password", "new-secure-password"));
+        commandHandler.handle(ResetPasswordWithTokenCommand.builder()
+                .token(rawToken)
+                .password("new-secure-password")
+                .repeatedPassword("new-secure-password")
+                .build());
 
         // then
         entityManager.flush();
@@ -108,8 +111,11 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(new ResetPasswordWithTokenCommand(
-                        "missing-token", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(ResetPasswordWithTokenCommand.builder()
+                        .token("missing-token")
+                        .password("new-secure-password")
+                        .repeatedPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(InvalidOrExpiredCredentialTokenException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-password");
@@ -134,8 +140,11 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new ResetPasswordWithTokenCommand(rawToken, "new-secure-password", "different-password")))
+        assertThatThrownBy(() -> commandHandler.handle(ResetPasswordWithTokenCommand.builder()
+                        .token(rawToken)
+                        .password("new-secure-password")
+                        .repeatedPassword("different-password")
+                        .build()))
                 .isInstanceOf(PasswordsDoNotMatchException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-password");

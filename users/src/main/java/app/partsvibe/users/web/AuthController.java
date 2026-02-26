@@ -147,11 +147,17 @@ public class AuthController {
 
         try {
             if (requestedMode == PasswordSetupMode.INVITE) {
-                mediator.executeCommand(
-                        new FinalizeUserInviteCommand(form.getToken(), form.getPassword(), form.getRepeatedPassword()));
+                mediator.executeCommand(FinalizeUserInviteCommand.builder()
+                        .token(form.getToken())
+                        .password(form.getPassword())
+                        .repeatedPassword(form.getRepeatedPassword())
+                        .build());
             } else {
-                mediator.executeCommand(new ResetPasswordWithTokenCommand(
-                        form.getToken(), form.getPassword(), form.getRepeatedPassword()));
+                mediator.executeCommand(ResetPasswordWithTokenCommand.builder()
+                        .token(form.getToken())
+                        .password(form.getPassword())
+                        .repeatedPassword(form.getRepeatedPassword())
+                        .build());
             }
             redirectAttributes.addFlashAttribute("passwordResetDone", true);
             return "redirect:/login";

@@ -48,8 +48,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
         currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when
-        commandHandler.handle(new UpdatePasswordCommand(
-                user.getId(), "current-password", "new-secure-password", "new-secure-password"));
+        commandHandler.handle(UpdatePasswordCommand.builder()
+                .userId(user.getId())
+                .currentPassword("current-password")
+                .newPassword("new-secure-password")
+                .repeatedNewPassword("new-secure-password")
+                .build());
 
         // then
         User saved = userRepository.findById(user.getId()).orElseThrow();
@@ -67,8 +71,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
         currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(
-                        user.getId(), "wrong-password", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(UpdatePasswordCommand.builder()
+                        .userId(user.getId())
+                        .currentPassword("wrong-password")
+                        .newPassword("new-secure-password")
+                        .repeatedNewPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(InvalidCurrentPasswordException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("current-password");
@@ -85,8 +93,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
         currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(
-                        user.getId(), "current-password", "new-secure-password", "different-password")))
+        assertThatThrownBy(() -> commandHandler.handle(UpdatePasswordCommand.builder()
+                        .userId(user.getId())
+                        .currentPassword("current-password")
+                        .newPassword("new-secure-password")
+                        .repeatedNewPassword("different-password")
+                        .build()))
                 .isInstanceOf(PasswordsDoNotMatchException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("current-password");
@@ -103,8 +115,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
         currentUserProvider.setCurrentUser(999L, "other@example.com", Set.of(RoleNames.USER));
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(
-                        user.getId(), "current-password", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(UpdatePasswordCommand.builder()
+                        .userId(user.getId())
+                        .currentPassword("current-password")
+                        .newPassword("new-secure-password")
+                        .repeatedNewPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(CurrentUserMismatchException.class);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("current-password");

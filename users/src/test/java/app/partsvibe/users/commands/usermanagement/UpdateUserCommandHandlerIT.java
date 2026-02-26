@@ -45,8 +45,11 @@ class UpdateUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .withRole(roleUser)
                 .build());
 
-        UserDetailsModel result =
-                commandHandler.handle(new UpdateUserCommand(target.getId(), " After@Example.COM ", false));
+        UserDetailsModel result = commandHandler.handle(UpdateUserCommand.builder()
+                .userId(target.getId())
+                .username(" After@Example.COM ")
+                .enabled(false)
+                .build());
 
         assertThat(result.username()).isEqualTo("after@example.com");
         assertThat(result.enabled()).isFalse();
@@ -70,14 +73,21 @@ class UpdateUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .withRole(roleUser)
                 .build());
 
-        assertThatThrownBy(() ->
-                        commandHandler.handle(new UpdateUserCommand(target.getId(), "EXISTING@example.com", true)))
+        assertThatThrownBy(() -> commandHandler.handle(UpdateUserCommand.builder()
+                        .userId(target.getId())
+                        .username("EXISTING@example.com")
+                        .enabled(true)
+                        .build()))
                 .isInstanceOf(UsernameAlreadyExistsException.class);
     }
 
     @Test
     void throwsWhenUserNotFound() {
-        assertThatThrownBy(() -> commandHandler.handle(new UpdateUserCommand(999_999L, "x@example.com", true)))
+        assertThatThrownBy(() -> commandHandler.handle(UpdateUserCommand.builder()
+                        .userId(999_999L)
+                        .username("x@example.com")
+                        .enabled(true)
+                        .build()))
                 .isInstanceOf(UserNotFoundException.class);
     }
 }

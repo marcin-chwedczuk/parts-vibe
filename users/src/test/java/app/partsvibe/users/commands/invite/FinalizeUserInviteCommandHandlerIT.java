@@ -71,8 +71,11 @@ class FinalizeUserInviteCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        commandHandler.handle(
-                new FinalizeUserInviteCommand("invite-token", "new-secure-password", "new-secure-password"));
+        commandHandler.handle(FinalizeUserInviteCommand.builder()
+                .token("invite-token")
+                .password("new-secure-password")
+                .repeatedPassword("new-secure-password")
+                .build());
 
         // then
         entityManager.flush();
@@ -94,8 +97,11 @@ class FinalizeUserInviteCommandHandlerIT extends AbstractUsersIntegrationTest {
     void rejectsWhenInviteTokenMissing() {
         // given
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new FinalizeUserInviteCommand("missing-token", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(FinalizeUserInviteCommand.builder()
+                        .token("missing-token")
+                        .password("new-secure-password")
+                        .repeatedPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(InvalidOrExpiredCredentialTokenException.class);
     }
 
@@ -111,8 +117,11 @@ class FinalizeUserInviteCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new FinalizeUserInviteCommand("expired-token", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(FinalizeUserInviteCommand.builder()
+                        .token("expired-token")
+                        .password("new-secure-password")
+                        .repeatedPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(InvalidOrExpiredCredentialTokenException.class);
     }
 
@@ -128,8 +137,11 @@ class FinalizeUserInviteCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new FinalizeUserInviteCommand("invite-token-2", "new-secure-password", "different-password")))
+        assertThatThrownBy(() -> commandHandler.handle(FinalizeUserInviteCommand.builder()
+                        .token("invite-token-2")
+                        .password("new-secure-password")
+                        .repeatedPassword("different-password")
+                        .build()))
                 .isInstanceOf(PasswordsDoNotMatchException.class);
         assertThat(userRepository.findByUsernameIgnoreCase("invited-user2@example.com"))
                 .isEmpty();
@@ -149,8 +161,11 @@ class FinalizeUserInviteCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new FinalizeUserInviteCommand("invite-token-3", "new-secure-password", "new-secure-password")))
+        assertThatThrownBy(() -> commandHandler.handle(FinalizeUserInviteCommand.builder()
+                        .token("invite-token-3")
+                        .password("new-secure-password")
+                        .repeatedPassword("new-secure-password")
+                        .build()))
                 .isInstanceOf(InvalidOrExpiredCredentialTokenException.class);
 
         entityManager.flush();

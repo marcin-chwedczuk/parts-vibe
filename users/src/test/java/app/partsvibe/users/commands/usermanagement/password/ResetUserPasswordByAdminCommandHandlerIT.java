@@ -63,8 +63,11 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
                 .build());
 
         // when
-        ResetUserPasswordByAdminCommandResult result = commandHandler.handle(
-                new ResetUserPasswordByAdminCommand(target.getId(), authenticatedAdmin.getId(), "admin-secret"));
+        ResetUserPasswordByAdminCommandResult result = commandHandler.handle(ResetUserPasswordByAdminCommand.builder()
+                .targetUserId(target.getId())
+                .adminUserId(authenticatedAdmin.getId())
+                .adminPassword("admin-secret")
+                .build());
 
         // then
         assertThat(result.targetUserId()).isEqualTo(target.getId());
@@ -85,8 +88,11 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
                 .build());
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(new ResetUserPasswordByAdminCommand(
-                        target.getId(), authenticatedAdmin.getId(), "wrong-password")))
+        assertThatThrownBy(() -> commandHandler.handle(ResetUserPasswordByAdminCommand.builder()
+                        .targetUserId(target.getId())
+                        .adminUserId(authenticatedAdmin.getId())
+                        .adminPassword("wrong-password")
+                        .build()))
                 .isInstanceOf(AdminReauthenticationFailedException.class);
         assertThat(userRepository.findById(target.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-target-password");
@@ -106,8 +112,11 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
         currentUserProvider.setCurrentUser(requester.getId(), requester.getUsername(), Set.of(RoleNames.USER));
 
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new ResetUserPasswordByAdminCommand(target.getId(), requester.getId(), "requester-secret")))
+        assertThatThrownBy(() -> commandHandler.handle(ResetUserPasswordByAdminCommand.builder()
+                        .targetUserId(target.getId())
+                        .adminUserId(requester.getId())
+                        .adminPassword("requester-secret")
+                        .build()))
                 .isInstanceOf(AdminPrivilegesRequiredException.class);
         assertThat(userRepository.findById(target.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-target-password");
@@ -125,8 +134,11 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
                 .withRole(roleUser)
                 .build());
         // when / then
-        assertThatThrownBy(() -> commandHandler.handle(
-                        new ResetUserPasswordByAdminCommand(target.getId(), otherAdmin.getId(), "other-secret")))
+        assertThatThrownBy(() -> commandHandler.handle(ResetUserPasswordByAdminCommand.builder()
+                        .targetUserId(target.getId())
+                        .adminUserId(otherAdmin.getId())
+                        .adminPassword("other-secret")
+                        .build()))
                 .isInstanceOf(AdminPrivilegesRequiredException.class);
         assertThat(userRepository.findById(target.getId()).orElseThrow().getPasswordHash())
                 .isEqualTo("old-target-password");

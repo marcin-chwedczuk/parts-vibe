@@ -5,7 +5,9 @@ import app.partsvibe.shared.cqrs.NoResult;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
+@Builder
 public record UpdateProfileCommand(
         @NotNull @Positive Long userId,
         @Size(max = 1000, message = "{profile.validation.bio.max}") String bio,

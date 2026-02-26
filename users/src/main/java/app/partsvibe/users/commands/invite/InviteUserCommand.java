@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
+@Builder
 public record InviteUserCommand(
         @NotBlank @Email @Size(max = 64) String email,
         @NotBlank @Size(max = 32) String roleName,
