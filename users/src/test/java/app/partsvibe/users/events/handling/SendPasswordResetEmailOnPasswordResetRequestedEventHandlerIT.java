@@ -30,15 +30,18 @@ class SendPasswordResetEmailOnPasswordResetRequestedEventHandlerIT extends Abstr
 
         mediator.onQuery(GetUserPreferredLocaleQuery.class, query -> Locale.ENGLISH);
 
-        var event = PasswordResetRequestedEvent.create(
-                "reset@example.com", "reset-token", Instant.parse("2026-02-26T12:00:00Z"));
+        var event = PasswordResetRequestedEvent.builder()
+                .email("reset@example.com")
+                .token("reset-token")
+                .expiresAt(Instant.parse("2026-02-26T12:00:00Z"))
+                .build();
 
         // when
         handler.handle(event);
 
         // then
         assertThat(emailSender.sentEmails()).hasSize(1);
-        var email = emailSender.sentEmails().get(0);
+        var email = emailSender.sentEmails().getFirst();
         assertThat(email.to()).containsExactly("reset@example.com");
         assertThat(email.subject()).isNotBlank();
         assertThat(email.bodyText()).contains("http://localhost:8080/password-reset?token=reset-token");

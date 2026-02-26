@@ -54,7 +54,11 @@ class RequestPasswordResetCommandHandler extends BaseCommandHandler<RequestPassw
         String hash = tokenCodec.hash(rawToken);
         tokenRepository.save(new UserPasswordResetToken(user, hash, expiresAt));
 
-        eventPublisher.publish(PasswordResetRequestedEvent.create(user.getUsername(), rawToken, expiresAt));
+        eventPublisher.publish(PasswordResetRequestedEvent.builder()
+                .email(user.getUsername())
+                .token(rawToken)
+                .expiresAt(expiresAt)
+                .build());
 
         return NoResult.INSTANCE;
     }

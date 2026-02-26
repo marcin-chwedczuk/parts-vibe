@@ -30,15 +30,20 @@ class SendInviteEmailOnUserInvitedEventHandlerIT extends AbstractUsersIntegratio
 
         mediator.onQuery(GetUserPreferredLocaleQuery.class, query -> Locale.ENGLISH);
 
-        var event = UserInvitedEvent.create(
-                "invitee@example.com", "invite-token", Instant.parse("2026-02-26T12:00:00Z"), "Welcome", "ROLE_USER");
+        var event = UserInvitedEvent.builder()
+                .email("invitee@example.com")
+                .token("invite-token")
+                .expiresAt(Instant.parse("2026-02-26T12:00:00Z"))
+                .inviteMessage("Welcome")
+                .invitedRole("ROLE_USER")
+                .build();
 
         // when
         handler.handle(event);
 
         // then
         assertThat(emailSender.sentEmails()).hasSize(1);
-        var email = emailSender.sentEmails().get(0);
+        var email = emailSender.sentEmails().getFirst();
         assertThat(email.to()).containsExactly("invitee@example.com");
         assertThat(email.subject()).isNotBlank();
         assertThat(email.bodyText()).contains("http://localhost:8080/invite?token=invite-token");

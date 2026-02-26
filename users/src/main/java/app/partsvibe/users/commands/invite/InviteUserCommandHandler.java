@@ -78,7 +78,13 @@ class InviteUserCommandHandler extends BaseCommandHandler<InviteUserCommand, Inv
 
         userInviteRepository.save(new UserInvite(email, roleName, inviteMessage, tokenHash, expiresAt));
 
-        eventPublisher.publish(UserInvitedEvent.create(email, rawToken, expiresAt, inviteMessage, roleName));
+        eventPublisher.publish(UserInvitedEvent.builder()
+                .email(email)
+                .token(rawToken)
+                .expiresAt(expiresAt)
+                .inviteMessage(inviteMessage)
+                .invitedRole(roleName)
+                .build());
         return expiresAt;
     }
 
