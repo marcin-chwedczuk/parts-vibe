@@ -77,6 +77,9 @@ working pattern here like a modulith or 3-layer architecture.
 - Prefer test data builders for creating domain objects in tests (for example `aUser()`, `aRole()`, `aUserInvite()`), instead of inline constructors.
   - Keep defaults safe and explicit in builders.
   - Override only fields relevant to a given test scenario.
+- When introducing a new entity, add a matching test data builder in test sources.
+- When changing an entity shape (new/renamed/removed fields), update its test data builder in the same change.
+- Tests should use test data builders instead of inline entity construction/mutation whenever practical.
 - Reuse lifecycle hooks from `AbstractModuleIntegrationTest` for per-test-class defaults:
   - override `beforeEachTest(TestInfo)` / `afterEachTest(TestInfo)` instead of adding local `@BeforeEach`/`@AfterEach` where possible.
   - keep hook setup minimal and stable (e.g. default clock, required baseline role), and keep scenario-specific setup inside each test.
@@ -122,6 +125,7 @@ Treat it as the default unless explicitly overridden.
 - Pipeline/decorator style behaviors are supported (`CommandBehavior`, `QueryBehavior`).
 - Command validation is implemented as a high-priority behavior using Bean Validation.
 - Use `NoResult` when command returns no business value.
+- Prefer Lombok builders for commands, queries, and events that have multiple parameters, so call sites use explicit parameter names.
 
 ### Events / Event Queue
 - Naming uses `event queue` terminology (avoid `outbox/inbox` naming drift).

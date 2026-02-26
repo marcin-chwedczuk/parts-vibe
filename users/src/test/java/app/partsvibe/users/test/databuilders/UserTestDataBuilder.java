@@ -10,6 +10,7 @@ public final class UserTestDataBuilder {
     private String username = "user-" + UUID.randomUUID();
     private String passwordHash = "noop";
     private boolean enabled = true;
+    private UUID avatarId = null;
     private final List<Role> roles = new ArrayList<>();
 
     private UserTestDataBuilder() {}
@@ -48,9 +49,15 @@ public final class UserTestDataBuilder {
         return this;
     }
 
+    public UserTestDataBuilder withAvatarId(UUID avatarId) {
+        this.avatarId = avatarId;
+        return this;
+    }
+
     public User build() {
         User user = new User(username, passwordHash);
         user.setEnabled(enabled);
+        user.setAvatarId(avatarId);
         user.getRoles().addAll(roles);
         return user;
     }

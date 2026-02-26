@@ -22,9 +22,9 @@ class GetUserMenuQueryHandlerIT extends AbstractUsersIntegrationTest {
     void returnsAvatarIdForExistingUser() {
         // given
         UUID avatarId = UUID.randomUUID();
-        var user = aUser().withUsername("menu-user@example.com").build();
-        user.setAvatarId(avatarId);
-        user = userRepository.save(user);
+        var user = userRepository.save(aUser().withUsername("menu-user@example.com")
+                .withAvatarId(avatarId)
+                .build());
 
         // when
         var result = queryHandler.handle(new GetUserMenuQuery(user.getId()));
