@@ -11,6 +11,8 @@ public final class UserInviteTestDataBuilder {
     private String inviteMessage = null;
     private String tokenHash = UUID.randomUUID().toString().replace("-", "");
     private Instant expiresAt = Instant.parse("2099-01-01T00:00:00Z");
+    private Instant usedAt = null;
+    private Instant revokedAt = null;
 
     private UserInviteTestDataBuilder() {}
 
@@ -43,7 +45,20 @@ public final class UserInviteTestDataBuilder {
         return this;
     }
 
+    public UserInviteTestDataBuilder withUsedAt(Instant usedAt) {
+        this.usedAt = usedAt;
+        return this;
+    }
+
+    public UserInviteTestDataBuilder withRevokedAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+        return this;
+    }
+
     public UserInvite build() {
-        return new UserInvite(email, roleName, inviteMessage, tokenHash, expiresAt);
+        UserInvite invite = new UserInvite(email, roleName, inviteMessage, tokenHash, expiresAt);
+        invite.setUsedAt(usedAt);
+        invite.setRevokedAt(revokedAt);
+        return invite;
     }
 }

@@ -22,11 +22,11 @@ class GetCurrentUserProfileQueryHandlerIT extends AbstractUsersIntegrationTest {
     void returnsProfileDataForExistingUser() {
         // given
         UUID avatarId = UUID.randomUUID();
-        var user = aUser().withUsername("profile-user@example.com").build();
-        user.setBio("A short bio");
-        user.setWebsite("https://example.com");
-        user.setAvatarId(avatarId);
-        user = userRepository.save(user);
+        var user = userRepository.save(aUser().withUsername("profile-user@example.com")
+                .withBio("A short bio")
+                .withWebsite("https://example.com")
+                .withAvatarId(avatarId)
+                .build());
 
         // when
         var result = queryHandler.handle(new GetCurrentUserProfileQuery(user.getId()));

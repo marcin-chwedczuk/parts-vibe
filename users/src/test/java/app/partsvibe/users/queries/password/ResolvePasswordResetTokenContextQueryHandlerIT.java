@@ -102,13 +102,12 @@ class ResolvePasswordResetTokenContextQueryHandlerIT extends AbstractUsersIntegr
         Instant now = NOW_2026_02_25T12_00Z;
         var user = userRepository.save(
                 aUser().withUsername("revoked-reset@example.com").build());
-        var token = resetTokenRepository.save(aUserPasswordResetToken()
+        resetTokenRepository.save(aUserPasswordResetToken()
                 .withUser(user)
                 .withTokenHash(tokenCodec.hash("revoked-reset-token"))
                 .withExpiresAt(now.plusSeconds(3600))
+                .withRevokedAt(now.minusSeconds(1))
                 .build());
-        token.setRevokedAt(now.minusSeconds(1));
-        resetTokenRepository.save(token);
 
         // when
         var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("revoked-reset-token"));
@@ -123,13 +122,12 @@ class ResolvePasswordResetTokenContextQueryHandlerIT extends AbstractUsersIntegr
         Instant now = NOW_2026_02_25T12_00Z;
         var user = userRepository.save(
                 aUser().withUsername("used-reset@example.com").build());
-        var token = resetTokenRepository.save(aUserPasswordResetToken()
+        resetTokenRepository.save(aUserPasswordResetToken()
                 .withUser(user)
                 .withTokenHash(tokenCodec.hash("used-reset-token"))
                 .withExpiresAt(now.plusSeconds(3600))
+                .withUsedAt(now.minusSeconds(1))
                 .build());
-        token.setUsedAt(now.minusSeconds(1));
-        resetTokenRepository.save(token);
 
         // when
         var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("used-reset-token"));

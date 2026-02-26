@@ -11,6 +11,8 @@ public final class UserTestDataBuilder {
     private String passwordHash = "noop";
     private boolean enabled = true;
     private UUID avatarId = null;
+    private String bio = null;
+    private String website = null;
     private final List<Role> roles = new ArrayList<>();
 
     private UserTestDataBuilder() {}
@@ -54,10 +56,22 @@ public final class UserTestDataBuilder {
         return this;
     }
 
+    public UserTestDataBuilder withBio(String bio) {
+        this.bio = bio;
+        return this;
+    }
+
+    public UserTestDataBuilder withWebsite(String website) {
+        this.website = website;
+        return this;
+    }
+
     public User build() {
         User user = new User(username, passwordHash);
         user.setEnabled(enabled);
         user.setAvatarId(avatarId);
+        user.setBio(bio);
+        user.setWebsite(website);
         user.getRoles().addAll(roles);
         return user;
     }

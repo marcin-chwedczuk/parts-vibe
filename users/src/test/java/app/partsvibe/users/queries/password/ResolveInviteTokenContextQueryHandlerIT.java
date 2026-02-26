@@ -64,14 +64,13 @@ class ResolveInviteTokenContextQueryHandlerIT extends AbstractUsersIntegrationTe
         // given
         Instant now = NOW_2026_02_25T12_00Z;
         userRepository.save(aUser().withUsername("invite-user2@example.com").build());
-        var invite = userInviteRepository.save(aUserInvite()
+        userInviteRepository.save(aUserInvite()
                 .withEmail("invite-user2@example.com")
                 .withRoleName(RoleNames.USER)
                 .withTokenHash(tokenCodec.hash("invite-used-token"))
                 .withExpiresAt(now.plusSeconds(3600))
+                .withUsedAt(now.minusSeconds(10))
                 .build());
-        invite.setUsedAt(now.minusSeconds(10));
-        userInviteRepository.save(invite);
 
         // when
         var result = queryHandler.handle(new ResolveInviteTokenContextQuery("invite-used-token"));

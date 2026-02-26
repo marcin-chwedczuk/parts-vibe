@@ -43,9 +43,9 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         UUID previousAvatarId = UUID.randomUUID();
         UUID newAvatarId = UUID.randomUUID();
 
-        var user = aUser().withUsername("avatar-user@example.com").build();
-        user.setAvatarId(previousAvatarId);
-        user = userRepository.save(user);
+        var user = userRepository.save(aUser().withUsername("avatar-user@example.com")
+                .withAvatarId(previousAvatarId)
+                .build());
 
         requestRepository.save(aUserAvatarChangeRequest()
                 .withUser(user)
@@ -97,14 +97,13 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         UUID newAvatarId = UUID.randomUUID();
         var user = userRepository.save(
                 aUser().withUsername("avatar-user-2@example.com").build());
-        var request = requestRepository.save(aUserAvatarChangeRequest()
+        requestRepository.save(aUserAvatarChangeRequest()
                 .withUser(user)
                 .withNewAvatarFileId(newAvatarId)
                 .withRequestedAt(now.minusSeconds(10))
+                .withStatus(UserAvatarChangeRequestStatus.APPLIED)
+                .withResolvedAt(now.minusSeconds(1))
                 .build());
-        request.setStatus(UserAvatarChangeRequestStatus.APPLIED);
-        request.setResolvedAt(now.minusSeconds(1));
-        requestRepository.save(request);
 
         // when
         handler.handle(FileReadyEvent.builder()

@@ -2,6 +2,7 @@ package app.partsvibe.users.test.databuilders;
 
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.domain.avatar.UserAvatarChangeRequest;
+import app.partsvibe.users.domain.avatar.UserAvatarChangeRequestStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,6 +11,8 @@ public final class UserAvatarChangeRequestTestDataBuilder {
     private UUID newAvatarFileId = UUID.randomUUID();
     private UUID previousAvatarFileId = null;
     private Instant requestedAt = Instant.parse("2099-01-01T00:00:00Z");
+    private UserAvatarChangeRequestStatus status = UserAvatarChangeRequestStatus.PENDING;
+    private Instant resolvedAt = null;
 
     private UserAvatarChangeRequestTestDataBuilder() {}
 
@@ -37,7 +40,21 @@ public final class UserAvatarChangeRequestTestDataBuilder {
         return this;
     }
 
+    public UserAvatarChangeRequestTestDataBuilder withStatus(UserAvatarChangeRequestStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public UserAvatarChangeRequestTestDataBuilder withResolvedAt(Instant resolvedAt) {
+        this.resolvedAt = resolvedAt;
+        return this;
+    }
+
     public UserAvatarChangeRequest build() {
-        return new UserAvatarChangeRequest(user, newAvatarFileId, previousAvatarFileId, requestedAt);
+        UserAvatarChangeRequest request =
+                new UserAvatarChangeRequest(user, newAvatarFileId, previousAvatarFileId, requestedAt);
+        request.setStatus(status);
+        request.setResolvedAt(resolvedAt);
+        return request;
     }
 }
