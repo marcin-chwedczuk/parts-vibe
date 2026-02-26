@@ -74,6 +74,12 @@ working pattern here like a modulith or 3-layer architecture.
 - For handler IT coverage, include both query handlers and event handlers (not only command handlers).
 - Use in-memory fakes from `test-support` where possible (`InMemoryMediator`, event/time/current-user/request-id fakes).
 - For users-module event/email handler ITs, prefer an in-memory `EmailSender` fake and assert final email content (`to`, `subject`, `bodyText`, `bodyHtml`).
+- Prefer test data builders for creating domain objects in tests (for example `aUser()`, `aRole()`, `aUserInvite()`), instead of inline constructors.
+  - Keep defaults safe and explicit in builders.
+  - Override only fields relevant to a given test scenario.
+- Reuse lifecycle hooks from `AbstractModuleIntegrationTest` for per-test-class defaults:
+  - override `beforeEachTest(TestInfo)` / `afterEachTest(TestInfo)` instead of adding local `@BeforeEach`/`@AfterEach` where possible.
+  - keep hook setup minimal and stable (e.g. default clock, required baseline role), and keep scenario-specific setup inside each test.
 
 ## Extra
 

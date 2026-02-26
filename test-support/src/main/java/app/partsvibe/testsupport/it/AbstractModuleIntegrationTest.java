@@ -4,6 +4,7 @@ import app.partsvibe.testsupport.fakes.InMemoryCurrentUserProvider;
 import app.partsvibe.testsupport.fakes.InMemoryEventPublisher;
 import app.partsvibe.testsupport.fakes.InMemoryRequestIdProvider;
 import app.partsvibe.testsupport.fakes.ManuallySetTimeProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,5 +51,19 @@ public abstract class AbstractModuleIntegrationTest {
         if (currentUserProvider != null) {
             currentUserProvider.setCurrentUser(testInfo.getDisplayName());
         }
+        beforeEachTest(testInfo);
+    }
+
+    @AfterEach
+    void cleanupSharedTestContext(TestInfo testInfo) {
+        afterEachTest(testInfo);
+    }
+
+    protected void beforeEachTest(TestInfo testInfo) {
+        // extension hook for module-specific test setup
+    }
+
+    protected void afterEachTest(TestInfo testInfo) {
+        // extension hook for module-specific test cleanup
     }
 }
