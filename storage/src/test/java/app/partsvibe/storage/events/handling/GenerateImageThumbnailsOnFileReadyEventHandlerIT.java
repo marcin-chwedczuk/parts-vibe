@@ -42,7 +42,10 @@ class GenerateImageThumbnailsOnFileReadyEventHandlerIT extends AbstractStorageIn
         storedFileRepository.save(stored);
         filesystemStorage.writeBlob(fileId, png);
 
-        handler.handle(FileReadyEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var saved = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(saved.isThumbnail128Ready()).isTrue();
@@ -66,7 +69,10 @@ class GenerateImageThumbnailsOnFileReadyEventHandlerIT extends AbstractStorageIn
         storedFileRepository.save(stored);
         filesystemStorage.writeBlob(fileId, payload);
 
-        handler.handle(FileReadyEvent.create(fileId, StorageObjectType.PART_ATTACHMENT));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.PART_ATTACHMENT)
+                .build());
 
         var saved = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(saved.isThumbnail128Ready()).isFalse();
@@ -88,7 +94,10 @@ class GenerateImageThumbnailsOnFileReadyEventHandlerIT extends AbstractStorageIn
         storedFileRepository.save(stored);
         filesystemStorage.writeBlob(fileId, png);
 
-        handler.handle(FileReadyEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var unchanged = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(unchanged.isThumbnail128Ready()).isFalse();
@@ -97,8 +106,10 @@ class GenerateImageThumbnailsOnFileReadyEventHandlerIT extends AbstractStorageIn
 
     @Test
     void skipsWhenFileDoesNotExist() {
-        assertThatCode(() ->
-                        handler.handle(FileReadyEvent.create(UUID.randomUUID(), StorageObjectType.USER_AVATAR_IMAGE)))
+        assertThatCode(() -> handler.handle(FileReadyEvent.builder()
+                        .fileId(UUID.randomUUID())
+                        .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                        .build()))
                 .doesNotThrowAnyException();
     }
 }

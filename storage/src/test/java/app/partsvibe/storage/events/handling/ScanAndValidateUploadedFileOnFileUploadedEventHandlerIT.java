@@ -41,7 +41,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
                 StorageTestData.pendingImageFile(fileId, StorageObjectType.USER_AVATAR_IMAGE, "ok.png", png.length));
         filesystemStorage.writeBlob(fileId, png);
 
-        handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileUploadedEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var saved = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(StoredFileStatus.READY);
@@ -65,7 +68,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
         fakeAntivirusScanner.setNextResult(
                 new ScanResult(ScanResult.Status.MALWARE_FOUND, Optional.of("Eicar-Test-Signature")));
 
-        handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileUploadedEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var saved = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(StoredFileStatus.REJECTED);
@@ -82,7 +88,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
                 fileId, StorageObjectType.USER_AVATAR_IMAGE, "avatar.png", text.length));
         filesystemStorage.writeBlob(fileId, text);
 
-        handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileUploadedEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var saved = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(StoredFileStatus.REJECTED);
@@ -102,7 +111,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
         storedFileRepository.save(stored);
         filesystemStorage.writeBlob(fileId, png);
 
-        handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileUploadedEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         var unchanged = storedFileRepository.findByFileId(fileId).orElseThrow();
         assertThat(unchanged.getStatus()).isEqualTo(StoredFileStatus.READY);
@@ -113,7 +125,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandlerIT extends AbstractSt
     void throwsWhenStoredFileDoesNotExist() {
         UUID fileId = UUID.randomUUID();
 
-        assertThatThrownBy(() -> handler.handle(FileUploadedEvent.create(fileId, StorageObjectType.USER_AVATAR_IMAGE)))
+        assertThatThrownBy(() -> handler.handle(FileUploadedEvent.builder()
+                        .fileId(fileId)
+                        .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                        .build()))
                 .isInstanceOf(StoredFileNotFoundException.class);
     }
 }

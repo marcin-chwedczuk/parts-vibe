@@ -55,7 +55,10 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
                 .build());
 
         // when
-        handler.handle(FileReadyEvent.create(newAvatarId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(newAvatarId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         // then
         entityManager.flush();
@@ -76,7 +79,10 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         UUID fileId = UUID.randomUUID();
 
         // when
-        handler.handle(FileReadyEvent.create(fileId, StorageObjectType.PART_ATTACHMENT));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(fileId)
+                .objectType(StorageObjectType.PART_ATTACHMENT)
+                .build());
 
         // then
         assertThat(requestRepository.findByNewAvatarFileId(fileId)).isEmpty();
@@ -101,7 +107,10 @@ class UserAvatarReadyEventHandlerIT extends AbstractUsersIntegrationTest {
         requestRepository.save(request);
 
         // when
-        handler.handle(FileReadyEvent.create(newAvatarId, StorageObjectType.USER_AVATAR_IMAGE));
+        handler.handle(FileReadyEvent.builder()
+                .fileId(newAvatarId)
+                .objectType(StorageObjectType.USER_AVATAR_IMAGE)
+                .build());
 
         // then
         var saved = requestRepository.findByNewAvatarFileId(newAvatarId).orElseThrow();

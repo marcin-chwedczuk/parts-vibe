@@ -88,7 +88,10 @@ class ScanAndValidateUploadedFileOnFileUploadedEventHandler extends BaseEventHan
         storedFile.setScannedAt(timeProvider.now());
         storedFileRepository.save(storedFile);
 
-        FileReadyEvent readyEvent = FileReadyEvent.create(storedFile.getFileId(), storedFile.getObjectType());
+        FileReadyEvent readyEvent = FileReadyEvent.builder()
+                .fileId(storedFile.getFileId())
+                .objectType(storedFile.getObjectType())
+                .build();
         eventPublisher.publish(readyEvent);
     }
 

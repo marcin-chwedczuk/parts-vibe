@@ -61,7 +61,10 @@ class UploadFileCommandHandler extends BaseCommandHandler<UploadFileCommand, Sto
         storedFileRepository.save(storedFile);
         filesystemStorage.writeBlob(fileId, content);
 
-        FileUploadedEvent event = FileUploadedEvent.create(fileId, command.objectType());
+        FileUploadedEvent event = FileUploadedEvent.builder()
+                .fileId(fileId)
+                .objectType(command.objectType())
+                .build();
         eventPublisher.publish(event);
 
         return new StorageUploadResult(fileId);
