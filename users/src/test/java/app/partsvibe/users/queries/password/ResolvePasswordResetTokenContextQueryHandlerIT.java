@@ -76,4 +76,65 @@ class ResolvePasswordResetTokenContextQueryHandlerIT extends AbstractUsersIntegr
         // then
         assertThat(result).isEmpty();
     }
+
+    @Test
+    void returnsEmptyForExpiredPasswordResetToken() {
+        // given
+        Instant now = NOW_2026_02_25T12_00Z;
+        var user = userRepository.save(
+                aUser().withUsername("expired-reset@example.com").build());
+        resetTokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash("expired-reset-token"))
+                .withExpiresAt(now.minusSeconds(1))
+                .build());
+
+        // when
+        var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("expired-reset-token"));
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void returnsEmptyForRevokedPasswordResetToken() {
+        // given
+        Instant now = NOW_2026_02_25T12_00Z;
+        var user = userRepository.save(
+                aUser().withUsername("revoked-reset@example.com").build());
+        var token = resetTokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash("revoked-reset-token"))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
+        token.setRevokedAt(now.minusSeconds(1));
+        resetTokenRepository.save(token);
+
+        // when
+        var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("revoked-reset-token"));
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void returnsEmptyForUsedPasswordResetToken() {
+        // given
+        Instant now = NOW_2026_02_25T12_00Z;
+        var user = userRepository.save(
+                aUser().withUsername("used-reset@example.com").build());
+        var token = resetTokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash("used-reset-token"))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
+        token.setUsedAt(now.minusSeconds(1));
+        resetTokenRepository.save(token);
+
+        // when
+        var result = queryHandler.handle(new ResolvePasswordResetTokenContextQuery("used-reset-token"));
+
+        // then
+        assertThat(result).isEmpty();
+    }
 }
