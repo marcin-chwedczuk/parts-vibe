@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.errors.UserNotFoundException;
 import app.partsvibe.users.errors.UsernameAlreadyExistsException;
@@ -14,6 +15,7 @@ import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class UpdateUserCommandHandlerIT extends AbstractUsersIntegrationTest {
@@ -26,9 +28,17 @@ class UpdateUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void updatesUsernameAndEnabledWithCanonicalUsername() {
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User target = userRepository.save(aUser().withUsername("before@example.com")
                 .withPasswordHash("{noop}x")
                 .enabled()
@@ -48,7 +58,7 @@ class UpdateUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void rejectsDuplicateUsernameCaseInsensitive() {
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         userRepository.save(aUser().withUsername("existing@example.com")
                 .withPasswordHash("{noop}x")
                 .enabled()

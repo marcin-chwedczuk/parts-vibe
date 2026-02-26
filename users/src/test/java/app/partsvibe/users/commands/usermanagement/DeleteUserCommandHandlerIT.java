@@ -6,12 +6,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.repo.RoleRepository;
 import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
@@ -24,11 +26,23 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+        roleRepository
+                .findByName(RoleNames.ADMIN)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.ADMIN).build()));
+    }
+
     @Test
     void deletesRegularUserAndReturnsDeletedUsername() {
-        currentUserProvider.setCurrentUser("admin-operator", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser("admin-operator", Set.of(RoleNames.ADMIN));
 
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User target = userRepository.save(
                 aUser().withUsername("deletable-user").withRole(roleUser).build());
 
@@ -40,7 +54,7 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void deleteIsIdempotentWhenUserDoesNotExist() {
-        currentUserProvider.setCurrentUser("admin-operator", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser("admin-operator", Set.of(RoleNames.ADMIN));
 
         DeleteUserCommandResult result = commandHandler.handle(new DeleteUserCommand(999_999L));
 
@@ -49,10 +63,10 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void rejectsDeletingCurrentUser() {
-        Role roleAdmin = roleRepository.save(aRole().withName("ROLE_ADMIN").build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
         User self = userRepository.save(
                 aUser().withUsername("admin-self").enabled().withRole(roleAdmin).build());
-        currentUserProvider.setCurrentUser(self.getId(), "admin-self", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser(self.getId(), "admin-self", Set.of(RoleNames.ADMIN));
 
         assertThatThrownBy(() -> commandHandler.handle(new DeleteUserCommand(self.getId())))
                 .isInstanceOf(CannotDeleteCurrentUserException.class);
@@ -61,9 +75,9 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void rejectsDeletingLastActiveAdmin() {
-        currentUserProvider.setCurrentUser("admin-operator", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser("admin-operator", Set.of(RoleNames.ADMIN));
 
-        Role roleAdmin = roleRepository.save(aRole().withName("ROLE_ADMIN").build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
         User onlyAdmin = userRepository.save(
                 aUser().withUsername("only-admin").enabled().withRole(roleAdmin).build());
 
@@ -74,9 +88,9 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
     @Test
     void allowsDeletingActiveAdminWhenAnotherActiveAdminExists() {
-        currentUserProvider.setCurrentUser("admin-operator", Set.of("ROLE_ADMIN"));
+        currentUserProvider.setCurrentUser("admin-operator", Set.of(RoleNames.ADMIN));
 
-        Role roleAdmin = roleRepository.save(aRole().withName("ROLE_ADMIN").build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
         userRepository.save(
                 aUser().withUsername("admin-a").enabled().withRole(roleAdmin).build());
         User adminB = userRepository.save(
@@ -86,6 +100,6 @@ class DeleteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
         assertThat(result.deletedUsername()).isEqualTo("admin-b");
         assertThat(userRepository.findById(adminB.getId())).isEmpty();
-        assertThat(userRepository.countActiveUsersByRoleName("ROLE_ADMIN")).isEqualTo(1);
+        assertThat(userRepository.countActiveUsersByRoleName(RoleNames.ADMIN)).isEqualTo(1);
     }
 }

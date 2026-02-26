@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.errors.CurrentUserMismatchException;
 import app.partsvibe.users.errors.InvalidCurrentPasswordException;
@@ -15,6 +16,7 @@ import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
@@ -27,15 +29,23 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void changesPasswordWhenCurrentPasswordIsValid() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("current-password")
                 .withRole(roleUser)
                 .build());
-        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of("ROLE_USER"));
+        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when
         commandHandler.handle(new UpdatePasswordCommand(
@@ -49,12 +59,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void rejectsChangeWhenCurrentPasswordIsInvalid() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("current-password")
                 .withRole(roleUser)
                 .build());
-        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of("ROLE_USER"));
+        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(
@@ -67,12 +77,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void rejectsChangeWhenPasswordsDoNotMatch() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("current-password")
                 .withRole(roleUser)
                 .build());
-        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of("ROLE_USER"));
+        currentUserProvider.setCurrentUser(user.getId(), user.getUsername(), Set.of(RoleNames.USER));
 
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(
@@ -85,12 +95,12 @@ class UpdatePasswordCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void rejectsChangeWhenAuthenticatedUserDiffersFromCommandUser() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("current-password")
                 .withRole(roleUser)
                 .build());
-        currentUserProvider.setCurrentUser(999L, "other@example.com", Set.of("ROLE_USER"));
+        currentUserProvider.setCurrentUser(999L, "other@example.com", Set.of(RoleNames.USER));
 
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(new UpdatePasswordCommand(

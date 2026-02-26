@@ -1,11 +1,13 @@
 package app.partsvibe.users.commands.password;
 
 import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
+import static app.partsvibe.users.test.databuilders.UserPasswordResetTokenTestDataBuilder.aUserPasswordResetToken;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.errors.InvalidOrExpiredCredentialTokenException;
@@ -18,9 +20,12 @@ import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTest {
+    private static final Instant NOW_2026_02_25T12_00Z = Instant.parse("2026-02-25T12:00:00Z");
+
     @Autowired
     private ResetPasswordWithTokenCommandHandler commandHandler;
 
@@ -39,24 +44,38 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
     @Autowired
     private EntityManager entityManager;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        timeProvider.setNow(NOW_2026_02_25T12_00Z);
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void changesPasswordMarksTokenUsedAndRevokesOtherPasswordResetTokens() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
+        Instant now = NOW_2026_02_25T12_00Z;
 
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("old-password")
                 .withRole(roleUser)
                 .build());
 
         String rawToken = "reset-token-primary";
-        UserPasswordResetToken usedToken = tokenRepository.save(
-                new UserPasswordResetToken(user, tokenCodec.hash(rawToken), now.plusSeconds(3600)));
+        UserPasswordResetToken usedToken = tokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash(rawToken))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
 
-        UserPasswordResetToken otherResetToken = tokenRepository.save(
-                new UserPasswordResetToken(user, tokenCodec.hash("reset-token-secondary"), now.plusSeconds(3600)));
+        UserPasswordResetToken otherResetToken = tokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash("reset-token-secondary"))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
 
         // when
         commandHandler.handle(
@@ -82,10 +101,7 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
     @Test
     void throwsWhenTokenIsMissingOrExpired() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("old-password")
                 .withRole(roleUser)
@@ -102,17 +118,20 @@ class ResetPasswordWithTokenCommandHandlerIT extends AbstractUsersIntegrationTes
     @Test
     void throwsWhenPasswordsDoNotMatch() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
+        Instant now = NOW_2026_02_25T12_00Z;
 
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("old-password")
                 .withRole(roleUser)
                 .build());
 
         String rawToken = "reset-token-primary";
-        tokenRepository.save(new UserPasswordResetToken(user, tokenCodec.hash(rawToken), now.plusSeconds(3600)));
+        tokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash(rawToken))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
 
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(

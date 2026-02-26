@@ -1,11 +1,13 @@
 package app.partsvibe.users.commands.invite;
 
 import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
+import static app.partsvibe.users.test.databuilders.UserInviteTestDataBuilder.aUserInvite;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.domain.invite.UserInvite;
 import app.partsvibe.users.errors.InvalidInviteRoleException;
@@ -18,9 +20,12 @@ import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
+    private static final Instant NOW_2026_02_25T12_00Z = Instant.parse("2026-02-25T12:00:00Z");
+
     @Autowired
     private InviteUserCommandHandler commandHandler;
 
@@ -39,12 +44,19 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        timeProvider.setNow(NOW_2026_02_25T12_00Z);
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void createsInviteAndSendsEmailWhenUserDoesNotExist() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-        roleRepository.save(aRole().withName("ROLE_USER").build());
+        Instant now = NOW_2026_02_25T12_00Z;
 
         // when
         InviteUserCommandResult result =
@@ -60,7 +72,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                 .filter(invite -> invite.getEmail().equals("new@example.com"))
                 .toList();
         assertThat(invites).hasSize(1);
-        assertThat(invites.get(0).getRoleName()).isEqualTo("ROLE_USER");
+        assertThat(invites.get(0).getRoleName()).isEqualTo(RoleNames.USER);
         assertThat(invites.get(0).getExpiresAt()).isEqualTo(now.plusSeconds(24 * 3600L));
         assertThat(invites.get(0).getRevokedAt()).isNull();
 
@@ -69,7 +81,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
         UserInvitedEvent event =
                 (UserInvitedEvent) eventPublisher.publishedEvents().get(0);
         assertThat(event.email()).isEqualTo("new@example.com");
-        assertThat(event.invitedRole()).isEqualTo("ROLE_USER");
+        assertThat(event.invitedRole()).isEqualTo(RoleNames.USER);
         assertThat(event.inviteMessage()).isEqualTo("Welcome aboard");
         assertThat(tokenCodec.hash(event.token())).isEqualTo(invites.get(0).getTokenHash());
     }
@@ -77,16 +89,18 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void resendsInviteWhenEmailHasPendingInvite() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-        roleRepository.save(aRole().withName("ROLE_USER").build());
+        Instant now = NOW_2026_02_25T12_00Z;
 
-        UserInvite previousInvite = userInviteRepository.save(new UserInvite(
-                "invited@example.com", "ROLE_ADMIN", null, tokenCodec.hash("old-invite-token"), now.plusSeconds(3600)));
+        UserInvite previousInvite = userInviteRepository.save(aUserInvite()
+                .withEmail("invited@example.com")
+                .withRoleName(RoleNames.ADMIN)
+                .withTokenHash(tokenCodec.hash("old-invite-token"))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
 
         // when
         InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("invited@example.com", "ROLE_USER", 24, null));
+                commandHandler.handle(new InviteUserCommand("invited@example.com", RoleNames.USER, 24, null));
 
         // then
         entityManager.flush();
@@ -107,7 +121,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
                         .findFirst()
                         .orElseThrow()
                         .getRoleName())
-                .isEqualTo("ROLE_USER");
+                .isEqualTo(RoleNames.USER);
         assertThat(invites.stream()
                         .filter(invite -> !invite.getId().equals(previousInvite.getId()))
                         .findFirst()
@@ -124,25 +138,23 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void resendInviteRevokesAllOutstandingUnusedInviteTokens() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
-        roleRepository.save(aRole().withName("ROLE_USER").build());
+        Instant now = NOW_2026_02_25T12_00Z;
 
-        UserInvite firstOldInvite = userInviteRepository.save(new UserInvite(
-                "multiple-tokens@example.com",
-                "ROLE_USER",
-                null,
-                tokenCodec.hash("old-invite-token-1"),
-                now.plusSeconds(3600)));
-        UserInvite secondOldInvite = userInviteRepository.save(new UserInvite(
-                "multiple-tokens@example.com",
-                "ROLE_USER",
-                null,
-                tokenCodec.hash("old-invite-token-2"),
-                now.plusSeconds(7200)));
+        UserInvite firstOldInvite = userInviteRepository.save(aUserInvite()
+                .withEmail("multiple-tokens@example.com")
+                .withRoleName(RoleNames.USER)
+                .withTokenHash(tokenCodec.hash("old-invite-token-1"))
+                .withExpiresAt(now.plusSeconds(3600))
+                .build());
+        UserInvite secondOldInvite = userInviteRepository.save(aUserInvite()
+                .withEmail("multiple-tokens@example.com")
+                .withRoleName(RoleNames.USER)
+                .withTokenHash(tokenCodec.hash("old-invite-token-2"))
+                .withExpiresAt(now.plusSeconds(7200))
+                .build());
 
         // when
-        commandHandler.handle(new InviteUserCommand("multiple-tokens@example.com", "ROLE_USER", 24, null));
+        commandHandler.handle(new InviteUserCommand("multiple-tokens@example.com", RoleNames.USER, 24, null));
 
         // then
         entityManager.flush();
@@ -166,7 +178,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void returnsAlreadyOnboardedWhenUserExists() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("active@example.com")
                 .withPasswordHash("password")
                 .withRole(roleUser)
@@ -174,7 +186,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
         // when
         InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("active@example.com", "ROLE_USER", 24, null));
+                commandHandler.handle(new InviteUserCommand("active@example.com", RoleNames.USER, 24, null));
 
         // then
         assertThat(result.outcome()).isEqualTo(InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED);
@@ -186,7 +198,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void returnsAlreadyOnboardedLockedWhenUserExistsAndIsLocked() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("locked@example.com")
                 .withPasswordHash("password")
                 .withRole(roleUser)
@@ -195,7 +207,7 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
 
         // when
         InviteUserCommandResult result =
-                commandHandler.handle(new InviteUserCommand("locked@example.com", "ROLE_USER", 24, null));
+                commandHandler.handle(new InviteUserCommand("locked@example.com", RoleNames.USER, 24, null));
 
         // then
         assertThat(result.outcome()).isEqualTo(InviteUserCommandResult.InviteOutcome.ALREADY_ONBOARDED_LOCKED);
@@ -207,8 +219,6 @@ class InviteUserCommandHandlerIT extends AbstractUsersIntegrationTest {
     @Test
     void rejectsInviteWhenRoleDoesNotExistInDatabase() {
         // given
-        timeProvider.setNow(Instant.parse("2026-02-25T12:00:00Z"));
-
         // when / then
         assertThatThrownBy(() -> commandHandler.handle(
                         new InviteUserCommand("missing-role@example.com", "ROLE_UNKNOWN", 24, null)))

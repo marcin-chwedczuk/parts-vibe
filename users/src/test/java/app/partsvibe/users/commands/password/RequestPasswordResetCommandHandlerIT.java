@@ -1,10 +1,12 @@
 package app.partsvibe.users.commands.password;
 
 import static app.partsvibe.users.test.databuilders.RoleTestDataBuilder.aRole;
+import static app.partsvibe.users.test.databuilders.UserPasswordResetTokenTestDataBuilder.aUserPasswordResetToken;
 import static app.partsvibe.users.test.databuilders.UserTestDataBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.partsvibe.users.domain.Role;
+import app.partsvibe.users.domain.RoleNames;
 import app.partsvibe.users.domain.User;
 import app.partsvibe.users.domain.security.UserPasswordResetToken;
 import app.partsvibe.users.events.PasswordResetRequestedEvent;
@@ -16,9 +18,12 @@ import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest {
+    private static final Instant NOW_2026_02_25T12_00Z = Instant.parse("2026-02-25T12:00:00Z");
+
     @Autowired
     private RequestPasswordResetCommandHandler commandHandler;
 
@@ -37,20 +42,31 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
     @Autowired
     private EntityManager entityManager;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        timeProvider.setNow(NOW_2026_02_25T12_00Z);
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void createsNewPasswordResetTokenRevokesPreviousActiveAndPublishesEvent() {
         // given
-        Instant now = Instant.parse("2026-02-25T12:00:00Z");
-        timeProvider.setNow(now);
+        Instant now = NOW_2026_02_25T12_00Z;
 
-        Role roleUser = roleRepository.save(aRole().withName("ROLE_USER").build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
         User user = userRepository.save(aUser().withUsername("alice@example.com")
                 .withPasswordHash("old-password")
                 .withRole(roleUser)
                 .build());
 
-        UserPasswordResetToken previousToken = tokenRepository.save(
-                new UserPasswordResetToken(user, tokenCodec.hash("previous-reset-token"), now.plusSeconds(1800)));
+        UserPasswordResetToken previousToken = tokenRepository.save(aUserPasswordResetToken()
+                .withUser(user)
+                .withTokenHash(tokenCodec.hash("previous-reset-token"))
+                .withExpiresAt(now.plusSeconds(1800))
+                .build());
 
         // when
         commandHandler.handle(new RequestPasswordResetCommand("  ALICE@Example.com "));
@@ -90,8 +106,6 @@ class RequestPasswordResetCommandHandlerIT extends AbstractUsersIntegrationTest 
     @Test
     void doesNothingWhenUserDoesNotExist() {
         // given
-        timeProvider.setNow(Instant.parse("2026-02-25T12:00:00Z"));
-
         // when
         commandHandler.handle(new RequestPasswordResetCommand("missing@example.com"));
 

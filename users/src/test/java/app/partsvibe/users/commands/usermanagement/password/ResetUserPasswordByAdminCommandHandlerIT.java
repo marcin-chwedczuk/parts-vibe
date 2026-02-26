@@ -15,6 +15,7 @@ import app.partsvibe.users.repo.UserRepository;
 import app.partsvibe.users.test.it.AbstractUsersIntegrationTest;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationTest {
@@ -27,11 +28,23 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
     @Autowired
     private RoleRepository roleRepository;
 
+    @Override
+    protected void beforeEachTest(TestInfo testInfo) {
+        roleRepository
+                .findByName(RoleNames.ADMIN)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.ADMIN).build()));
+        roleRepository
+                .findByName(RoleNames.USER)
+                .orElseGet(() ->
+                        roleRepository.save(aRole().withName(RoleNames.USER).build()));
+    }
+
     @Test
     void resetsTargetPasswordWhenAdminReauthenticatesSuccessfully() {
         // given
-        Role roleAdmin = roleRepository.save(aRole().withName(RoleNames.ADMIN).build());
-        Role roleUser = roleRepository.save(aRole().withName(RoleNames.USER).build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
 
         User admin = userRepository.save(aUser().withUsername("admin@example.com")
                 .withPasswordHash("admin-secret")
@@ -60,8 +73,8 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
     @Test
     void rejectsResetWhenAdminPasswordIsInvalid() {
         // given
-        Role roleAdmin = roleRepository.save(aRole().withName(RoleNames.ADMIN).build());
-        Role roleUser = roleRepository.save(aRole().withName(RoleNames.USER).build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
 
         User admin = userRepository.save(aUser().withUsername("admin@example.com")
                 .withPasswordHash("admin-secret")
@@ -84,7 +97,7 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
     @Test
     void rejectsResetWhenRequesterIsNotAdmin() {
         // given
-        Role roleUser = roleRepository.save(aRole().withName(RoleNames.USER).build());
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
 
         User requester = userRepository.save(aUser().withUsername("requester@example.com")
                 .withPasswordHash("requester-secret")
@@ -107,8 +120,8 @@ class ResetUserPasswordByAdminCommandHandlerIT extends AbstractUsersIntegrationT
     @Test
     void rejectsResetWhenCommandAdminDiffersFromAuthenticatedAdmin() {
         // given
-        Role roleAdmin = roleRepository.save(aRole().withName(RoleNames.ADMIN).build());
-        Role roleUser = roleRepository.save(aRole().withName(RoleNames.USER).build());
+        Role roleAdmin = roleRepository.findByName(RoleNames.ADMIN).orElseThrow();
+        Role roleUser = roleRepository.findByName(RoleNames.USER).orElseThrow();
 
         User authenticatedAdmin = userRepository.save(aUser().withUsername("admin@example.com")
                 .withPasswordHash("admin-secret")
